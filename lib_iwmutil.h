@@ -12,21 +12,21 @@
 INT
 main(){
 	// 実行開始時間
-	UINT _execMS=iExecSec_init();
+	UINT _execMS = iExecSec_init();
 
 	// コマンド名／引数
-	MBS *_program=iCmdline_getCmd();
-	MBS **args=iCmdline_getArgs();
+	MBS *_program = iCmdline_getCmd();
+	MBS **args = iCmdline_getArgs();
 
 	// ↓ここから
 
 	// ↑ここまで
 
 	// デバッグ
-	icalloc_mapPrint();ifree_all();icalloc_mapPrint();
+	icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
 
 	// 実行時間
-	P("(+%.3fsec)\n\n",iExecSec_next(_execMS));
+	P("(+%.3fsec)\n\n", iExecSec_next(_execMS));
 	imain_end();
 }
 */
