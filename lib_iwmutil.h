@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20181008"
-#define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2018 iwm-iwama"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20190813"
+#define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2019 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
 	サンプル
@@ -239,14 +239,9 @@ MBS      *icnv_U2A(U8N *ptrU);
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
 UINT     imi_len(MBS *ptr);
-
 UINT     iji_len(MBS *ptr);
-UINT     iji_lenX(MBS *ptr);
-
-UINT     iui_lenX(U8N *ptr);
-
+UINT     iui_len(U8N *ptr);
 UINT     iwi_len(WCS *ptr);
-UINT     iwi_lenX(WCS *ptr);
 
 MBS      *imp_forwardN(MBS *ptr,UINT sizeM);
 MBS      *ijp_forwardN(MBS *ptr,UINT sizeJ);
@@ -560,14 +555,6 @@ UINT     iFchk_typePathA(MBS *path);
 
 BOOL     iFchk_Bfile(MBS *fn);
 #define  iFchk_Tfile(fn)                         (BOOL)(iFchk_typePathA(fn)==2 && !iFchk_Bfile(fn) ? TRUE : FALSE)
-
-/*【文字コードに関する覚え書きと実験】
-	１.２ シフトJIS ２バイト文字の判定
-	http://www5d.biglobe.ne.jp/~noocyte/Programming/CharCode.html#IsSjisLeadAndTrail
-	#define IsSjisTrailByte(byte) ((((unsigned)(byte)-0x40U)<(unsigned)(94*2+1))&&((unsigned)(byte)!=0x7FU))
-*/
-#define  ichk_2byteMBS(ptr)                      !((((unsigned)(*ptr)-0x40U)<(unsigned)(94*2+1))&&((unsigned)(*ptr)!=0x7FU))
-#define  ichk_2byteWCS(ptr)                      (*ptr>0xff ? TRUE : FALSE)
 
 #define  ichk_attrDirFile(attr)                  (UINT)(((UINT)attr & FILE_ATTRIBUTE_DIRECTORY) ? 1 : 2)
 

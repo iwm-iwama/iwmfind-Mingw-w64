@@ -686,7 +686,7 @@ U8N
 	{
 		return NULL;
 	}
-	UINT uW = iwi_lenX(ptrW); // この方が速い
+	UINT uW = iwi_len(ptrW);
 	UINT uU = uW + ($IWM_uWords * 2);
 	U8N *ptrU = icalloc_MBS(uU);
 		WideCharToMultiByte(CP_UTF8, 0, ptrW, uW, ptrU, uU, 0, 0);
@@ -713,7 +713,7 @@ WCS
 	{
 		return NULL;
 	}
-	UINT uW = iui_lenX(ptrU); // この方が速い
+	UINT uW = iui_len(ptrU);
 	WCS *ptrW = icalloc_WCS(uW);
 		MultiByteToWideChar(CP_UTF8, 0, ptrU, -1, ptrW, uW);
 	return ptrW;
@@ -728,7 +728,7 @@ MBS
 	{
 		return NULL;
 	}
-	UINT uW = iwi_lenX(ptrW); // この方が速い
+	UINT uW = iwi_len(ptrW);
 	UINT uA = uW + $IWM_uWords;
 	MBS *ptr = icalloc_MBS(uA);
 		WideCharToMultiByte(CP_OEMCP, 0, ptrW, uW, ptr, uA, 0, 0);
@@ -799,32 +799,13 @@ iji_len(
 	}
 	return uCnt;
 }
-// v2016-09-08
-// (2016-09-08対応) $IWM_bSuccess／$IWM_uWords
+// v2019-08-13
 UINT
-iji_lenX(
-	MBS *ptr
-)
-{
-	ijp_forwardN(ptr, UINT_MAX);
-	/* 継承
-		$IWM_bSuccess
-		$IWM_uWords
-	*/
-	return $IWM_uWords;
-}
-// v2016-09-08
-// (2016-09-08対応) $IWM_bSuccess／$IWM_uWords
-UINT
-iui_lenX(
+iui_len(
 	U8N *ptr
 )
 {
 	iup_forwardN(ptr, UINT_MAX);
-	/* 継承
-		$IWM_bSuccess
-		$IWM_uWords
-	*/
 	return $IWM_uWords;
 }
 // v2016-09-06
@@ -844,34 +825,6 @@ iwi_len(
 		++rtn;
 	}
 	return rtn;
-}
-// v2016-09-08
-// (2016-09-08対応) $IWM_bSuccess／$IWM_uWords
-UINT
-iwi_lenX(
-	WCS *ptr
-)
-{
-	if(!ptr)
-	{
-		$IWM_bSuccess = FALSE;
-		$IWM_uWords = 0;
-		return 0;
-	}
-	UINT uJ = 0;
-	UINT uCnt = 0;
-	while(*ptr)
-	{
-		if(ichk_2byteWCS(ptr))
-		{
-			++uJ;
-		}
-		++uCnt;
-		++ptr;
-	}
-	$IWM_bSuccess = TRUE;
-	$IWM_uWords = uCnt;
-	return uCnt;
 }
 //-------------------------
 // size先のポインタを返す
@@ -906,7 +859,7 @@ MBS
 	MBS *p = "ABあいう";
 	P82(ijp_forwardN(p, 3)); //=> "いう"
 */
-// v2016-09-07
+// v2019-08-13
 MBS
 *ijp_forwardN(
 	MBS *ptr,  // 開始位置
@@ -922,15 +875,7 @@ MBS
 	UINT uCnt = 0;
 	while(*ptr && sizeJ > 0)
 	{
-		// CharNextA()だと、全角2byte目のみのチェックが出来なく不便
-		if(ichk_2byteMBS(ptr))
-		{
-			ptr += 2;
-		}
-		else
-		{
-			++ptr;
-		}
+		ptr = CharNextA(ptr);
 		++uCnt; // 文字数
 		--sizeJ;
 	}

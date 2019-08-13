@@ -181,7 +181,7 @@ MBS *_sGroup = 0;
 */
 MBS *_sSort = 0;
 /*
-	カラム名等、非表示
+	フッタ情報を非表示
 	-noguide | -ng
 */
 BOOL _bNoGuide = FALSE;
@@ -290,6 +290,7 @@ INT _iExec = 0;
 */
 #define   PRIORITY_DEFAULT    3
 INT _iPriority = PRIORITY_DEFAULT;
+
 INT
 main()
 {
@@ -548,7 +549,9 @@ main()
 		{
 			_iExec = _iRm;
 		}
-		_bNoGuide = TRUE; // 項目を非表示
+
+		_bNoGuide = TRUE; // フッタ情報を非表示
+
 		if(_iExec <= I_EXT2)
 		{
 			p1 = iFget_AdirA(_sOpMd);
@@ -884,6 +887,7 @@ main()
 	//
 	imain_end();
 }
+
 MBS
 *str_encode(
 	MBS *ptr
@@ -902,6 +906,7 @@ MBS
 		p1 = p2;
 	return p1;
 }
+
 MBS
 *sql_escape(
 	MBS *ptr
@@ -933,6 +938,7 @@ MBS
 		p1 = p2;
 	return p1;
 }
+
 /* 2016-08-19
 【留意】Dirの表示について
 	d:\aaa\ 以下の、
@@ -997,6 +1003,7 @@ ifind10(
 		while(FindNextFileW(hfind, &F));
 	FindClose(hfind);
 }
+
 VOID
 ifind21(
 	WCS *dir,
@@ -1011,6 +1018,7 @@ ifind21(
 		sqlite3_bind_int(_stmt1, 4, _uStepCnt);
 	sqlite3_step(_stmt1);
 }
+
 VOID
 ifind22(
 	$struct_iFinfoW *FI,
@@ -1030,6 +1038,7 @@ ifind22(
 		sqlite3_bind_int64 (_stmt2, 9, FI->iFsize);
 	sqlite3_step(_stmt2);
 }
+
 /*
 	SQLの実行
 */
@@ -1049,6 +1058,7 @@ sql_exec(
 		imain_end();
 	}
 }
+
 /*
 	検索結果を１行取得する度に呼ばれるコールバック関数
 */
@@ -1274,6 +1284,7 @@ print_result(
 	}
 	return SQLITE_OK; // return 0
 }
+
 BOOL
 sql_saveOrLoadMemdb(
 	sqlite3 *mem_db, // ":memory:"
@@ -1312,6 +1323,7 @@ sql_saveOrLoadMemdb(
 	ifree(up1);
 	return (!err ? TRUE : FALSE);
 }
+
 VOID
 print_footer()
 {
@@ -1373,6 +1385,7 @@ print_footer()
 		P2("--");
 	iConsole_setTextColor(_getColorDefault);
 }
+
 VOID
 print_version()
 {
@@ -1386,6 +1399,7 @@ print_version()
 		SQLITE_VERSION
 	);
 }
+
 VOID
 print_help()
 {
