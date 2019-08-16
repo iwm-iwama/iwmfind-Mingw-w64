@@ -589,30 +589,37 @@ MBS
 			{
 				case('a'):
 					*(rtn + i1) = '\a';
-				break;
+					break;
+
 				case('b'):
 					*(rtn + i1) = '\b';
-				break;
+					break;
+
 				case('t'):
 					*(rtn + i1) = '\t';
-				break;
+					break;
+
 				case('n'):
 					*(rtn + i1) = '\n';
-				break;
+					break;
+
 				case('v'):
 					*(rtn + i1) = '\v';
-				break;
+					break;
+
 				case('f'):
 					*(rtn + i1) = '\f';
-				break;
+					break;
+
 				case('r'):
 					*(rtn + i1) = '\r';
-				break;
+					break;
+
 				default:
 					*(rtn + i1) = '\\';
 					++i1;
 					*(rtn + i1) = *ptr;
-				break;
+					break;
 			}
 		}
 		else
@@ -897,7 +904,7 @@ U8N
 		return ptr;
 	}
 	// BOMを読み飛ばす(UTF-8N は該当しない)
-	if(*ptr == 0xEF && *(ptr + 1) == 0xBB && *(ptr + 2) == 0xBF)
+	if(*ptr == (CHAR)0xEF && *(ptr + 1) == (CHAR)0xBB && *(ptr + 2) == (CHAR)0xBF)
 	{
 		ptr += 3;
 	}
@@ -1379,7 +1386,7 @@ MBS
 	P82(ijs_sub_clone(ptr, -6, 2)); //=> "A"
 	P82(ijs_sub_clone(ptr, -7, 2)); //=> ""
 */
-// v2014-05-03
+// v2019-08-15
 MBS
 *ijs_sub_clone(
 	MBS *ptr, // 文字列
@@ -1391,7 +1398,7 @@ MBS
 	{
 		return ptr;
 	}
-	UINT len = iji_len(ptr);
+	INT len = iji_len(ptr);
 	if(jpos >= len)
 	{
 		return imp_eod(ptr);
@@ -1613,7 +1620,7 @@ iwb_cmp(
 	ifree(wp1);
 	NL();
 */
-// v2016-01-18
+// v2019-08-15
 WCS
 *iwp_cmpSunday(
 	WCS *ptr,
@@ -1625,7 +1632,7 @@ WCS
 	{
 		return 0;
 	}
-	CONST UINT searchLenW = iwi_len(search);
+	CONST INT searchLenW = iwi_len(search);
 	WCS *pEnd = 0;
 	WCS *searchBgn = 0;
 	WCS *searchEnd = 0;
@@ -1633,7 +1640,7 @@ WCS
 	WCS *ptrTmp = icalloc_WCS(iwi_len(ptr) + searchLenW); // +番兵
 	WCS *p1 = 0;
 	BOOL bHit = FALSE;
-	UINT uHitCnt = 0;
+	INT iHitCnt = 0;
 	INT c = 0;
 	if(icase)
 	{
@@ -1654,13 +1661,13 @@ WCS
 		searchBgn = searchEnd = searchTmp;
 		--searchBgn;
 		c = *(ptrTmp + searchLenW); // Sunday法の特徴
-		uHitCnt = 0;
+		iHitCnt = 0;
 		while(*searchEnd)
 		{
 			// 文字列照合
 			if(*pEnd == *searchEnd)
 			{
-				++uHitCnt; // 一致数
+				++iHitCnt; // 一致数
 			}
 			// ずらす数
 			if(c == *searchEnd)
@@ -1670,7 +1677,7 @@ WCS
 			++searchEnd;
 			++pEnd;
 		}
-		if(uHitCnt == searchLenW)
+		if(iHitCnt == searchLenW)
 		{
 			bHit = TRUE;
 			break;
@@ -1800,7 +1807,7 @@ iji_searchCntLA(
 	}
 	switch(option)
 	{
-		case(0): break;
+		case(0):                         break;
 		case(1): rtn *= imi_len(search); break;
 		case(2): rtn *= iji_len(search); break;
 	}
@@ -1869,7 +1876,7 @@ iji_searchCntRA(
 	}
 	switch(option)
 	{
-		case(0): break;
+		case(0):                         break;
 		case(1): rtn *= imi_len(search); break;
 		case(2): rtn *= iji_len(search); break;
 	}
@@ -2015,11 +2022,13 @@ icmpOperator_extractHead(
 			{
 				rtn = (*(ptr + 1) == '=' ? 1 : 2);
 			}
-		break;
+			break;
+
 		// [0]"="
 		case('='):
 			rtn = 0;
-		break;
+			break;
+
 		// [-2]"<" | [-1]"<=" | [3]"<>"
 		case('<'):
 			if(*(ptr + 1) == '>')
@@ -2030,7 +2039,7 @@ icmpOperator_extractHead(
 			{
 				rtn = (*(ptr + 1) == '=' ? -1 : -2);
 			}
-		break;
+			break;
 	}
 	if(bNot)
 	{
@@ -3831,7 +3840,7 @@ MBS
 		}
 	ifree(pAryUsed);
 */
-// v2016-08-26
+// v2019-08-15
 // (2016-08-29対応) $IWM_bSuccess／$IWM_uAryUsed
 MBS
 **iary_higherDir(
@@ -3878,7 +3887,7 @@ MBS
 				if(imb_cmpfi(*(sAry + u2), *(sAry + u1)))
 				{
 					// 順ソートなので u2, u1
-					iAryFlg[u2] = (iAryDepth[u2] <= (iAryDepth[u1] + depth) ? -1 : 1);
+					iAryFlg[u2] = (iAryDepth[u2] <= (iAryDepth[u1] + (INT)depth) ? -1 : 1);
 				}
 				++u2;
 			}
@@ -4320,7 +4329,7 @@ iFinfo_initW(
 	}
 	return TRUE;
 }
-// v2016-05-08
+// v2019-08-15
 BOOL
 iFinfo_init2A(
 	$struct_iFinfoA *FI, //
@@ -4335,7 +4344,7 @@ iFinfo_init2A(
 	}
 	MBS *path2 = iFget_AdirA(path); // 絶対pathを返す
 		INT iFtype = iFchk_typePathA(path2);
-		UINT uDirLen = (iFtype == 1 ? imi_len(path2) : PathFindFileNameA(path2) - path2);
+		UINT uDirLen = (iFtype == 1 ? imi_len(path2) : (UINT)(PathFindFileNameA(path2) - path2));
 		MBS *pDir = (FI->fullnameA); // tmp
 			imp_pcpy(pDir, path2, path2 + uDirLen);
 		MBS *sName = NULL;
@@ -4449,23 +4458,27 @@ iFinfo_attrAtoUINT(
 			// 32: ARCHIVE
 			case('a'):
 				rtn += FILE_ATTRIBUTE_ARCHIVE;
-			break;
+				break;
+
 			// 16: DIRECTORY
 			case('d'):
 				rtn += FILE_ATTRIBUTE_DIRECTORY;
-			break;
+				break;
+
 			// 4: SYSTEM
 			case('s'):
 				rtn += FILE_ATTRIBUTE_SYSTEM;
-			break;
+				break;
+
 			// 2: HIDDEN
 			case('h'):
 				rtn += FILE_ATTRIBUTE_HIDDEN;
-			break;
+				break;
+
 			// 1: READONLY
 			case('r'):
 				rtn += FILE_ATTRIBUTE_READONLY;
-			break;
+				break;
 		}
 		++p2;
 	}
@@ -4865,7 +4878,7 @@ iFchk_typePathA(
 	P83(iFchk_Bfile("aaa.txt")); //=> FALSE
 	P83(iFchk_Bfile("???"));     //=> FALSE (存在しないとき)
 */
-// v2015-05-15
+// v2019-08-15
 BOOL
 iFchk_Bfile(
 	MBS *Fn
@@ -4878,7 +4891,7 @@ iFchk_Bfile(
 	}
 	UINT cnt = 0, c = 0, u1 = 0;
 	// 64byteでは不完全
-	while((c = getc(Fp)) != EOF && u1 < 128)
+	while((c = getc(Fp)) != (UINT)EOF && u1 < 128)
 	{
 		if(c == 0)
 		{
@@ -4936,18 +4949,20 @@ MBS
 			// path
 			case(0):
 				imp_cpy(rtn, path);
-			break;
+				break;
+
 			// name+ext
 			case(1):
 				pBgn = PathFindFileNameA(path);
 				imp_cpy(rtn, pBgn);
-			break;
+				break;
+
 			// name
 			case(2):
 				pBgn = PathFindFileNameA(path);
 				pEnd = PathFindExtensionA(pBgn);
 				imp_pcpy(rtn, pBgn, pEnd);
-			break;
+				break;
 		}
 	}
 	return rtn;
@@ -4970,11 +4985,12 @@ MBS
 			p1 = ims_cat_clone(path, "\\");
 				_fullpath(rtn, p1, IMAX_PATHA);
 			ifree(p1);
-		break;
+			break;
+
 		// File
 		case(2):
 			_fullpath(rtn, path, IMAX_PATHA);
-		break;
+			break;
 	}
 	return rtn;
 }
@@ -4995,8 +5011,8 @@ MBS
 	MBS *p1 = 0;
 	switch(iFchk_typePathA(path))
 	{
-		case(1): p1 = "\\"; break;
-		case(2): break;
+		case(1): p1 = "\\";   break;
+		case(2):              break;
 		default: return NULL; break;
 	}
 	MBS *ps1 = ims_cat_clone(path, p1);
@@ -5114,27 +5130,32 @@ iwin_set_priority(
 		// リアルタイム
 		case(0):
 			class = REALTIME_PRIORITY_CLASS;
-		break;
+			break;
+
 		// 高
 		case(1):
 			class = HIGH_PRIORITY_CLASS;
-		break;
+			break;
+
 		// 通常以上
 		case(2):
 			class = ABOVE_NORMAL_PRIORITY_CLASS;
-		break;
+			break;
+
 		// 通常
 		case(3):
 			class = NORMAL_PRIORITY_CLASS;
-		break;
+			break;
+
 		// 通常以下
 		case(4):
 			class = BELOW_NORMAL_PRIORITY_CLASS;
-		break;
+			break;
+
 		// アイドル
 		case(5):
 			class = IDLE_PRIORITY_CLASS;
-		break;
+			break;
 	}
 	HANDLE hProcess = GetCurrentProcess();
 	return (SetPriorityClass(hProcess, class) ? FALSE : TRUE);
@@ -5144,27 +5165,6 @@ iwin_set_priority(
 	Console
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
-//-------------------------
-// カーソルを表示／非表示
-//-------------------------
-/* (例)
-	iConsole_setCursor(FALSE);
-	P("12345");
-	Sleep(5000); // カーソル非表示
-	iConsole_setCursor(TRUE);
-*/
-// v2012-07-20
-VOID
-iConsole_setCursor(
-	BOOL option // ON=TRUE／OFF=FALSE
-)
-{
-	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_CURSOR_INFO info;
-	GetConsoleCursorInfo(handle, &info);
-	info.bVisible = option;
-    SetConsoleCursorInfo(handle, &info);
-}
 //---------------------------------
 // 現在の文字・画面の表示色を得る
 //---------------------------------
@@ -5200,92 +5200,6 @@ iConsole_setTextColor(
 {
 	HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
 	SetConsoleTextAttribute(handle, rgb);
-}
-//-----------------
-// キー入力を得る
-//-----------------
-/* (例)
-	while(TRUE)
-	{
-		if(iConsole_chkInputA("q", FALSE, "[q]+[Enter]で終了...\n>> "))
-		{
-			break;
-		}
-	}
-	// "" と NULL では動作が違う
-	iConsole_chkInputA("", FALSE, "続行するには何かキーを押してください . . .");
-	iConsole_chkInputA(NULL, FALSE, "続行するには何かキーを押してください . . .");
-*/
-// v2015-12-12
-BOOL
-iConsole_chkInputA(
-	MBS *input, // NULL=いずれの入力でもTRUEを返す
-	BOOL icase, // TRUE=大文字小文字区別しない
-	MBS *exp    // 入力催促 (例)"続行するには何かキーを押してください . . ."
-)
-{
-	if(exp)
-	{
-		P20(exp);
-	}
-	BOOL rtn = FALSE;
-	if(input)
-	{
-		MBS *p1 = iCmdline_getsA(imi_len(input) + 1); //  + 1<=文字長0対策
-			rtn = imb_cmp(input, p1, TRUE, icase);
-		ifree(p1);
-	}
-	else
-	{
-		getch(); // キー入力待ち
-		NL();    // (null)の後は改行されないので意図的に改行
-		rtn = TRUE;
-	}
-	return rtn;
-}
-/* (例)
-	MBS *p1 = 0;
-	MBS *input = "q"; // キー入力字のTrue値
-	BOOL bTrue = TRUE;
-	while(bTrue)
-	{
-		p1 = iConsole_getInputA(input, FALSE, "[q]+[Enter]で終了...\n>> ");
-		if(imb_cmppi(input, p1))
-		{
-			bTrue = FALSE;
-		}
-		else
-		{
-			P("%s？ ええ、そうですとも。\n", p1);
-		}
-		ifree(p1);
-		NL();
-	}
-*/
-// v2015-12-12
-MBS
-*iConsole_getInputA(
-	MBS *input, // NULL=いずれの入力でもTRUEを返す
-	BOOL icase, // TRUE=大文字小文字区別しない
-	MBS *exp    // 入力催促 (例)"続行するには何かキーを押してください . . ."
-)
-{
-	if(exp)
-	{
-		P20(exp);
-	}
-	MBS *rtn = 0;
-	if(input)
-	{
-		rtn = iCmdline_getsA(IGET_ARGS_LEN_MAX);
-	}
-	else
-	{
-		getch(); // キー入力待ち
-		NL();    // (null)の後は改行されないので意図的に改行
-		rtn = NULL;
-	}
-	return rtn;
 }
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -6256,112 +6170,134 @@ MBS
 			++format;
 			switch(*format)
 			{
-			// Ymdhns
+				// Ymdhns
 				case 'a': // 曜日(例:Su)
 					pEnd = imp_cpy(pEnd, idate_cjd_mWday(cjd));
-				break;
+					break;
+
 				case 'A': // 曜日数(例:0)
 					sprintf(s1, "%d", idate_cjd_iWday(cjd));
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'c': // 年内の通算日(例:001)
 					sprintf(s1, "%03d", idate_cjd_yeardays(cjd));
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'C': // CJD通算日
 					sprintf(s1, CJD_FORMAT, cjd);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'e': // 年内の通算週(例:01)
 					sprintf(s1, "%02d", idate_cjd_yearweeks(cjd));
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'E': // CJD通算週
 					sprintf(s1, "%d", (INT)(cjd / 7) + 1);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
-			// Diff
+					break;
+
+				// Diff
 				case 'M': // 通算月
 					sprintf(s1, "%d", (i_y * 12) + i_m);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'D': // 通算日
 					sprintf(s1, "%d", i_days);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'H': // 通算時
 					sprintf(s1, "%d", (i_days * 24) + i_h);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'N': // 通算分
 					sprintf(s1, "%d", (i_days * 24 * 60) + (i_h * 60) + i_n);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'S': // 通算秒
 					sprintf(s1, "%d", (i_days * 24 * 60 * 60) + (i_h * 60 * 60) + (i_n * 60) + i_s);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'W': // 通算週
 					sprintf(s1, "%d", (INT)(i_days / 7));
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'w': // 通算週の余日
 					sprintf(s1, "%d", (i_days % 7));
 					pEnd = imp_cpy(pEnd, s1);
-				break;
-			// 共通
+					break;
+
+				// 共通
 				case 'g': // Sign "-" "+"
 					*pEnd = (i_sign < 0 ? '-' : '+');
 					++pEnd;
-				break;
+					break;
+
 				case 'G': // Sign "-" のみ
 					if(i_sign < 0)
 					{
 						*pEnd = '-';
 						++pEnd;
 					}
-				break;
+					break;
+
 				case 'y': // 年(例:2011)
 				case 'Y': // 年(例:11)
 					sprintf(s1, "%04d", i_y);
 					pEnd = imp_cpy(pEnd, (*format == 'y' ? s1 : s1 + 2));
-				break;
+					break;
+
 				case 'm': // 月(例:01)
 					sprintf(s1, "%02d", i_m);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'd': // 日(例:01)
 					sprintf(s1, "%02d", i_d);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'h': // 時(例:01)
 					sprintf(s1, "%02d", i_h);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 'n': // 分(例:01)
 					sprintf(s1, "%02d", i_n);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case 's': // 秒(例:01)
 					sprintf(s1, "%02d", i_s);
 					pEnd = imp_cpy(pEnd, s1);
-				break;
+					break;
+
 				case '%':
 					*pEnd = '%';
 					++pEnd;
-				break;
+					break;
+
 				default:
 					--format; // else に処理を振る
-				break;
+					break;
 			}
 		}
 		else if(*format == '\\')
 		{
 			switch(*(format + 1))
 			{
-				case('a'): *pEnd = '\a'; break;
-				case('n'): *pEnd = '\n'; break;
-				case('t'): *pEnd = '\t'; break;
+				case('a'): *pEnd = '\a';          break;
+				case('n'): *pEnd = '\n';          break;
+				case('t'): *pEnd = '\t';          break;
 				default:   *pEnd = *(format + 1); break;
 			}
 			++format;
@@ -6533,17 +6469,19 @@ MBS
 					case(0): // "[]"
 						p3 = "y";
 						i1 = 1;
-					break;
+						break;
+
 					case(1): // "[%]"
 						if(*ts1 == '%')
 						{
 							p3 = "y%";
 							i1 = 1;
 						}
-					break;
+						break;
+
 					default:
 						p3 = ts1;
-					break;
+						break;
 				}
 				if(i1)
 				{
@@ -6559,49 +6497,55 @@ MBS
 								add_y = i1;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
+
 							case 'M': // 月 => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
 							case 'm': // 月 => "yyyy-mm-dd hh:nn:ss"
 								add_m = i1;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
+
 							case 'W': // 週 => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
 							case 'w': // 週 => "yyyy-mm-dd hh:nn:ss"
 								add_d = i1 * 7;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
+
 							case 'D': // 日 => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
 							case 'd': // 日 => "yyyy-mm-dd hh:nn:ss"
 								add_d = i1;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
+
 							case 'H': // 時 => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
 							case 'h': // 時 => "yyyy-mm-dd hh:nn:ss"
 								add_h = i1;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
+
 							case 'N': // 分 => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
 							case 'n': // 分 => "yyyy-mm-dd hh:nn:ss"
 								add_n = i1;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
+
 							case 'S': // 秒 => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
 							case 's': // 秒 => "yyyy-mm-dd hh:nn:ss"
 								add_s = i1;
 								flg = TRUE;
 								bAdd = TRUE;
-							break;
+								break;
 						}
 						// [1y6m] のようなとき [1y] で処理する
 						if(flg)
