@@ -1,11 +1,11 @@
 //----------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind3_20190710"
+#define   IWMFIND_VERSION     "iwmfind3_20191120"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2019 iwm-iwama"
 //----------------------------------------------------------------
 #include  "lib_iwmutil.h"
 #include  "sqlite3.h"
-MBS  *str_encode(MBS *ptr);
-MBS  *sql_escape(MBS *ptr);
+MBS  *str_encode(MBS *pM);
+MBS  *sql_escape(MBS *pM);
 VOID ifind10($struct_iFinfoW *FI, WCS *dir, UINT dirLenJ, INT depth);
 VOID ifind21(WCS *dir, UINT dirId, INT depth);
 VOID ifind22($struct_iFinfoW *FI, UINT dirId, WCS *fname);
@@ -18,16 +18,16 @@ VOID print_help();
 //-----------
 // 共用変数
 //-----------
-UINT _execMS = 0;
-MBS  *_program = 0;
-MBS  *_sTmp = 0;    // 後で icalloc_MBS(IGET_ARGS_LEN_MAX)
-U8N  *_sqlU = 0;
-UINT _uDirId = 0;   // Dir数
-UINT _uAllCnt = 0;  // 検索数
-UINT _uStepCnt = 0; // Currentdir位置
-UINT _uRowCnt = 0;  // 処理行数
-sqlite3      *_iDbs = 0;
-sqlite3_stmt *_stmt1 = 0, *_stmt2 = 0;
+UINT $execMS = 0;
+MBS  *$program = 0;
+MBS  *$sTmp = 0;    // 後で icalloc_MBS(IGET_ARGS_LEN_MAX)
+U8N  *$sqlU = 0;
+UINT $uDirId = 0;   // Dir数
+UINT $uAllCnt = 0;  // 検索数
+UINT $uStepCnt = 0; // Currentdir位置
+UINT $uRowCnt = 0;  // 処理行数
+sqlite3      *$iDbs = 0;
+sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 // [文字色] + ([背景色] * 16)
 //  0 = Black    1 = Navy     2 = Green    3 = Teal
 //  4 = Maroon   5 = Purple   6 = Olive    7 = Silver
@@ -295,14 +295,14 @@ INT
 main()
 {
 	// 実行時間
-	_execMS = iExecSec_init();
+	$execMS = iExecSec_init();
 	// 現在時間
 	_aiNow = (INT*)idate_cjd_to_iAryYmdhns(idate_nowToCjd(TRUE));
 	// 大域変数
-	_sTmp = icalloc_MBS(IGET_ARGS_LEN_MAX + 1); // +"\0"
+	$sTmp = icalloc_MBS(IGET_ARGS_LEN_MAX + 1); // +"\0"
 	_getColorDefault = iConsole_getBgcolor();   // 現在の文字色／背景色
 	// 変数
-	_program = iCmdline_getCmd();
+	$program = iCmdline_getCmd();
 	MBS **args = iCmdline_getArgs();
 	INT argc = iargs_size(args);
 	MBS **ap1 = {0}, **ap2 = {0}, **ap3 = {0};
@@ -654,14 +654,14 @@ main()
 		ifree(p1);
 	}
 	// -where | -w
-	snprintf(_sTmp, IGET_ARGS_LEN_MAX, "depth>=%d AND depth<=%d", _iMinDepth, _iMaxDepth);
-		_sWhere2 = ims_clone(_sTmp);
+	snprintf($sTmp, IGET_ARGS_LEN_MAX, "depth>=%d AND depth<=%d", _iMinDepth, _iMaxDepth);
+		_sWhere2 = ims_clone($sTmp);
 	ap1 = iargs_option(args, "-where", "-w");
 		if($IWM_uAryUsed)
 		{
 			_sWhere0 = sql_escape(*(ap1 + 0));
-			snprintf(_sTmp, IGET_ARGS_LEN_MAX, "WHERE %s AND", _sWhere0);
-			_sWhere1 = ims_clone(_sTmp);
+			snprintf($sTmp, IGET_ARGS_LEN_MAX, "WHERE %s AND", _sWhere0);
+			_sWhere1 = ims_clone($sTmp);
 		}
 		else
 		{
@@ -673,8 +673,8 @@ main()
 	ap1 = iargs_option(args, "-group", "-g");
 		if($IWM_uAryUsed)
 		{
-			snprintf(_sTmp, IGET_ARGS_LEN_MAX, "GROUP BY %s", *(ap1 + 0));
-			_sGroup = ims_clone(_sTmp);
+			snprintf($sTmp, IGET_ARGS_LEN_MAX, "GROUP BY %s", *(ap1 + 0));
+			_sGroup = ims_clone($sTmp);
 		}
 		else
 		{
@@ -752,9 +752,9 @@ main()
 	// SQL作成
 	// SJIS で作成（DOSプロンプト対応）
 	i1 = imi_len(SELECT_VIEW) + imi_len(_sSelect) + imi_len(_sWhere1) + imi_len(_sWhere2) + imi_len(_sGroup) + imi_len(_sSort) + 1;
-	snprintf(_sTmp, IGET_ARGS_LEN_MAX, SELECT_VIEW, _sSelect, _sWhere1, _sWhere2, _sGroup, _sSort);
+	snprintf($sTmp, IGET_ARGS_LEN_MAX, SELECT_VIEW, _sSelect, _sWhere1, _sWhere2, _sGroup, _sSort);
 	// SJIS を UTF-8 に変換（Sqlite3対応）
-	_sqlU = A2U(_sTmp);
+	$sqlU = M2U($sTmp);
 	// -table "header"
 	if(*_sTable1)
 	{
@@ -762,11 +762,11 @@ main()
 	}
 	// -in DBを指定
 	// UTF-8
-	U8N *up1 = A2U(_sInDbn);
-		if(sqlite3_open(up1, &_iDbs))
+	U8N *up1 = M2U(_sInDbn);
+		if(sqlite3_open(up1, &$iDbs))
 		{
 			fprintf(stderr, "[Err] -in '%s' を開けない!\n", _sInDbn);
-			sqlite3_close(_iDbs); // ErrでもDB解放
+			sqlite3_close($iDbs); // ErrでもDB解放
 			imain_end();
 		}
 		else
@@ -787,31 +787,31 @@ main()
 							＜出力＞ UTF-8  => SJIS
 						の方法に辿り着いた。
 					*/
-					sql_exec(_iDbs, "PRAGMA encoding='UTF-8';", NULL);
+					sql_exec($iDbs, "PRAGMA encoding='UTF-8';", NULL);
 					// TABLE作成
-					sql_exec(_iDbs, CREATE_T_DIR, NULL);
-					sql_exec(_iDbs, CREATE_T_FILE, NULL);
+					sql_exec($iDbs, CREATE_T_DIR, NULL);
+					sql_exec($iDbs, CREATE_T_FILE, NULL);
 					// VIEW作成
-					sql_exec(_iDbs, CREATE_VIEW, NULL);
+					sql_exec($iDbs, CREATE_VIEW, NULL);
 					// 前処理
-					sqlite3_prepare(_iDbs, INSERT_T_DIR, imi_len(INSERT_T_DIR), &_stmt1, NULL);
-					sqlite3_prepare(_iDbs, INSERT_T_FILE, imi_len(INSERT_T_FILE), &_stmt2, NULL);
+					sqlite3_prepare($iDbs, INSERT_T_DIR, imi_len(INSERT_T_DIR), &$stmt1, NULL);
+					sqlite3_prepare($iDbs, INSERT_T_FILE, imi_len(INSERT_T_FILE), &$stmt2, NULL);
 					// トランザクション開始
-					sql_exec(_iDbs, "BEGIN", NULL);
+					sql_exec($iDbs, "BEGIN", NULL);
 					// 検索データ DB書込
 					WCS *wp1 = 0;
 					for(i2 = 0; (p1 = *(_aDir + i2)); i2++)
 					{
-						wp1 = A2W(p1);
-							_uStepCnt = iwi_len(wp1);
-							ifind10(FI, wp1, _uStepCnt, 0); // 本処理
+						wp1 = M2W(p1);
+							$uStepCnt = iwi_len(wp1);
+							ifind10(FI, wp1, $uStepCnt, 0); // 本処理
 						ifree(wp1);
 					}
 					// トランザクション終了
-					sql_exec(_iDbs, "COMMIT", NULL);
+					sql_exec($iDbs, "COMMIT", NULL);
 					// 後処理
-					sqlite3_finalize(_stmt2);
-					sqlite3_finalize(_stmt1);
+					sqlite3_finalize($stmt2);
+					sqlite3_finalize($stmt1);
 				iFinfo_freeW(FI);
 			}
 			// 結果
@@ -827,31 +827,31 @@ main()
 				// WHERE STR のとき不要データ削除
 				if(imi_len(_sWhere0))
 				{
-					sql_exec(_iDbs, "BEGIN", NULL); // トランザクション開始
+					sql_exec($iDbs, "BEGIN", NULL); // トランザクション開始
 						p1 = ims_cat_clone("WHERE ", _sWhere0);
-							snprintf(_sTmp, IGET_ARGS_LEN_MAX, UPDATE_EXEC99_1, p1);
+							snprintf($sTmp, IGET_ARGS_LEN_MAX, UPDATE_EXEC99_1, p1);
 						ifree(p1);
-						p1 = A2U(_sTmp); // UTF-8で処理
-							sql_exec(_iDbs, p1, NULL);              // フラグを立てる
-							sql_exec(_iDbs, DELETE_EXEC99_1, NULL); // 不要データ削除
-							sql_exec(_iDbs, UPDATE_EXEC99_2, NULL); // フラグ初期化
+						p1 = M2U($sTmp); // UTF-8で処理
+							sql_exec($iDbs, p1, NULL);              // フラグを立てる
+							sql_exec($iDbs, DELETE_EXEC99_1, NULL); // 不要データ削除
+							sql_exec($iDbs, UPDATE_EXEC99_2, NULL); // フラグ初期化
 						ifree(p1);
-					sql_exec(_iDbs, "COMMIT", NULL); // トランザクション終了
-					sql_exec(_iDbs, "VACUUM", NULL); // VACUUM
+					sql_exec($iDbs, "COMMIT", NULL); // トランザクション終了
+					sql_exec($iDbs, "VACUUM", NULL); // VACUUM
 				}
 				// _sIn, _sOut 両指定のときは, 途中, ファイル名が逆になるので, 後でswap
-				sql_saveOrLoadMemdb(_iDbs, (*_sIn ? _sInDbn : _sOutDbn), TRUE);
+				sql_saveOrLoadMemdb($iDbs, (*_sIn ? _sInDbn : _sOutDbn), TRUE);
 				// outDb 出力数カウント
 				_iExec = 99;
-				sql_exec(_iDbs, "SELECT number FROM V_INDEX;", print_result); // "SELECT *" は遅い
+				sql_exec($iDbs, "SELECT number FROM V_INDEX;", print_result); // "SELECT *" は遅い
 			}
 			else
 			{
 				// 画面表示
-				sql_exec(_iDbs, _sqlU, print_result);
+				sql_exec($iDbs, $sqlU, print_result);
 			}
 			// DB解放
-			sqlite3_close(_iDbs);
+			sqlite3_close($iDbs);
 			// _sIn, _sOut ファイル名をswap
 			if(*_sIn)
 			{
@@ -890,10 +890,10 @@ main()
 
 MBS
 *str_encode(
-	MBS *ptr
+	MBS *pM
 )
 {
-	MBS *p1 = ims_clone(ptr);
+	MBS *p1 = ims_clone(pM);
 	MBS *p2 = 0;
 	p2 = ijs_replace(p1, "\\a", "\a"); // "\a"
 		ifree(p1);
@@ -909,10 +909,10 @@ MBS
 
 MBS
 *sql_escape(
-	MBS *ptr
+	MBS *pM
 )
 {
-	MBS *p1 = ims_clone(ptr);
+	MBS *p1 = ims_clone(pM);
 	MBS *p2 = 0;
 		p2 = ijs_replace(p1, ";", " "); // ";" => " " SQLインジェクション回避
 	ifree(p1);
@@ -975,7 +975,7 @@ ifind10(
 		// 読み飛ばす Depth
 		BOOL bMinDepthFlg = (depth >= _iMinDepth ? TRUE : FALSE);
 		// dirIdを逐次生成
-		UINT dirId = (++_uDirId);
+		UINT dirId = (++$uDirId);
 		// Dir
 		if(bMinDepthFlg)
 		{
@@ -1011,12 +1011,12 @@ ifind21(
 	INT depth
 )
 {
-	sqlite3_reset(_stmt1);
-		sqlite3_bind_int64(_stmt1, 1, dirId);
-		sqlite3_bind_text16(_stmt1, 2, dir, -1, SQLITE_STATIC);
-		sqlite3_bind_int(_stmt1, 3, depth);
-		sqlite3_bind_int(_stmt1, 4, _uStepCnt);
-	sqlite3_step(_stmt1);
+	sqlite3_reset($stmt1);
+		sqlite3_bind_int64($stmt1, 1, dirId);
+		sqlite3_bind_text16($stmt1, 2, dir, -1, SQLITE_STATIC);
+		sqlite3_bind_int($stmt1, 3, depth);
+		sqlite3_bind_int($stmt1, 4, $uStepCnt);
+	sqlite3_step($stmt1);
 }
 
 VOID
@@ -1026,17 +1026,17 @@ ifind22(
 	WCS *fname
 )
 {
-	sqlite3_reset(_stmt2);
-		sqlite3_bind_int64(_stmt2, 1, ++_uAllCnt);
-		sqlite3_bind_int64(_stmt2, 2, dirId);
-		sqlite3_bind_text16(_stmt2, 3, fname, -1, SQLITE_STATIC);
-		sqlite3_bind_int(_stmt2, 4, (FI->iExt) - (FI->iFname));
-		sqlite3_bind_int(_stmt2, 5, FI->iAttr);
-		sqlite3_bind_double(_stmt2, 6, FI->cjdCtime);
-		sqlite3_bind_double(_stmt2, 7, FI->cjdMtime);
-		sqlite3_bind_double(_stmt2, 8, FI->cjdAtime);
-		sqlite3_bind_int64 (_stmt2, 9, FI->iFsize);
-	sqlite3_step(_stmt2);
+	sqlite3_reset($stmt2);
+		sqlite3_bind_int64($stmt2, 1, ++$uAllCnt);
+		sqlite3_bind_int64($stmt2, 2, dirId);
+		sqlite3_bind_text16($stmt2, 3, fname, -1, SQLITE_STATIC);
+		sqlite3_bind_int($stmt2, 4, (FI->iExt) - (FI->iFname));
+		sqlite3_bind_int($stmt2, 5, FI->iAttr);
+		sqlite3_bind_double($stmt2, 6, FI->cjdCtime);
+		sqlite3_bind_double($stmt2, 7, FI->cjdMtime);
+		sqlite3_bind_double($stmt2, 8, FI->cjdAtime);
+		sqlite3_bind_int64 ($stmt2, 9, FI->iFsize);
+	sqlite3_step($stmt2);
 }
 
 /*
@@ -1050,7 +1050,7 @@ sql_exec(
 )
 {
 	MBS *p_err = 0; // SQLiteが使用
-	_uRowCnt = 0;
+	$uRowCnt = 0;
 	if(sqlite3_exec(db, sql, cb, NULL, &p_err))
 	{
 		fprintf(stderr, "[Err] 構\文エラー\n    %s\n    %s\n", p_err, sql);
@@ -1081,27 +1081,27 @@ print_result(
 		case(I_MV2):   // --move2
 			// _sOpMd\以下には、_aDir\以下の dir を作成
 			i1 = atoi(*(sColumnValues + 0)); // step_cnt
-			p1 = U2A(*(sColumnValues + 1));  // dir "\"付
+			p1 = U2M(*(sColumnValues + 1));  // dir "\"付
 			p1e = ijp_forwardN(p1, i1);      // p1のEOD
-			p2 = U2A(*(sColumnValues + 2));  // name
-			p3 = U2A(*(sColumnValues + 3));  // path
+			p2 = U2M(*(sColumnValues + 2));  // name
+			p3 = U2M(*(sColumnValues + 3));  // path
 			// mkdir
-			snprintf(_sTmp, IGET_ARGS_LEN_MAX, "%s\\%s", _sOpMd, p1e);
-				if(imk_dir(_sTmp))
+			snprintf($sTmp, IGET_ARGS_LEN_MAX, "%s\\%s", _sOpMd, p1e);
+				if(imk_dir($sTmp))
 				{
-					P("md   => %s\n", _sTmp); // 新規dirを表示
-					++_uRowCnt;
+					P("md   => %s\n", $sTmp); // 新規dirを表示
+					++$uRowCnt;
 				}
 			// 先
 			p4 = ims_clone(p1e);
-				snprintf(_sTmp, IGET_ARGS_LEN_MAX, "%s\\%s%s", _sOpMd, p4, p2);
-			p5 = ims_clone(_sTmp);
+				snprintf($sTmp, IGET_ARGS_LEN_MAX, "%s\\%s%s", _sOpMd, p4, p2);
+			p5 = ims_clone($sTmp);
 			if(_iExec == I_CP)
 			{
 				if(CopyFile(p3, p5, FALSE))
 				{
 					P("cp   <= %s\n", p3); // fileを表示
-					++_uRowCnt;
+					++$uRowCnt;
 				}
 			}
 			else if(_iExec >= I_MV)
@@ -1119,7 +1119,7 @@ print_result(
 				if(MoveFile(p3, p5))
 				{
 					P("mv   <= %s\n", p3); // fileを表示
-					++_uRowCnt;
+					++$uRowCnt;
 				}
 				// rmdir
 				if(_iExec == I_MV2)
@@ -1127,7 +1127,7 @@ print_result(
 					if(irm_dir(p1))
 					{
 						P("rd   => %s\n", p1); // dirを表示
-						++_uRowCnt;
+						++$uRowCnt;
 					}
 				}
 			}
@@ -1139,24 +1139,24 @@ print_result(
 		break;
 		case(I_EXT1): // --extract1
 		case(I_EXT2): // --extract2
-			p1 = U2A(*(sColumnValues + 0)); // path
-			p2 = U2A(*(sColumnValues + 1)); // name
+			p1 = U2M(*(sColumnValues + 0)); // path
+			p2 = U2M(*(sColumnValues + 1)); // name
 				// mkdir
 				if(imk_dir(_sOpMd))
 				{
 					P("md   => %s\n", _sOpMd); // 新規dirを表示
-					++_uRowCnt;
+					++$uRowCnt;
 				}
 				// 先
-				snprintf(_sTmp, IGET_ARGS_LEN_MAX, "%s\\%s", _sOpMd, p2);
-				p3 = ims_clone(_sTmp);
+				snprintf($sTmp, IGET_ARGS_LEN_MAX, "%s\\%s", _sOpMd, p2);
+				p3 = ims_clone($sTmp);
 					// I_EXT1, I_EXT2共、同名fileは上書き
 					if(_iExec == I_EXT1)
 					{
 						if(CopyFile(p1, p3, FALSE))
 						{
 							P("ext1 <= %s\n", p3); // fileを表示
-							++_uRowCnt;
+							++$uRowCnt;
 						}
 					}
 					else if(_iExec == I_EXT2)
@@ -1174,7 +1174,7 @@ print_result(
 						if(MoveFile(p1, p3))
 						{
 							P("mv   <= %s\n", p3); // fileを表示
-							++_uRowCnt;
+							++$uRowCnt;
 						}
 					}
 				ifree(p3);
@@ -1182,20 +1182,20 @@ print_result(
 			ifree(p1);
 		break;
 		case(I_RP): // --replace
-			p1 = U2A(*(sColumnValues + 0)); // type
-			p2 = U2A(*(sColumnValues + 1)); // path
+			p1 = U2M(*(sColumnValues + 0)); // type
+			p2 = U2M(*(sColumnValues + 1)); // path
 				if(*p1 == 'f' && CopyFile(_sOpRep, p2, FALSE))
 				{
 					P("rep  => %s\n", p2); // fileを表示
-					++_uRowCnt;
+					++$uRowCnt;
 				}
 			ifree(p2);
 			ifree(p1);
 		break;
 		case(I_RM):  // --remove
 		case(I_RM2): // --remove2
-			p1 = U2A(*(sColumnValues + 0)); // path
-			p2 = U2A(*(sColumnValues + 1)); // dir
+			p1 = U2M(*(sColumnValues + 0)); // path
+			p2 = U2M(*(sColumnValues + 1)); // dir
 			// ReadOnly属性(1)を解除
 			if((1 & atoi(*(sColumnValues + 2))))
 			{
@@ -1206,7 +1206,7 @@ print_result(
 			{
 				// fileのみ
 				P("rm   => %s\n", p1); // fileを表示
-				++_uRowCnt;
+				++$uRowCnt;
 			}
 			// 空dir 削除
 			if(_iExec == I_RM2)
@@ -1215,25 +1215,25 @@ print_result(
 				if(irm_dir(p2))
 				{
 					P("rd   => %s\n", p2); // dirを表示
-					++_uRowCnt;
+					++$uRowCnt;
 				}
 			}
 			ifree(p2);
 			ifree(p1);
 		break;
 		case(99): // Count Only
-			++_uRowCnt;
+			++$uRowCnt;
 		break;
 		default:
 			// タイトル表示
-			if(!_uRowCnt)
+			if(!$uRowCnt)
 			{
 				iConsole_setTextColor(ColorBgText1);
 					P20(_sTr1); // 行先頭の付加文字列
 					for(i1 = 0; i1 < iColumnCount; i1++)
 					{
 						p1 = *(sColumnNames + i1);
-						p2 = U2A(p1);
+						p2 = U2M(p1);
 							P(
 								"%s%s[%s]%s%s",
 								_sTd1,
@@ -1259,14 +1259,14 @@ print_result(
 						"%s%s%u%s%s",
 						_sTd1,
 						_sQuote,
-						_uRowCnt + 1,
+						$uRowCnt + 1,
 						_sQuote,
 						(!*_sTd1 && i1 == iColumnCount2 ? "" : _sTd2)
 					);
 				}
 				else
 				{
-					p2 = U2A(*(sColumnValues + i1));
+					p2 = U2M(*(sColumnValues + i1));
 						P(
 							"%s%s%s%s%s",
 							_sTd1,
@@ -1279,7 +1279,7 @@ print_result(
 				}
 			}
 			P2(_sTr2); // 行末尾の付加文字列
-			++_uRowCnt;
+			++$uRowCnt;
 		break;
 	}
 	return SQLITE_OK; // return 0
@@ -1298,7 +1298,7 @@ sql_saveOrLoadMemdb(
 	sqlite3 *pTo;
 	sqlite3 *pFrom;
 	// UTF-8で処理
-	U8N *up1 = A2U(ofn);
+	U8N *up1 = M2U(ofn);
 		if(!(err = sqlite3_open(up1, &pFile)))
 		{
 			if(save_load)
@@ -1332,9 +1332,9 @@ print_footer()
 		LN();
 		P(
 			"-- %u row%s in set ( %.3f sec)\n",
-			_uRowCnt,
-			(_uRowCnt > 1 ? "s" : ""), // 複数形
-			iExecSec_next(_execMS)
+			$uRowCnt,
+			($uRowCnt > 1 ? "s" : ""), // 複数形
+			iExecSec_next($execMS)
 		);
 	iConsole_setTextColor(ColorExp1);
 		P2("--");
@@ -1345,8 +1345,8 @@ print_footer()
 				++u1;
 			}
 		P2("--");
-			p1 = U2A(_sqlU);
-				P("--  _sqlU  \"%s\"\n", p1);
+			p1 = U2M($sqlU);
+				P("--  $sqlU  \"%s\"\n", p1);
 			ifree(p1);
 		P2("--");
 		if(*_sInDbn)
@@ -1407,22 +1407,22 @@ print_help()
 		print_version();
 		LN();
 	iConsole_setTextColor(ColorBgText1);
-		P (" %s [Dir] [Option] ", _program);
+		P (" %s [Dir] [Option] ", $program);
 	iConsole_setTextColor(ColorText1);
 		P9(2);
 	iConsole_setTextColor(ColorBgText2);
 		P2(" (使用例1) 検索 ");
-		P ("   %s DIR -r -s \"number, path, size\" -w \"ext like 'exe'\" ", _program);
+		P ("   %s DIR -r -s \"number, path, size\" -w \"ext like 'exe'\" ", $program);
 	iConsole_setTextColor(ColorText1);
 		P9(2);
 	iConsole_setTextColor(ColorBgText2);
 		P2(" (使用例2) 検索結果をファイルへ保存 ");
-		P ("   %s DIR1 DIR2 ... -r -o FILE [Option] ", _program);
+		P ("   %s DIR1 DIR2 ... -r -o FILE [Option] ", $program);
 	iConsole_setTextColor(ColorText1);
 		P9(2);
 	iConsole_setTextColor(ColorBgText2);
 		P2(" (使用例3) 検索対象をファイルから読込 ");
-		P ("   %s -i FILE [Option] ", _program);
+		P ("   %s -i FILE [Option] ", $program);
 	iConsole_setTextColor(ColorText1);
 		P9(2);
 	iConsole_setTextColor(ColorExp2);

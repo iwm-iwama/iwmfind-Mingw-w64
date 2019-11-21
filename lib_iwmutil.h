@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20190816"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20191121"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2019 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -9,16 +9,75 @@
 /*
 #include "lib_iwmutil.h"
 
+//-----------
+// 共有変数
+//-----------
+UINT $execMS   = 0;
+MBS  *$program = NULL;
+MBS  **$args   = {NULL};
+UINT $argsSize = 0;
+
 INT
-main(){
+main()
+{
 	// 実行開始時間
-	UINT _execMS = iExecSec_init();
+	$execMS = iExecSec_init();
 
 	// コマンド名／引数
-	MBS *_program = iCmdline_getCmd();
-	MBS **args = iCmdline_getArgs();
+	$program = iCmdline_getCmd();
+	$args = iCmdline_getArgs();
+	$argsSize = $IWM_uAryUsed;
 
 	// ↓ここから
+
+	// (例) test.exe -size=640,480 -text1="where name like 'who?'" -text2="あいうえお","か,き,く,け,こ","'さ'し'す'せ'そ'"
+
+	MBS **as1 = {NULL};
+	MBS **as2 = {NULL};
+
+	P2($program);
+
+	for(INT _i1 = 0; _i1 < $argsSize; _i1++)
+	{
+		NL();
+		P2($args[_i1]);	
+
+		as1 = ija_split($args[_i1], "=", "", FALSE);
+		INT _i11 = $IWM_uAryUsed;
+
+		MBS *sLabel = as1[0];
+
+		for(INT _i2 = 1; _i2 < _i11; _i2++)
+		{
+			as2 = ija_split(as1[_i2], ",", "\"\"\'\'", TRUE);
+
+			// "-size"
+			if(imb_cmpp(sLabel, "-size"))
+			{
+				P("0> %s\n", as2[0]);
+				P("1> %s\n", as2[1]);
+			}
+
+			// "-text1"
+			if(imb_cmpp(sLabel, "-text1"))
+			{
+				P("0> %s\n", as2[0]);
+			}
+
+			// "-text2"
+			if(imb_cmpp(sLabel, "-text2"))
+			{
+				P("0> %s\n", as2[0]);
+				P("1> %s\n", as2[1]);
+				P("2> %s\n", as2[2]);
+			}
+
+			ifree(as2);
+		}
+		ifree(as1);
+	}
+
+	NL();
 
 	// ↑ここまで
 
@@ -26,7 +85,7 @@ main(){
 	icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
 
 	// 実行時間
-	P("(+%.3fsec)\n\n", iExecSec_next(_execMS));
+	P("(+%.3fsec)\n\n", iExecSec_next($execMS));
 	imain_end();
 }
 */
@@ -104,13 +163,13 @@ VOID     *irealloc(VOID *ptr,UINT n,UINT size);
 	(例) MBS[]=[0]"ABC",[1]"DEF",[2]NULL
 */
 #define  icalloc_MBS(n)                          (MBS*)icalloc(n,sizeof(MBS),FALSE)
-#define  irealloc_MBS(ptr,n)                     (MBS*)irealloc(ptr,n,sizeof(MBS))
+#define  irealloc_MBS(pM,n)                      (MBS*)irealloc(pM,n,sizeof(MBS))
 
 #define  icalloc_MBS_ary(n)                      (MBS**)icalloc(n,sizeof(MBS*),TRUE)
-#define  irealloc_MBS_ary(ptr,n)                 (MBS**)irealloc(ptr,n,sizeof(MBS*))
+#define  irealloc_MBS_ary(pM,n)                  (MBS**)irealloc(pM,n,sizeof(MBS*))
 
 #define  icalloc_WCS(n)                          (WCS*)icalloc(n,sizeof(WCS),FALSE)
-#define  irealloc_WCS(ptr,n)                     (WCS*)irealloc(ptr,n,sizeof(WCS))
+#define  irealloc_WCS(pW,n)                      (WCS*)irealloc(pW,n,sizeof(WCS))
 
 #define  icalloc_INT(n)                          (INT*)icalloc(n,sizeof(INT),FALSE)
 #define  irealloc_INT(ptr,n)                     (INT*)irealloc(ptr,n,sizeof(INT))
@@ -132,13 +191,13 @@ VOID     icalloc_mapSweep();
 
 #define  ifree(ptr)                              (VOID)icalloc_free(ptr);(VOID)icalloc_mapSweep();
 #define  ifree_all()                             (VOID)icalloc_freeAll()
-#define  imain_end()                             ifree_all(),exit(EXIT_SUCCESS)
+#define  imain_end()                             ifree_all();exit(EXIT_SUCCESS)
 
 VOID     icalloc_mapPrint1();
 VOID     icalloc_mapPrint2();
 #define  icalloc_mapPrint()                      P8();icalloc_mapPrint1();icalloc_mapPrint2()
 
-#define  ierr_end(msg)                           P("Err: %s\n",msg),imain_end()
+#define  ierr_end(msg)                           P("Err: %s\n",msg);imain_end()
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -146,62 +205,62 @@ VOID     icalloc_mapPrint2();
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
 VOID     P(CONST MBS *format,...);
-VOID     PR(MBS *ptr,INT repeat);
-VOID     P20B(MBS *ptr);
-VOID     P20X(MBS *ptr);
-VOID     P20XW(WCS *ptrW);
+VOID     PR(MBS *pM,INT repeat);
+VOID     P20B(MBS *pM);
+VOID     P20X(MBS *pM);
+VOID     P20XW(WCS *pW);
 
-#define  PC(ptr)                                 putchar(*ptr)
-#define  PP(ptr)                                 P("[%p] ",ptr)
-#define  PX(ptr)                                 P("|%#hx|",*ptr)
+#define  PC(pM)                                  putchar(*pM)
+#define  PP(pM)                                  P("[%p] ",pM)
+#define  PX(pM)                                  P("|%#hx|",*pM)
 #define  NL()                                    putchar('\n')
 #define  LN()                                    PR("-",72);NL()
 
-#define  P20(ptr)                                P("%s",ptr)
+#define  P20(pM)                                 P("%s",pM)
 #define  P30(num)                                P("%I64d",(INT64)num)
 #define  P40(num)                                P("%.8f",(DOUBLE)num)
 #define  P80()                                   P("L%4u: ",__LINE__)
 
-#define  P2(ptr)                                 P20(ptr);NL()
+#define  P2(pM)                                  P20(pM);NL()
 #define  P3(num)                                 P30(num);NL()
 #define  P4(num)                                 P40(num);NL()
 #define  P8()                                    P80();NL()
 #define  P9(repeat)                              PR("\n",repeat)
 
-#define  P820(ptr)                               P80();P20(ptr)
+#define  P820(pM)                                P80();P20(pM)
 #define  P830(num)                               P80();P30(num)
 #define  P840(num)                               P80();P40(num)
 
-#define  P82(ptr)                                P80();P2(ptr)
+#define  P82(pM)                                 P80();P2(pM)
 #define  P83(num)                                P80();P3(num)
 #define  P84(num)                                P80();P4(num)
 
-#define  P22(ptr1,ptr2)                          P("\"%s\"\t\"%s\"\n",ptr1,ptr2)
-#define  P23(ptr1,num1)                          P("%s%I64d\n",ptr1,(INT64)num1)
-#define  P24(ptr1,num1)                          P("%s%f\n",ptr1,(DOUBLE)num1)
+#define  P22(pM1,pM2)                            P("\"%s\"\t\"%s\"\n",pM1,pM2)
+#define  P23(pM,num)                             P("%s%I64d\n",pM,(INT64)num)
+#define  P24(pM,num)                             P("%s%f\n",pM,(DOUBLE)num)
 
-#define  P32(num1,ptr1)                          P("(%I64d)\t\"%s\"\n",(INT64)num1,ptr1)
+#define  P32(num,pM)                             P("(%I64d)\t\"%s\"\n",(INT64)num,pM)
 #define  P33(num1,num2)                          P("(%I64d)\t(%I64d)\n",(INT64)num1,(INT64)num2)
 #define  P34(num1,num2)                          P("(%I64d)\t(%.8f)\n",(INT64)num1,(DOUBLE)num2)
 #define  P44(num1,num2)                          P("(%.8f)\t(%.8f)\n",(DOUBLE)num1,(DOUBLE)num2)
 
-#define  P822(ptr1,ptr2)                         P80();P22(ptr1,ptr2)
-#define  P823(ptr1,num1)                         P80();P23(ptr1,num1)
-#define  P824(ptr1,num1)                         P80();P24(ptr1,num1)
-#define  P832(num,ptr)                           P80();P32(num,ptr)
+#define  P822(pM1,pM2)                           P80();P22(pM1,pM2)
+#define  P823(pM,num)                            P80();P23(pM,num)
+#define  P824(pM,num)                            P80();P24(pM,num)
+#define  P832(num,pM)                            P80();P32(num,pM)
 #define  P833(num1,num2)                         P80();P33(num1,num2)
 #define  P834(num1,num2)                         P80();P34(num1,num2)
 #define  P844(num1,num2)                         P80();P44(num1,num2)
 
-#define  P2B1(ptr1)                              P20B(ptr1);NL()
-#define  P2B2(repeat,ptr1)                       PR(" ",repeat);P20B(ptr1);NL()
-#define  P82B1(ptr1)                             P80();P2B1(ptr1)
-#define  P82B2(repeat,ptr1)                      P80();P2B2(repeat,ptr1)
+#define  P2B1(pM)                                P20B(pM);NL()
+#define  P2B2(repeat,pM)                         PR(" ",repeat);P20B(pM);NL()
+#define  P82B1(pM)                               P80();P2B1(pM)
+#define  P82B2(repeat,pM)                        P80();P2B2(repeat,pM)
 
-#define  P82X(ptr)                               P80();P20X(ptr);NL()
-#define  P82XW(ptrW)                             P80();P20XW(ptrW);NL()
+#define  P82X(pM)                                P80();P20X(pM);NL()
+#define  P82XW(pW)                               P80();P20XW(pW);NL()
 
-MBS      *ims_conv_escape(MBS *ptr);
+MBS      *ims_conv_escape(MBS *pM);
 MBS      *ims_sprintf(FILE *oFp,MBS *format,...);
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -209,53 +268,53 @@ MBS      *ims_sprintf(FILE *oFp,MBS *format,...);
 	MBS／WCS／U8N変換
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
-WCS      *icnv_A2W(MBS *ptr);
-#define  A2W(ptr)                                (WCS*)icnv_A2W(ptr)
+WCS      *icnv_M2W(MBS *pM);
+#define  M2W(pM)                                 (WCS*)icnv_M2W(pM)
 
-U8N      *icnv_W2U(WCS *ptrW);
-#define  W2U(ptrW)                               (U8N*)icnv_W2U(ptrW)
+U8N      *icnv_W2U(WCS *pW);
+#define  W2U(pW)                                 (U8N*)icnv_W2U(pW)
 
-U8N      *icnv_A2U(MBS *ptr);
-#define  A2U(ptr)                                (U8N*)icnv_A2U(ptr)
+U8N      *icnv_M2U(MBS *pM);
+#define  M2U(pM)                                 (U8N*)icnv_M2U(pM)
 
-WCS      *icnv_U2W(U8N *ptrU);
-#define  U2W(ptrU)                               (WCS*)icnv_U2W(ptrU)
+WCS      *icnv_U2W(U8N *pU);
+#define  U2W(pU)                                 (WCS*)icnv_U2W(pU)
 
-MBS      *icnv_W2A(WCS *ptrW);
-#define  W2A(ptrW)                               (MBS*)icnv_W2A(ptrW)
+MBS      *icnv_W2M(WCS *pW);
+#define  W2M(pW)                                 (MBS*)icnv_W2M(pW)
 
-MBS      *icnv_U2A(U8N *ptrU);
-#define  U2A(ptrU)                               (MBS*)icnv_U2A(ptrU)
+MBS      *icnv_U2M(U8N *pU);
+#define  U2M(pU)                                 (MBS*)icnv_U2M(pU)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
 	文字列処理
 		p : return Pointer
 		s : return String
-		1byte     MBS : imp_xxx(),imp_xxx()
-		1 & 2byte MBS : ijp_xxx(),ijs_xxx()
-		UTF-8     U8N : iup_xxx(),ius_xxx()
-		UTF-16    WCS : iwp_xxx(),iws_xxx()
+		1byte     MBS : imp_xxx(), imp_xxx()
+		1 & 2byte MBS : ijp_xxx(), ijs_xxx()
+		UTF-8     U8N : iup_xxx(), ius_xxx()
+		UTF-16    WCS : iwp_xxx(), iws_xxx()
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
-UINT     imi_len(MBS *ptr);
-UINT     iji_len(MBS *ptr);
-UINT     iui_len(U8N *ptr);
-UINT     iwi_len(WCS *ptr);
+UINT     imi_len(MBS *pM);
+UINT     iji_len(MBS *pM);
+UINT     iui_len(U8N *pU);
+UINT     iwi_len(WCS *pW);
 
-MBS      *imp_forwardN(MBS *ptr,UINT sizeM);
-MBS      *ijp_forwardN(MBS *ptr,UINT sizeJ);
-U8N      *iup_forwardN(U8N *ptr,UINT sizeU);
+MBS      *imp_forwardN(MBS *pM,UINT sizeM);
+MBS      *ijp_forwardN(MBS *pM,UINT sizeJ);
+U8N      *iup_forwardN(U8N *pU,UINT sizeU);
 
-MBS      *imp_sod(MBS *ptr);
-#define  imp_eod(ptr)                            (MBS*)(ptr+imi_len(ptr))
-WCS      *iwp_sod(WCS *ptr);
-#define  iwp_eod(ptr)                            (WCS*)(ptr+iwi_len(ptr))
+MBS      *imp_sod(MBS *pM);
+#define  imp_eod(pM)                             (MBS*)(pM+imi_len(pM))
+WCS      *iwp_sod(WCS *pW);
+#define  iwp_eod(pW)                             (WCS*)(pW+iwi_len(pW))
 
-MBS      *ims_upper(MBS *ptr);
-MBS      *ims_lower(MBS *ptr);
-WCS      *iws_upper(WCS *ptr);
-WCS      *iws_lower(WCS *ptr);
+MBS      *ims_upper(MBS *pM);
+MBS      *ims_lower(MBS *pM);
+WCS      *iws_upper(WCS *pW);
+WCS      *iws_lower(WCS *pW);
 
 UINT     iji_plen(MBS *pBgn,MBS *pEnd);
 
@@ -287,122 +346,122 @@ MBS      *ims_cat_clone3(MBS *from1,MBS *from2,MBS *from3,MBS *from4);
 WCS      *iws_cat_clone3(WCS *from1,WCS *from2,WCS *from3,WCS *from4);
 #define  iws_cat_clone(from1,from2)              (WCS*)iws_cat_clone3(from1,from2,NULL,NULL)
 
-MBS      *ims_ncat_clone(MBS *ptr,...);
+MBS      *ims_ncat_clone(MBS *pM,...);
 
-MBS      *ijs_sub_clone(MBS *ptr,INT start,INT sizeJ);
-#define  ijs_sub_cloneL(ptr,sizeJ)               (MBS*)ijs_sub_clone(ptr,0,sizeJ)
-#define  ijs_sub_cloneR(ptr,sizeJ)               (MBS*)ijs_sub_clone(ptr,-sizeJ,sizeJ)
+MBS      *ijs_sub_clone(MBS *pM,INT start,INT sizeJ);
+#define  ijs_sub_cloneL(pM,sizeJ)                (MBS*)ijs_sub_clone(pM,0,sizeJ)
+#define  ijs_sub_cloneR(pM,sizeJ)                (MBS*)ijs_sub_clone(pM,-sizeJ,sizeJ)
 
-BOOL     imb_cmp(MBS *ptr,MBS *search,BOOL perfect,BOOL icase);
-#define  imb_cmpf(ptr,search)                    (BOOL)imb_cmp(ptr,search,FALSE,FALSE)
-#define  imb_cmpfi(ptr,search)                   (BOOL)imb_cmp(ptr,search,FALSE,TRUE)
-#define  imb_cmpp(ptr,search)                    (BOOL)imb_cmp(ptr,search,TRUE ,FALSE)
-#define  imb_cmppi(ptr,search)                   (BOOL)imb_cmp(ptr,search,TRUE ,TRUE)
-#define  imb_cmp_leq(ptr,search,icase)           (BOOL)imb_cmp(search,ptr,FALSE,icase)
-#define  imb_cmp_leqf(ptr,search)                (BOOL)imb_cmp_leq(ptr,search,FALSE)
-#define  imb_cmp_leqfi(ptr,search)               (BOOL)imb_cmp_leq(ptr,search,TRUE)
+BOOL     imb_cmp(MBS *pM,MBS *search,BOOL perfect,BOOL icase);
+#define  imb_cmpf(pM,search)                     (BOOL)imb_cmp(pM,search,FALSE,FALSE)
+#define  imb_cmpfi(pM,search)                    (BOOL)imb_cmp(pM,search,FALSE,TRUE)
+#define  imb_cmpp(pM,search)                     (BOOL)imb_cmp(pM,search,TRUE,FALSE)
+#define  imb_cmppi(pM,search)                    (BOOL)imb_cmp(pM,search,TRUE,TRUE)
+#define  imb_cmp_leq(pM,search,icase)            (BOOL)imb_cmp(search,pM,FALSE,icase)
+#define  imb_cmp_leqf(pM,search)                 (BOOL)imb_cmp_leq(pM,search,FALSE)
+#define  imb_cmp_leqfi(pM,search)                (BOOL)imb_cmp_leq(pM,search,TRUE)
 
-BOOL     iwb_cmp(WCS *ptr,WCS *search,BOOL perfect,BOOL icase);
-#define  iwb_cmpf(ptr,search)                    (BOOL)iwb_cmp(ptr,search,FALSE,FALSE)
-#define  iwb_cmpfi(ptr,search)                   (BOOL)iwb_cmp(ptr,search,FALSE,TRUE)
-#define  iwb_cmpp(ptr,search)                    (BOOL)iwb_cmp(ptr,search,TRUE ,FALSE)
-#define  iwb_cmppi(ptr,search)                   (BOOL)iwb_cmp(ptr,search,TRUE ,TRUE)
-#define  iwb_cmp_leq(ptr,search,icase)           (BOOL)iwb_cmp(search,ptr,FALSE,icase)
-#define  iwb_cmp_leqf(ptr,search)                (BOOL)iwb_cmp_leq(ptr,search,FALSE)
-#define  iwb_cmp_leqfi(ptr,search)               (BOOL)iwb_cmp_leq(ptr,search,TRUE)
+BOOL     iwb_cmp(WCS *pW,WCS *search,BOOL perfect,BOOL icase);
+#define  iwb_cmpf(pW,search)                     (BOOL)iwb_cmp(pW,search,FALSE,FALSE)
+#define  iwb_cmpfi(pW,search)                    (BOOL)iwb_cmp(pW,search,FALSE,TRUE)
+#define  iwb_cmpp(pW,search)                     (BOOL)iwb_cmp(pW,search,TRUE,FALSE)
+#define  iwb_cmppi(pW,search)                    (BOOL)iwb_cmp(pW,search,TRUE,TRUE)
+#define  iwb_cmp_leq(pW,search,icase)            (BOOL)iwb_cmp(search,pW,FALSE,icase)
+#define  iwb_cmp_leqf(pW,search)                 (BOOL)iwb_cmp_leq(pW,search,FALSE)
+#define  iwb_cmp_leqfi(pW,search)                (BOOL)iwb_cmp_leq(pW,search,TRUE)
 
-WCS      *iwp_cmpSunday(WCS *ptr,WCS *search,BOOL icase);
+WCS      *iwp_cmpSunday(WCS *pW,WCS *search,BOOL icase);
 
-MBS      *ijp_bypass(MBS *ptr,MBS *from,MBS *to);
+MBS      *ijp_bypass(MBS *pM,MBS *from,MBS *to);
 
-UINT     iji_searchCntA(MBS *ptr,MBS *search,BOOL icase);
-#define  iji_searchCnt(ptr,search)               (UINT)iji_searchCntA(ptr,search,FALSE)
-#define  iji_searchCnti(ptr,search)              (UINT)iji_searchCntA(ptr,search,TRUE)
+UINT     iji_searchCntA(MBS *pM,MBS *search,BOOL icase);
+#define  iji_searchCnt(pM,search)                (UINT)iji_searchCntA(pM,search,FALSE)
+#define  iji_searchCnti(pM,search)               (UINT)iji_searchCntA(pM,search,TRUE)
 
-UINT     iwi_searchCntW(WCS *ptr,WCS *search,BOOL icase);
-#define  iwi_searchCnt(ptr,search)               (UINT)iwi_searchCntW(ptr,search,FALSE)
-#define  iwi_searchCnti(ptr,search)              (UINT)iwi_searchCntW(ptr,search,TRUE)
+UINT     iwi_searchCntW(WCS *pW,WCS *search,BOOL icase);
+#define  iwi_searchCnt(pW,search)                (UINT)iwi_searchCntW(pW,search,FALSE)
+#define  iwi_searchCnti(pW,search)               (UINT)iwi_searchCntW(pW,search,TRUE)
 
-UINT     iji_searchCntLA(MBS *ptr,MBS *search,BOOL icase,INT option);
-#define  iji_searchCntL(ptr,search)              (UINT)iji_searchCntLA(ptr,search,FALSE,0)
-#define  iji_searchCntLi(ptr,search)             (UINT)iji_searchCntLA(ptr,search,TRUE, 0)
-#define  imi_searchLenL(ptr,search)              (UINT)iji_searchCntLA(ptr,search,FALSE,1)
-#define  imi_searchLenLi(ptr,search)             (UINT)iji_searchCntLA(ptr,search,TRUE, 1)
-#define  iji_searchLenL(ptr,search)              (UINT)iji_searchCntLA(ptr,search,FALSE,2)
-#define  iji_searchLenLi(ptr,search)             (UINT)iji_searchCntLA(ptr,search,TRUE, 2)
+UINT     iji_searchCntLA(MBS *pM,MBS *search,BOOL icase,INT option);
+#define  iji_searchCntL(pM,search)               (UINT)iji_searchCntLA(pM,search,FALSE,0)
+#define  iji_searchCntLi(pM,search)              (UINT)iji_searchCntLA(pM,search,TRUE,0)
+#define  imi_searchLenL(pM,search)               (UINT)iji_searchCntLA(pM,search,FALSE,1)
+#define  imi_searchLenLi(pM,search)              (UINT)iji_searchCntLA(pM,search,TRUE,1)
+#define  iji_searchLenL(pM,search)               (UINT)iji_searchCntLA(pM,search,FALSE,2)
+#define  iji_searchLenLi(pM,search)              (UINT)iji_searchCntLA(pM,search,TRUE,2)
 
-UINT     iwi_searchCntLW(WCS *ptr,WCS *search,BOOL icase,INT option);
-#define  iwi_searchCntL(ptr,search)              (UINT)iwi_searchCntLW(ptr,search,FALSE,0)
-#define  iwi_searchCntLi(ptr,search)             (UINT)iwi_searchCntLW(ptr,search,TRUE, 0)
-#define  iwi_searchLenL(ptr,search)              (UINT)iwi_searchCntLW(ptr,search,FALSE,1)
-#define  iwi_searchLenLi(ptr,search)             (UINT)iwi_searchCntLW(ptr,search,TRUE, 1)
+UINT     iwi_searchCntLW(WCS *pW,WCS *search,BOOL icase,INT option);
+#define  iwi_searchCntL(pW,search)               (UINT)iwi_searchCntLW(pW,search,FALSE,0)
+#define  iwi_searchCntLi(pW,search)              (UINT)iwi_searchCntLW(pW,search,TRUE,0)
+#define  iwi_searchLenL(pW,search)               (UINT)iwi_searchCntLW(pW,search,FALSE,1)
+#define  iwi_searchLenLi(pW,search)              (UINT)iwi_searchCntLW(pW,search,TRUE,1)
 
-UINT     iji_searchCntRA(MBS *ptr,MBS *search,BOOL icase,INT option);
-#define  iji_searchCntR(ptr,search)              (UINT)iji_searchCntRA(ptr,search,FALSE,0)
-#define  iji_searchCntRi(ptr,search)             (UINT)iji_searchCntRA(ptr,search,TRUE, 0)
-#define  imi_searchLenR(ptr,search)              (UINT)iji_searchCntRA(ptr,search,FALSE,1)
-#define  imi_searchLenRi(ptr,search)             (UINT)iji_searchCntRA(ptr,search,TRUE, 1)
-#define  iji_searchLenR(ptr,search)              (UINT)iji_searchCntRA(ptr,search,FALSE,2)
-#define  iji_searchLenRi(ptr,search)             (UINT)iji_searchCntRA(ptr,search,TRUE, 2)
+UINT     iji_searchCntRA(MBS *pM,MBS *search,BOOL icase,INT option);
+#define  iji_searchCntR(pM,search)               (UINT)iji_searchCntRA(pM,search,FALSE,0)
+#define  iji_searchCntRi(pM,search)              (UINT)iji_searchCntRA(pM,search,TRUE,0)
+#define  imi_searchLenR(pM,search)               (UINT)iji_searchCntRA(pM,search,FALSE,1)
+#define  imi_searchLenRi(pM,search)              (UINT)iji_searchCntRA(pM,search,TRUE,1)
+#define  iji_searchLenR(pM,search)               (UINT)iji_searchCntRA(pM,search,FALSE,2)
+#define  iji_searchLenRi(pM,search)              (UINT)iji_searchCntRA(pM,search,TRUE,2)
 
-UINT     iwi_searchCntRW(WCS *ptr,WCS *search,BOOL icase,INT option);
-#define  iwi_searchCntR(ptr,search)              (UINT)iwi_searchCntRW(ptr,search,FALSE,0)
-#define  iwi_searchCntRi(ptr,search)             (UINT)iwi_searchCntRW(ptr,search,TRUE, 0)
-#define  iwi_searchLenR(ptr,search)              (UINT)iwi_searchCntRW(ptr,search,FALSE,1)
-#define  iwi_searchLenRi(ptr,search)             (UINT)iwi_searchCntRW(ptr,search,TRUE, 1)
+UINT     iwi_searchCntRW(WCS *pW,WCS *search,BOOL icase,INT option);
+#define  iwi_searchCntR(pW,search)               (UINT)iwi_searchCntRW(pW,search,FALSE,0)
+#define  iwi_searchCntRi(pW,search)              (UINT)iwi_searchCntRW(pW,search,TRUE,0)
+#define  iwi_searchLenR(pW,search)               (UINT)iwi_searchCntRW(pW,search,FALSE,1)
+#define  iwi_searchLenRi(pW,search)              (UINT)iwi_searchCntRW(pW,search,TRUE,1)
 
-MBS      *ijp_searchLA(MBS *ptr,MBS *search,BOOL icase);
-#define  ijp_searchL(ptr,search)                 (MBS*)ijp_searchLA(ptr,search,FALSE)
-#define  ijp_searchLi(ptr,search)                (MBS*)ijp_searchLA(ptr,search,TRUE)
+MBS      *ijp_searchLA(MBS *pM,MBS *search,BOOL icase);
+#define  ijp_searchL(pM,search)                  (MBS*)ijp_searchLA(pM,search,FALSE)
+#define  ijp_searchLi(pM,search)                 (MBS*)ijp_searchLA(pM,search,TRUE)
 
-MBS      *ijp_searchRA(MBS *ptr,MBS *search,BOOL icase);
-#define  ijp_searchR(ptr,search)                 (MBS*)ijp_searchRA(ptr,search,FALSE)
-#define  ijp_searchRi(ptr,search)                (MBS*)ijp_searchRA(ptr,search,TRUE)
+MBS      *ijp_searchRA(MBS *pM,MBS *search,BOOL icase);
+#define  ijp_searchR(pM,search)                  (MBS*)ijp_searchRA(pM,search,FALSE)
+#define  ijp_searchRi(pM,search)                 (MBS*)ijp_searchRA(pM,search,TRUE)
 
-INT      icmpOperator_extractHead(MBS *ptr);
+INT      icmpOperator_extractHead(MBS *pM);
 MBS      *icmpOperator_toHeadA(INT operator);
 BOOL     icmpOperator_chk_INT(INT i1,INT i2,INT operator);
 BOOL     icmpOperator_chk_INT64(INT64 i1,INT64 i2,INT operator);
 BOOL     icmpOperator_chkDBL(DOUBLE d1,DOUBLE d2,INT operator);
 
-MBS      **ija_split(MBS *ptr,MBS *tokens,MBS *quotes,BOOL quote_cut);
-#define  ija_token(ptr,tokens)                   (MBS**)ija_split(ptr,tokens,"",FALSE)
-MBS      **ija_token_eod(MBS *ptr);
-MBS      **ija_token_zero(MBS *ptr);
+MBS      **ija_split(MBS *pM,MBS *tokens,MBS *quotes,BOOL quote_cut);
+#define  ija_token(pM,tokens)                    (MBS**)ija_split(pM,tokens,"",FALSE)
+MBS      **ija_token_eod(MBS *pM);
+MBS      **ija_token_zero(MBS *pM);
 
-MBS      *ijs_rm_quote(MBS *ptr,MBS *quoteS,MBS *quoteE,BOOL icase,BOOL one_to_one);
+MBS      *ijs_rm_quote(MBS *pM,MBS *quoteS,MBS *quoteE,BOOL icase,BOOL one_to_one);
 
-MBS      *ims_addTokenNStr(MBS *ptr);
+MBS      *ims_addTokenNStr(MBS *pM);
 
-MBS      *ijs_cut(MBS *ptr,MBS *rmLs,MBS *rmRs);
-#define  ijs_cutL(ptr,rmLs)                      (MBS*)ijs_cut(ptr,rmLs,NULL)
-#define  ijs_cutR(ptr,rmRs)                      (MBS*)ijs_cut(ptr,NULL,rmRs)
+MBS      *ijs_cut(MBS *pM,MBS *rmLs,MBS *rmRs);
+#define  ijs_cutL(pM,rmLs)                       (MBS*)ijs_cut(pM,rmLs,NULL)
+#define  ijs_cutR(pM,rmRs)                       (MBS*)ijs_cut(pM,NULL,rmRs)
 
-MBS      *ijs_cutAry(MBS *ptr,MBS **aryLs,MBS **aryRs);
-MBS      *ijs_trim(MBS *ptr);
-MBS      *ijs_trimL(MBS *ptr);
-MBS      *ijs_trimR(MBS *ptr);
-MBS      *ijs_chomp(MBS *ptr);
+MBS      *ijs_cutAry(MBS *pM,MBS **aryLs,MBS **aryRs);
+MBS      *ijs_trim(MBS *pM);
+MBS      *ijs_trimL(MBS *pM);
+MBS      *ijs_trimR(MBS *pM);
+MBS      *ijs_chomp(MBS *pM);
 
 MBS      *ijs_replace(MBS *from,MBS *before,MBS *after);
 
-MBS      *ijs_simplify(MBS *ptr,MBS *search);
-WCS      *iws_simplify(WCS *ptr,WCS *search);
+MBS      *ijs_simplify(MBS *pM,MBS *search);
+WCS      *iws_simplify(WCS *pW,WCS *search);
 
-BOOL     imb_shiftL(MBS *ptr,UINT byte);
-BOOL     imb_shiftR(MBS *ptr,UINT byte);
+BOOL     imb_shiftL(MBS *pM,UINT byte);
+BOOL     imb_shiftR(MBS *pM,UINT byte);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
 	数字関係
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  inum_chkA(ptr)                          (BOOL)((*ptr>='0'&&*ptr<='9')||*ptr=='+'||*ptr=='-'||*ptr=='.'?TRUE:FALSE)
-#define  inum_chk2A(ptr)                         (BOOL)(*ptr>='0'&&*ptr<='9'?TRUE:FALSE)
-INT      inum_atoi(MBS *ptr);
-INT64    inum_atoi64(MBS *ptr);
-INT64    inum_atoi64Ex(MBS *ptr);
-DOUBLE   inum_atof(MBS *ptr);
+#define  inum_chkM(pM)                           (BOOL)((*pM>='0'&&*pM<='9')||*pM=='+'||*pM=='-'||*pM=='.'?TRUE:FALSE)
+#define  inum_chk2M(pM)                          (BOOL)(*pM>='0'&&*pM<='9'?TRUE:FALSE)
+INT      inum_atoi(MBS *pM);
+INT64    inum_atoi64(MBS *pM);
+INT64    inum_atoi64Ex(MBS *pM);
+DOUBLE   inum_atof(MBS *pM);
 
 UINT     inum_posSize(INT64 num);
 DOUBLE   inum_posToDec(DOUBLE num,INT shift);
@@ -432,7 +491,7 @@ MBS      **iCmdline_getArgs();
 MBS      *iCmdline_getsA(CONST UINT sizeM);
 MBS      *iCmdline_getsJ(CONST UINT sizeJ);
 
-MBS      *iCmdline_esEncode(MBS *ptr);
+MBS      *iCmdline_esEncode(MBS *pM);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -464,7 +523,7 @@ MBS      **iary_simplify(MBS **ary,BOOL icase);
 MBS      **iary_higherDir(MBS **ary,UINT depth);
 
 MBS      **iary_clone(MBS **ary);
-MBS      **iary_new(MBS *ptr,...);
+MBS      **iary_new(MBS *pM,...);
 
 VOID     iary_print(MBS **ary);
 
@@ -590,7 +649,7 @@ BOOL     iwin_set_priority(INT class);
 UINT     iConsole_getBgcolor();
 VOID     iConsole_setTextColor(UINT rgb);
 #define  iConsole_setColor(textcolor,bgcolor)    (VOID)iConsole_setTextColor(textcolor+(bgcolor*16))
-#define  iConsole_setTitle(ptr)                  (VOID)SetConsoleTitleA(ptr)
+#define  iConsole_setTitle(pM)                   (VOID)SetConsoleTitleA(pM)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -598,9 +657,9 @@ VOID     iConsole_setTextColor(UINT rgb);
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
 BOOL     iClipboard_erase();
-BOOL     iClipboard_setText(MBS *ptr);
+BOOL     iClipboard_setText(MBS *pM);
 MBS      *iClipboard_getText();
-BOOL     iClipboard_addText(MBS *ptr);
+BOOL     iClipboard_addText(MBS *pM);
 MBS      *iClipboard_getDropFn(UINT option);
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -690,10 +749,10 @@ INT      *idate_cnv_month(INT i_y,INT i_m,INT from_m,INT to_m);
 INT      idate_month_end(INT i_y,INT i_m);
 BOOL     idate_chk_month_end(INT i_y,INT i_m,INT i_d,BOOL reChk);
 
-DOUBLE   idate_MBStoCjd(MBS *ptr);
+DOUBLE   idate_MBStoCjd(MBS *pM);
 
-MBS      **idate_MBS_to_mAryYmdhns(MBS *ptr);
-INT      *idate_MBS_to_iAryYmdhns(MBS *ptr);
+MBS      **idate_MBS_to_mAryYmdhns(MBS *pM);
+INT      *idate_MBS_to_iAryYmdhns(MBS *pM);
 
 INT      idate_ymd_num(INT i_y,INT i_m,INT i_d);
 DOUBLE   idate_ymdhnsToCjd(INT i_y,INT i_m,INT i_d,INT i_h,INT i_n,INT i_s);
@@ -774,7 +833,7 @@ MBS      *idate_format_cjdToA(MBS *format,DOUBLE cjd);
 		N,n : 分
 		S,s : 秒
 */
-MBS      *idate_replace_format_ymdhns(MBS *ptr,MBS *quote1,MBS *quote2,MBS *add_quote,CONST INT i_y,CONST INT i_m,CONST INT i_d,CONST INT i_h,CONST INT i_n,CONST INT i_s);
+MBS      *idate_replace_format_ymdhns(MBS *pM,MBS *quote1,MBS *quote2,MBS *add_quote,CONST INT i_y,CONST INT i_m,CONST INT i_d,CONST INT i_h,CONST INT i_n,CONST INT i_s);
 #define  idate_format_nowToYmdhns(i_y,i_m,i_d,i_h,i_n,i_s) \
                                                  (MBS*)idate_replace_format_ymdhns("[]","[","]","",i_y,i_m,i_d,i_h,i_n,i_s)
 
