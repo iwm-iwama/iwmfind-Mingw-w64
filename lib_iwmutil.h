@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20191121"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20191229"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2019 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -532,7 +532,8 @@ VOID     iary_print(MBS **ary);
 	File/Dirèàóù(WIN32_FIND_DATAA)
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
-typedef struct{
+typedef struct
+{
 	MBS      fullnameA[IMAX_PATHA];// (ó·) D:\ä‚ä‘\iwama.txt
 	UINT     iFname;               // MBS= 8Å^WCS= 6
 	UINT     iExt;                 // MBS=13Å^WCS=11
@@ -543,9 +544,11 @@ typedef struct{
 	DOUBLE   cjdMtime;             // Å™
 	DOUBLE   cjdAtime;             // Å™
 	INT64    iFsize;               // byte (4GBëŒâû)
-} $struct_iFinfoA;
+}
+$struct_iFinfoA;
 
-typedef struct{
+typedef struct
+{
 	WCS      fullnameW[IMAX_PATHW];// (ó·) D:\ä‚ä‘\iwama.txt
 	UINT     iFname;               // MBS= 8Å^WCS= 6
 	UINT     iExt;                 // MBS=13Å^WCS=11
@@ -556,7 +559,8 @@ typedef struct{
 	DOUBLE   cjdMtime;             // Å™
 	DOUBLE   cjdAtime;             // Å™
 	INT64    iFsize;               // byte (4GBëŒâû)
-} $struct_iFinfoW;
+}
+$struct_iFinfoW;
 
 $struct_iFinfoA *iFinfo_allocA();
 $struct_iFinfoW *iFinfo_allocW();
@@ -591,10 +595,12 @@ FILETIME iFinfo_ymdhnsToFtime(INT wYear,INT wMonth,INT wDay,INT wHour,INT wMinut
 	File/Dirèàóù
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
-typedef struct{
+typedef struct
+{
 	UINT size;
 	MBS *ptr;
-} $struct_ifreadBuf;
+}
+$struct_ifreadBuf;
 
 FILE     *ifopen(MBS *Fn,MBS *mode);
 #define  ifclose(Fp)                             fclose(Fp)
@@ -846,3 +852,23 @@ DOUBLE   idate_nowToCjd(BOOL area);
 #define  idate_nowToCjd_systemtime()             (DOUBLE)idate_nowToCjd(FALSE)
 
 #define  idate_cjd_sec(cjd)                      (DOUBLE)(cjd)*86400.0
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/*---------------------------------------------------------------------------------------
+	Geography
+---------------------------------------------------------------------------------------*/
+/////////////////////////////////////////////////////////////////////////////////////////
+typedef struct
+{
+	DOUBLE dist;  // ãóó£(km)
+	DOUBLE angle; // ìx(è\êiñ@)
+	INT    deg;   // ìx
+	INT    min;   // ï™
+	DOUBLE sec;   // ïb
+}
+$Geo;
+
+DOUBLE   rtnGeoIBLto10A(INT deg,INT min,DOUBLE sec);
+DOUBLE   rtnGeoIBLto10B(DOUBLE ddmmss);
+$Geo     rtnGeo10toIBL(DOUBLE angle);
+$Geo     rtnGeoVincentry(DOUBLE lat1,DOUBLE lng1,DOUBLE lat2,DOUBLE lng2);

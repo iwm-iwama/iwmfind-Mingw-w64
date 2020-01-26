@@ -106,12 +106,15 @@ iExecSec(
 	icalloc() 用に確保される配列
 	IcallocDiv は必要に応じて変更
 */
-typedef struct{
+typedef struct
+{
 	VOID *ptr; // ポインタ位置
 	UINT num;  // 配列個数（配列以外 = 0）
 	UINT size; // アロケート長
 	UINT id;   // 順番
-} $struct_icallocMap;
+}
+$struct_icallocMap;
+
 $struct_icallocMap *__icallocMap; // 可変長
 UINT __icallocMapSize = 0;        // *__icallocMap のサイズ＋1
 UINT __icallocMapEOD = 0;         // *__icallocMap の現在位置＋1
@@ -2195,9 +2198,9 @@ icmpOperator_chkDBL(
 // 文字列を分割し配列を作成
 //---------------------------
 /* (例)
-	MBS *p1="2014年 4月29日  {(18時 42分) 00秒}";
-	MBS *tokens="年月日時分秒 ";
-	MBS **ary={0};
+	MBS *p1 = "2014年 4月29日  {(18時 42分) 00秒}";
+	MBS *tokens = "年月日時分秒 ";
+	MBS **ary = {0};
 	//ary = ija_split(p1, tokens, "{}[]", FALSE); //=> [0]"2014" [1]"4" [2]"29" [3]"{(18時 42分) 00秒}"
 	//ary = ija_split(p1, tokens, "{}[]", TRUE);  //=> [0]"2014" [1]"4" [2]"29" [3]"(18時 42分) 00秒"
 	// 第３引数 = NULL | "" のとき、以降の引数は無視される
@@ -6770,3 +6773,172 @@ iConsole_progress(
 	iConsole_setTextColor(textcolor_org); // 元のテキスト色に戻す
 }
 */
+/////////////////////////////////////////////////////////////////////////////////////////
+/*---------------------------------------------------------------------------------------
+	Geography
+---------------------------------------------------------------------------------------*/
+/////////////////////////////////////////////////////////////////////////////////////////
+//-------------------
+// 度分秒 => 十進法
+//-------------------
+/* (例)
+	printf("%f度\n", rtnGeoIBLto10A(24, 26, 58.495200));
+*/
+// v2019-12-19
+DOUBLE
+rtnGeoIBLto10A(
+	INT deg,   // 度
+	INT min,   // 分
+	DOUBLE sec // 秒
+)
+{
+	return (DOUBLE)deg + ((DOUBLE)min / 60.0) + (sec / 3600.0);
+}
+/* (例)
+	printf("%f度\n", rtnGeoIBLto10B(242658.495200));
+*/
+// v2019-12-19
+DOUBLE
+rtnGeoIBLto10B(
+	DOUBLE ddmmss // ddmmss.s...
+)
+{
+	DOUBLE sec = fmod(ddmmss, 100.0);
+	INT min = (INT)(ddmmss / 100) % 100;
+	INT deg = (INT)(ddmmss / 10000);
+	return deg + (min / 60.0) + (sec / 3600.0);
+}
+
+//-------------------
+// 十進法 => 度分秒
+//-------------------
+/* (例)
+	$Geo geo = rtnGeo10toIBL(24.449582);
+	printf("%d度%d分%f秒\n", geo.deg, geo.min, geo.sec);
+*/
+// v2019-12-18
+$Geo
+rtnGeo10toIBL(
+	DOUBLE angle // 十進法
+)
+{
+	INT deg = (INT)angle;
+		angle = (angle - (DOUBLE)deg) * 60.0;
+	INT min = (INT)angle;
+		angle -= min;
+	DOUBLE sec = (DOUBLE)angle * 60.0;
+
+	// 0.999... * 60 => 60.0 対策
+	if(sec == 60.0)
+	{
+		min += 1;
+		sec = 0;
+	}
+	return ($Geo){0, 0, deg, min, sec};
+}
+
+//-------------------------------
+// Vincenty法による２点間の距離
+//-------------------------------
+/* (参考)
+	http://tancro.e-central.tv/grandmaster/script/vincentyJS.html
+*/
+/* (例)
+	$Geo geo = rtnGeoVincentry(35.685187, 139.752274, 24.449582, 122.934340);
+	printf("%fkm %f度\n", geo.dist, geo.angle);
+*/
+// v2019-12-29
+$Geo
+rtnGeoVincentry(
+	DOUBLE lat1, // 開始～緯度
+	DOUBLE lng1, // 開始～経度
+	DOUBLE lat2, // 終了～緯度
+	DOUBLE lng2  // 終了～経度
+)
+{
+	if(lat1 == lat2 && lng1 == lng2)
+	{
+		return ($Geo){0, 0, 0, 0, 0};
+	}
+
+	///CONST DOUBLE _A = 6378137.0;
+	CONST DOUBLE _B   = 6356752.314;
+	CONST DOUBLE _F   = 1 / 298.257222101;
+	CONST DOUBLE _RAD = M_PI / 180.0;
+
+	CONST DOUBLE latR1 = lat1 * _RAD;
+	CONST DOUBLE lngR1 = lng1 * _RAD;
+	CONST DOUBLE latR2 = lat2 * _RAD;
+	CONST DOUBLE lngR2 = lng2 * _RAD;
+
+	CONST DOUBLE f1 = 1 - _F;
+
+	CONST DOUBLE omega = lngR2 - lngR1;
+	CONST DOUBLE tanU1 = f1 * tan(latR1);
+	CONST DOUBLE cosU1 = 1 / sqrt(1 + (tanU1 * tanU1));
+	CONST DOUBLE sinU1 = tanU1 * cosU1;
+	CONST DOUBLE tanU2 = f1 * tan(latR2);
+	CONST DOUBLE cosU2 = 1 / sqrt(1 + (tanU2 * tanU2));
+	CONST DOUBLE sinU2 = tanU2 * cosU2;
+
+	DOUBLE lamda  = omega;
+	DOUBLE dLamda = 0.0;
+
+	DOUBLE sinLamda  = 0.0;
+	DOUBLE cosLamda  = 0.0;
+	DOUBLE sin2sigma = 0.0;
+	DOUBLE sinSigma  = 0.0;
+	DOUBLE cosSigma  = 0.0;
+	DOUBLE sigma     = 0.0;
+	DOUBLE sinAlpha  = 0.0;
+	DOUBLE cos2alpha = 0.0;
+	DOUBLE cos2sm    = 0.0;
+	DOUBLE c = 0.0;
+
+	INT count = 0;
+
+	do
+	{
+		sinLamda = sin(lamda);
+		cosLamda = cos(lamda);
+		sin2sigma = (cosU2 * sinLamda) * (cosU2 * sinLamda) + (cosU1 * sinU2 - sinU1 * cosU2 * cosLamda) * (cosU1 * sinU2 - sinU1 * cosU2 * cosLamda);
+		if(sin2sigma < 0.0)
+		{
+			return ($Geo){0, 0, 0, 0, 0};
+		}
+		sinSigma = sqrt(sin2sigma);
+		cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLamda;
+		sigma = atan2(sinSigma, cosSigma);
+		sinAlpha = cosU1 * cosU2 * sinLamda / sinSigma;
+		cos2alpha = 1 - sinAlpha * sinAlpha;
+		cos2sm = cosSigma - 2 * sinU1 * sinU2 / cos2alpha;
+		if(!cos2sm)
+		{
+			cos2sm = 0;
+		}
+		c = _F / 16 * cos2alpha * (4 + _F * (4 - 3 * cos2alpha));
+		dLamda = lamda;
+		lamda = omega + (1 - c) * _F * sinAlpha * (sigma + c * sinSigma * (cos2sm + c * cosSigma * (-1 + 2 * cos2sm * cos2sm)));
+		if(count++ > 10)
+		{
+			break;
+		}
+	}
+	while(fabs(lamda - dLamda) > 1e-12);
+
+	DOUBLE u2 = cos2alpha * (1 - f1 * f1) / (f1 * f1);
+	DOUBLE a = 1 + u2 / 16384 * (4096 + u2 * (-768 + u2 * (320 - 175 * u2)));
+	DOUBLE b = u2 / 1024 * (256 + u2 * (-128 + u2 * (74 - 47 * u2)));
+	DOUBLE dSigma = b * sinSigma * (cos2sm + b / 4 * (cosSigma * (-1 + 2 * cos2sm * cos2sm) - b / 6 * cos2sm * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2sm * cos2sm)));
+	DOUBLE angle = atan2(cosU2 * sinLamda, cosU1 * sinU2 - sinU1 * cosU2 * cosLamda) * 180 / M_PI;
+	DOUBLE dist = _B * a * (sigma - dSigma);
+
+	// 変換
+	if(angle < 0)
+	{
+		angle += 360.0; // 360度表記
+	}
+	dist /= 1000.0; // m => km
+
+	return ($Geo){dist, angle, 0, 0, 0};
+}
