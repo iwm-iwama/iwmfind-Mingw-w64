@@ -1,6 +1,6 @@
 //----------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind3_20191120"
-#define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2019 iwm-iwama"
+#define   IWMFIND_VERSION     "iwmfind3_20200223"
+#define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //----------------------------------------------------------------
 #include  "lib_iwmutil.h"
 #include  "sqlite3.h"
@@ -38,8 +38,9 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   ColorExp2           (14 + ( 0 * 16))
 #define   ColorExp3           (11 + ( 0 * 16))
 #define   ColorText1          (15 + ( 0 * 16))
-#define   ColorBgText1        (15 + ( 9 * 16))
-#define   ColorBgText2        (15 + (12 * 16))
+#define   ColorText2          ( 7 + ( 0 * 16))
+#define   ColorBgText1        (15 + (12 * 16))
+
 UINT _getColorDefault = 0;
 #define   MEMDB     ":memory:"
 #define   OLDDB     ("iwmfind.db."IWMFIND_VERSION)
@@ -1228,7 +1229,7 @@ print_result(
 			// タイトル表示
 			if(!$uRowCnt)
 			{
-				iConsole_setTextColor(ColorBgText1);
+				iConsole_setTextColor(ColorExp3);
 					P20(_sTr1); // 行先頭の付加文字列
 					for(i1 = 0; i1 < iColumnCount; i1++)
 					{
@@ -1410,17 +1411,17 @@ print_help()
 		P (" %s [Dir] [Option] ", $program);
 	iConsole_setTextColor(ColorText1);
 		P9(2);
-	iConsole_setTextColor(ColorBgText2);
+	iConsole_setTextColor(ColorText2);
 		P2(" (使用例1) 検索 ");
 		P ("   %s DIR -r -s \"number, path, size\" -w \"ext like 'exe'\" ", $program);
-	iConsole_setTextColor(ColorText1);
+//x	iConsole_setTextColor(ColorText1);
 		P9(2);
-	iConsole_setTextColor(ColorBgText2);
+//x	iConsole_setTextColor(ColorText2);
 		P2(" (使用例2) 検索結果をファイルへ保存 ");
 		P ("   %s DIR1 DIR2 ... -r -o FILE [Option] ", $program);
-	iConsole_setTextColor(ColorText1);
+//x	iConsole_setTextColor(ColorText1);
 		P9(2);
-	iConsole_setTextColor(ColorBgText2);
+//x	iConsole_setTextColor(ColorText2);
 		P2(" (使用例3) 検索対象をファイルから読込 ");
 		P ("   %s -i FILE [Option] ", $program);
 	iConsole_setTextColor(ColorText1);
@@ -1631,6 +1632,7 @@ print_help()
 		P2("    実行優先度を設定");
 		P2("    (例)NUM 1=優先／2=通常以上／3=通常(初期値)／4=通常以下／5=アイドル時");
 	iConsole_setTextColor(ColorHeaderFooter);
+		NL();
 		LN();
 	iConsole_setTextColor(_getColorDefault);
 }
