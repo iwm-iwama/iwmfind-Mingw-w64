@@ -1414,14 +1414,10 @@ print_help()
 	iConsole_setTextColor(ColorText2);
 		P2(" (使用例1) 検索 ");
 		P ("   %s DIR -r -s \"number, path, size\" -w \"ext like 'exe'\" ", $program);
-//x	iConsole_setTextColor(ColorText1);
 		P9(2);
-//x	iConsole_setTextColor(ColorText2);
 		P2(" (使用例2) 検索結果をファイルへ保存 ");
 		P ("   %s DIR1 DIR2 ... -r -o FILE [Option] ", $program);
-//x	iConsole_setTextColor(ColorText1);
 		P9(2);
-//x	iConsole_setTextColor(ColorText2);
 		P2(" (使用例3) 検索対象をファイルから読込 ");
 		P ("   %s -i FILE [Option] ", $program);
 	iConsole_setTextColor(ColorText1);
