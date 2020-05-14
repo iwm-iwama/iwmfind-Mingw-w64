@@ -1,95 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20191229"
-#define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2019 iwm-iwama"
-/////////////////////////////////////////////////////////////////////////////////////////
-/*---------------------------------------------------------------------------------------
-	サンプル
----------------------------------------------------------------------------------------*/
-/////////////////////////////////////////////////////////////////////////////////////////
-/*
-#include "lib_iwmutil.h"
-
-//-----------
-// 共有変数
-//-----------
-UINT $execMS   = 0;
-MBS  *$program = NULL;
-MBS  **$args   = {NULL};
-UINT $argsSize = 0;
-
-INT
-main()
-{
-	// 実行開始時間
-	$execMS = iExecSec_init();
-
-	// コマンド名／引数
-	$program = iCmdline_getCmd();
-	$args = iCmdline_getArgs();
-	$argsSize = $IWM_uAryUsed;
-
-	// ↓ここから
-
-	// (例) test.exe -size=640,480 -text1="where name like 'who?'" -text2="あいうえお","か,き,く,け,こ","'さ'し'す'せ'そ'"
-
-	MBS **as1 = {NULL};
-	MBS **as2 = {NULL};
-
-	P2($program);
-
-	for(INT _i1 = 0; _i1 < $argsSize; _i1++)
-	{
-		NL();
-		P2($args[_i1]);	
-
-		as1 = ija_split($args[_i1], "=", "", FALSE);
-		INT _i11 = $IWM_uAryUsed;
-
-		MBS *sLabel = as1[0];
-
-		for(INT _i2 = 1; _i2 < _i11; _i2++)
-		{
-			as2 = ija_split(as1[_i2], ",", "\"\"\'\'", TRUE);
-
-			// "-size"
-			if(imb_cmpp(sLabel, "-size"))
-			{
-				P("0> %s\n", as2[0]);
-				P("1> %s\n", as2[1]);
-			}
-
-			// "-text1"
-			if(imb_cmpp(sLabel, "-text1"))
-			{
-				P("0> %s\n", as2[0]);
-			}
-
-			// "-text2"
-			if(imb_cmpp(sLabel, "-text2"))
-			{
-				P("0> %s\n", as2[0]);
-				P("1> %s\n", as2[1]);
-				P("2> %s\n", as2[2]);
-			}
-
-			ifree(as2);
-		}
-		ifree(as1);
-	}
-
-	NL();
-
-	// ↑ここまで
-
-	// デバッグ
-	icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
-
-	// 実行時間
-	P("(+%.3fsec)\n\n", iExecSec_next($execMS));
-	imain_end();
-}
-*/
-
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200513"
+#define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2020 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
 #include <ctype.h>
@@ -110,7 +21,6 @@ main()
 /////////////////////////////////////////////////////////////////////////////////////////
 #define  IMAX_PATHW                              (UINT)(MAX_PATH+2) // windef.h参照
 #define  IMAX_PATHA                              (UINT)(2*IMAX_PATHW)
-#define  IGET_ARGS_LEN_MAX                       2048
 #define  IVA_LIST_MAX                            64       // va_xxx()の上限値
 
 #define  MBS                                     CHAR     // imx_xxx()／MBCS
@@ -206,9 +116,6 @@ VOID     icalloc_mapPrint2();
 /////////////////////////////////////////////////////////////////////////////////////////
 VOID     P(CONST MBS *format,...);
 VOID     PR(MBS *pM,INT repeat);
-VOID     P20B(MBS *pM);
-VOID     P20X(MBS *pM);
-VOID     P20XW(WCS *pW);
 
 #define  PC(pM)                                  putchar(*pM)
 #define  PP(pM)                                  P("[%p] ",pM)
@@ -216,49 +123,21 @@ VOID     P20XW(WCS *pW);
 #define  NL()                                    putchar('\n')
 #define  LN()                                    PR("-",72);NL()
 
-#define  P20(pM)                                 P("%s",pM)
-#define  P30(num)                                P("%I64d",(INT64)num)
-#define  P40(num)                                P("%.8f",(DOUBLE)num)
 #define  P80()                                   P("L%4u: ",__LINE__)
 
-#define  P2(pM)                                  P20(pM);NL()
-#define  P3(num)                                 P30(num);NL()
-#define  P4(num)                                 P40(num);NL()
+#define  P2(pM)                                  P("%s\n",pM)
+#define  P3(num)                                 P("%I64d\n",(INT64)num)
+#define  P4(num)                                 P("%.8f\n",(DOUBLE)num)
 #define  P8()                                    P80();NL()
 #define  P9(repeat)                              PR("\n",repeat)
 
-#define  P820(pM)                                P80();P20(pM)
-#define  P830(num)                               P80();P30(num)
-#define  P840(num)                               P80();P40(num)
-
 #define  P82(pM)                                 P80();P2(pM)
+#define  P823(pM,num)                            P80();P("%s%I64d\n",pM,(INT64)num)
+
 #define  P83(num)                                P80();P3(num)
+#define  P832(num,pM)                            P80();P("[%I64d] %s\n",(INT64)num,pM)
+
 #define  P84(num)                                P80();P4(num)
-
-#define  P22(pM1,pM2)                            P("\"%s\"\t\"%s\"\n",pM1,pM2)
-#define  P23(pM,num)                             P("%s%I64d\n",pM,(INT64)num)
-#define  P24(pM,num)                             P("%s%f\n",pM,(DOUBLE)num)
-
-#define  P32(num,pM)                             P("(%I64d)\t\"%s\"\n",(INT64)num,pM)
-#define  P33(num1,num2)                          P("(%I64d)\t(%I64d)\n",(INT64)num1,(INT64)num2)
-#define  P34(num1,num2)                          P("(%I64d)\t(%.8f)\n",(INT64)num1,(DOUBLE)num2)
-#define  P44(num1,num2)                          P("(%.8f)\t(%.8f)\n",(DOUBLE)num1,(DOUBLE)num2)
-
-#define  P822(pM1,pM2)                           P80();P22(pM1,pM2)
-#define  P823(pM,num)                            P80();P23(pM,num)
-#define  P824(pM,num)                            P80();P24(pM,num)
-#define  P832(num,pM)                            P80();P32(num,pM)
-#define  P833(num1,num2)                         P80();P33(num1,num2)
-#define  P834(num1,num2)                         P80();P34(num1,num2)
-#define  P844(num1,num2)                         P80();P44(num1,num2)
-
-#define  P2B1(pM)                                P20B(pM);NL()
-#define  P2B2(repeat,pM)                         PR(" ",repeat);P20B(pM);NL()
-#define  P82B1(pM)                               P80();P2B1(pM)
-#define  P82B2(repeat,pM)                        P80();P2B2(repeat,pM)
-
-#define  P82X(pM)                                P80();P20X(pM);NL()
-#define  P82XW(pW)                               P80();P20XW(pW);NL()
 
 MBS      *ims_conv_escape(MBS *pM);
 MBS      *ims_sprintf(FILE *oFp,MBS *format,...);
@@ -289,12 +168,12 @@ MBS      *icnv_U2M(U8N *pU);
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
 	文字列処理
-		p : return Pointer
-		s : return String
-		1byte     MBS : imp_xxx(), imp_xxx()
-		1 & 2byte MBS : ijp_xxx(), ijs_xxx()
-		UTF-8     U8N : iup_xxx(), ius_xxx()
-		UTF-16    WCS : iwp_xxx(), iws_xxx()
+		"p" : return Pointer
+		"s" : return String
+		1byte     MBS : imp_, imp_, imi_
+		1 & 2byte MBS : ijp_, ijs_, iji_
+		UTF-8     U8N : iup_, ius_, iui_
+		UTF-16    WCS : iwp_, iws_, iwi_
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
 UINT     imi_len(MBS *pM);
@@ -313,8 +192,6 @@ WCS      *iwp_sod(WCS *pW);
 
 MBS      *ims_upper(MBS *pM);
 MBS      *ims_lower(MBS *pM);
-WCS      *iws_upper(WCS *pW);
-WCS      *iws_lower(WCS *pW);
 
 UINT     iji_plen(MBS *pBgn,MBS *pEnd);
 
@@ -323,28 +200,16 @@ WCS      *iwp_cpy(WCS *to,WCS *from);
 #define  ijp_cpy(to,from)                        (MBS*)imp_pcpy(to,from,CharNextA(from))
 
 MBS      *imp_pcpy(MBS *to,MBS *from1,MBS *from2);
-WCS      *iwp_pcpy(WCS *to,WCS *from1,WCS *from2);
-
 #define  imp_ncpy(to,from,size)                  (MBS*)imp_pcpy(to,from,from+size)
-#define  iwp_ncpy(to,from,size)                  (WCS*)iwp_pcpy(to,from,from+size)
 #define  ijp_ncpy(to,from,sizeJ)                 (MBS*)imp_pcpy(to,from,ijp_forwardN(from,sizeJ))
 
 MBS      *ims_clone(MBS *from);
 WCS      *iws_clone(WCS *from);
 
 MBS      *ims_pclone(MBS *from1,MBS *from2);
-WCS      *iws_pclone(WCS *from1,WCS *from2);
-
 #define  ims_nclone(from1,size)                  (MBS*)ims_pclone(from1,(from1+size))
-#define  iws_nclone(from1,size)                  (WCS*)iws_pclone(from1,(from1+size))
 
 MBS      *ims_cat_pclone(MBS *to,MBS *from1,MBS *from2);
-WCS      *iws_cat_pclone(WCS *to,WCS *from1,WCS *from2);
-
-MBS      *ims_cat_clone3(MBS *from1,MBS *from2,MBS *from3,MBS *from4);
-#define  ims_cat_clone(from1,from2)              (MBS*)ims_cat_clone3(from1,from2,NULL,NULL)
-WCS      *iws_cat_clone3(WCS *from1,WCS *from2,WCS *from3,WCS *from4);
-#define  iws_cat_clone(from1,from2)              (WCS*)iws_cat_clone3(from1,from2,NULL,NULL)
 
 MBS      *ims_ncat_clone(MBS *pM,...);
 
@@ -370,8 +235,6 @@ BOOL     iwb_cmp(WCS *pW,WCS *search,BOOL perfect,BOOL icase);
 #define  iwb_cmp_leqf(pW,search)                 (BOOL)iwb_cmp_leq(pW,search,FALSE)
 #define  iwb_cmp_leqfi(pW,search)                (BOOL)iwb_cmp_leq(pW,search,TRUE)
 
-WCS      *iwp_cmpSunday(WCS *pW,WCS *search,BOOL icase);
-
 MBS      *ijp_bypass(MBS *pM,MBS *from,MBS *to);
 
 UINT     iji_searchCntA(MBS *pM,MBS *search,BOOL icase);
@@ -390,12 +253,6 @@ UINT     iji_searchCntLA(MBS *pM,MBS *search,BOOL icase,INT option);
 #define  iji_searchLenL(pM,search)               (UINT)iji_searchCntLA(pM,search,FALSE,2)
 #define  iji_searchLenLi(pM,search)              (UINT)iji_searchCntLA(pM,search,TRUE,2)
 
-UINT     iwi_searchCntLW(WCS *pW,WCS *search,BOOL icase,INT option);
-#define  iwi_searchCntL(pW,search)               (UINT)iwi_searchCntLW(pW,search,FALSE,0)
-#define  iwi_searchCntLi(pW,search)              (UINT)iwi_searchCntLW(pW,search,TRUE,0)
-#define  iwi_searchLenL(pW,search)               (UINT)iwi_searchCntLW(pW,search,FALSE,1)
-#define  iwi_searchLenLi(pW,search)              (UINT)iwi_searchCntLW(pW,search,TRUE,1)
-
 UINT     iji_searchCntRA(MBS *pM,MBS *search,BOOL icase,INT option);
 #define  iji_searchCntR(pM,search)               (UINT)iji_searchCntRA(pM,search,FALSE,0)
 #define  iji_searchCntRi(pM,search)              (UINT)iji_searchCntRA(pM,search,TRUE,0)
@@ -403,12 +260,6 @@ UINT     iji_searchCntRA(MBS *pM,MBS *search,BOOL icase,INT option);
 #define  imi_searchLenRi(pM,search)              (UINT)iji_searchCntRA(pM,search,TRUE,1)
 #define  iji_searchLenR(pM,search)               (UINT)iji_searchCntRA(pM,search,FALSE,2)
 #define  iji_searchLenRi(pM,search)              (UINT)iji_searchCntRA(pM,search,TRUE,2)
-
-UINT     iwi_searchCntRW(WCS *pW,WCS *search,BOOL icase,INT option);
-#define  iwi_searchCntR(pW,search)               (UINT)iwi_searchCntRW(pW,search,FALSE,0)
-#define  iwi_searchCntRi(pW,search)              (UINT)iwi_searchCntRW(pW,search,TRUE,0)
-#define  iwi_searchLenR(pW,search)               (UINT)iwi_searchCntRW(pW,search,FALSE,1)
-#define  iwi_searchLenRi(pW,search)              (UINT)iwi_searchCntRW(pW,search,TRUE,1)
 
 MBS      *ijp_searchLA(MBS *pM,MBS *search,BOOL icase);
 #define  ijp_searchL(pM,search)                  (MBS*)ijp_searchLA(pM,search,FALSE)
@@ -446,7 +297,6 @@ MBS      *ijs_chomp(MBS *pM);
 MBS      *ijs_replace(MBS *from,MBS *before,MBS *after);
 
 MBS      *ijs_simplify(MBS *pM,MBS *search);
-WCS      *iws_simplify(WCS *pW,WCS *search);
 
 BOOL     imb_shiftL(MBS *pM,UINT byte);
 BOOL     imb_shiftR(MBS *pM,UINT byte);
@@ -488,11 +338,6 @@ MBS      *MT_irand_words(UINT size,BOOL ext);
 MBS      *iCmdline_getCmd();
 MBS      **iCmdline_getArgs();
 
-MBS      *iCmdline_getsA(CONST UINT sizeM);
-MBS      *iCmdline_getsJ(CONST UINT sizeJ);
-
-MBS      *iCmdline_esEncode(MBS *pM);
-
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
 	Array
@@ -509,8 +354,6 @@ UINT     iary_Mlen(MBS **ary);
 
 UINT     iary_Jlen(MBS **ary);
 #define  iargs_Jlen(ary)                         (UINT)iary_Jlen(((MBS**)ary)
-
-MBS      **iargs_option(MBS **ary,MBS *op1,MBS *op2);
 
 INT      iary_qsort_cmp(CONST VOID *p1,CONST VOID *p2,BOOL asc);
 INT      iary_qsort_cmpAsc(CONST VOID *p1,CONST VOID *p2);
@@ -642,13 +485,6 @@ MBS      *imk_tempfile(MBS *prefix);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
-	Windows System
----------------------------------------------------------------------------------------*/
-/////////////////////////////////////////////////////////////////////////////////////////
-BOOL     iwin_set_priority(INT class);
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/*---------------------------------------------------------------------------------------
 	Console
 ---------------------------------------------------------------------------------------*/
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -689,7 +525,7 @@ MBS      *iClipboard_getDropFn(UINT option);
 	◆各暦の変数
 		※CJDを基準に計算。
 		JD  : Julian Day               :-4712-01-01 12:00:00開始
-		CJD : Chronological Julian Day :-4712-01-01 00:00:00開始 :JD-0.5 
+		CJD : Chronological Julian Day :-4712-01-01 00:00:00開始 :JD-0.5
 		MJD : Modified Julian Day      : 1858-11-17 00:00:00開始 :JD-2400000.5
 		LD  : Lilian Day               : 1582-10-15 00:00:00開始 :JD-2299159.5
 */
