@@ -3113,12 +3113,12 @@ iary_sort(
 //---------------------
 /* (ó·)
 	MBS **ary = iCmdline_getArgs();
-	MBS *p1 = iary_toA(ary, "\t");
+	MBS *p1 = iary_join(ary, "\t");
 	P82(p1);
 */
-// v2014-04-15
+// v2020-05-14
 MBS
-*iary_toA(
+*iary_join(
 	MBS **ary, // îzóÒ
 	MBS *token // ãÊêÿï∂éö
 )
@@ -3868,7 +3868,7 @@ iFinfo_attrAtoUINT(
 	}
 	MBS **ap1 = ija_token(sAttr, "");
 	MBS **ap2 = iary_simplify(ap1, TRUE);
-		MBS *p1 = iary_toA(ap2, "");
+		MBS *p1 = iary_join(ap2, "");
 	ifree(ap2);
 	ifree(ap1);
 	// è¨ï∂éöÇ…ïœä∑

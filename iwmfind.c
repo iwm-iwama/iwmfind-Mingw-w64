@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20200513"
+#define   IWMFIND_VERSION     "iwmfind4_20200515"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -125,17 +125,17 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   SELECT_VIEW \
 			"SELECT %s FROM V_INDEX %s %s %s ORDER BY %s;"
 #define   OP_SELECT_0 \
-			"number, path"
+			"number,path"
 #define   OP_SELECT_1 \
-			"number, path, depth, type, size, ctime, mtime, atime"
+			"number,path,depth,type,size,ctime,mtime,atime"
 #define   OP_SELECT_MKDIR \
-			"step_byte, dir, name, path"
+			"step_byte,dir,name,path"
 #define   OP_SELECT_EXTRACT \
-			"path, name"
+			"path,name"
 #define   OP_SELECT_RP \
-			"type, path"
+			"type,path"
 #define   OP_SELECT_RM \
-			"path, dir, attr_num"
+			"path,dir,attr_num"
 #define   I_MKDIR    1
 #define   I_CP       2
 #define   I_MV       3
@@ -518,23 +518,21 @@ main()
 			if(_as2_cnt)
 			{
 				// "number"位置を求める
-				$ap2 = ija_token(_as2[0], ", ");
-					$ap3 = iary_simplify($ap2, TRUE); // number表示は１個しか出来ないので重複排除
-						$iSelectPosNumber = 0;
-						while(($p2 = $ap3[$iSelectPosNumber]))
+				$ap2 = iary_simplify(_as2, TRUE); // number表示は１個しか出来ないので重複排除
+					$iSelectPosNumber = 0;
+					while(($p2 = $ap2[$iSelectPosNumber]))
+					{
+						if(imb_cmppi($p2, "number"))
 						{
-							if(imb_cmppi($p2, "number"))
-							{
-								break;
-							}
-							++$iSelectPosNumber;
+							break;
 						}
-						if(! $p2)
-						{
-							$iSelectPosNumber = -1;
-						}
-						$sSelect = iary_toA($ap3, ", ");
-					ifree($ap3);
+						++$iSelectPosNumber;
+					}
+					if(! $p2)
+					{
+						$iSelectPosNumber = -1;
+					}
+					$sSelect = iary_join($ap2, ",");
 				ifree($ap2);
 			}
 			else
@@ -1375,7 +1373,7 @@ print_help()
 		P (" (使用例1) ");
 	iConsole_setTextColor(ColorText1);
 		P2("検索");
-		P ("   %s DIR -r -s=\"number, path, size\" -w=\"ext like 'exe'\"\n\n", $program);
+		P ("   %s DIR -r -s=number,path,size -w=\"ext like 'exe'\"\n\n", $program);
 	iConsole_setTextColor(ColorExp1);
 		P (" (使用例2) ");
 	iConsole_setTextColor(ColorText1);
@@ -1407,7 +1405,7 @@ print_help()
 		P2("       (注) 検索対象 dir と併用できない");
 	iConsole_setTextColor(ColorExp3);
 		NL();
-		P2("   -select=\"COLUMN1, ...\" | -s=\"COLUMN1, ...\"");
+		P2("   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...");
 	iConsole_setTextColor(ColorText1);
 		P2("       number    (NUM) 表\示順");
 		P2("       path      (STR) dir\\name");

@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200513"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200514"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2020 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
@@ -360,7 +360,7 @@ INT      iary_qsort_cmpAsc(CONST VOID *p1,CONST VOID *p2);
 INT      iary_qsort_cmpDesc(CONST VOID *p1,CONST VOID *p2);
 #define  iary_sortAsc(ary)                       (VOID)qsort((MBS*)ary,iary_size(ary),sizeof(MBS**),iary_qsort_cmpAsc)
 #define  iary_sortDesc(ary)                      (VOID)qsort((MBS*)ary,iary_size(ary),sizeof(MBS**),iary_qsort_cmpDesc)
-MBS      *iary_toA(MBS **ary,MBS *token);
+MBS      *iary_join(MBS **ary,MBS *token);
 
 MBS      **iary_simplify(MBS **ary,BOOL icase);
 MBS      **iary_higherDir(MBS **ary,UINT depth);
