@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200514"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200530"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2020 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
@@ -40,16 +40,7 @@
 #define  IDATE_FORMAT_STD                        "%G%y-%m-%d %h:%n:%s"
 #define  IDATE_FORMAT_DIFF                       "%g%y-%m-%d %h:%n:%s"
 
-#define  ceil8(n)                                (UINT)((((n)>>3)+2)<<3)
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/*---------------------------------------------------------------------------------------
-	ŽÀs’¼Œã‚ÌŠÖ”‚©‚ç‚Ì•Ô’li’FŠÖ”‘¤‚Å‘Î‰ž‚µ‚Ä‚¢‚é‚±‚Æj
----------------------------------------------------------------------------------------*/
-/////////////////////////////////////////////////////////////////////////////////////////
-BOOL     $IWM_bSuccess;      // ˆ—¬Œ÷=TRUE^ˆ—‘ÎÛ‚ª•sÝ‚È‚Ç=FALSE
-UINT     $IWM_uAryUsed;      // ‚QŽŸŒ³”z—ñ‚Ì—v‘f”
-UINT     $IWM_uWords;        // •¶Žš”^MBS,WCS‚ð‹æ•Ê
+#define  ceil8(n)                                (UINT)(((n>>3)<<3)+8)
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
@@ -203,6 +194,8 @@ MBS      *imp_pcpy(MBS *to,MBS *from1,MBS *from2);
 #define  imp_ncpy(to,from,size)                  (MBS*)imp_pcpy(to,from,from+size)
 #define  ijp_ncpy(to,from,sizeJ)                 (MBS*)imp_pcpy(to,from,ijp_forwardN(from,sizeJ))
 
+UINT     imi_cpy(MBS *to,MBS *from);
+
 MBS      *ims_clone(MBS *from);
 WCS      *iws_clone(WCS *from);
 
@@ -310,13 +303,7 @@ BOOL     imb_shiftR(MBS *pM,UINT byte);
 #define  inum_chk2M(pM)                          (BOOL)(*pM>='0'&&*pM<='9'?TRUE:FALSE)
 INT      inum_atoi(MBS *pM);
 INT64    inum_atoi64(MBS *pM);
-INT64    inum_atoi64Ex(MBS *pM);
 DOUBLE   inum_atof(MBS *pM);
-
-UINT     inum_posSize(INT64 num);
-DOUBLE   inum_posToDec(DOUBLE num,INT shift);
-
-INT      inum_bitwiseCmpINT(INT iBase,INT iDest);
 
 /*yCopyright (C) 1997 - 2002,Makoto Matsumoto and Takuji Nishimura,All rights reserved.z
 	http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/mt19937ar.c
@@ -366,7 +353,6 @@ MBS      **iary_simplify(MBS **ary,BOOL icase);
 MBS      **iary_higherDir(MBS **ary,UINT depth);
 
 MBS      **iary_clone(MBS **ary);
-MBS      **iary_new(MBS *pM,...);
 
 VOID     iary_print(MBS **ary);
 
@@ -468,20 +454,13 @@ BOOL     iFchk_Bfile(MBS *fn);
 
 MBS      *iFget_extPathname(MBS *path,UINT option);
 
-MBS      *iFget_Apath(MBS *path);
-#define  iFget_pwd()                             (MBS*)iFget_Apath(".")
-
 MBS      *iFget_AdirA(MBS *path);
-WCS      *iFget_AdirW(WCS *path);
 MBS      *iFget_RdirA(MBS *path);
-WCS      *iFget_RdirW(WCS *path);
 
 #define  irm_file(path)                          (BOOL)DeleteFile(path)
 #define  irm_dir(path)                           (BOOL)RemoveDirectory(path)
 
 BOOL     imk_dir(MBS *path);
-
-MBS      *imk_tempfile(MBS *prefix);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------

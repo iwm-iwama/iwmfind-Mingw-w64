@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20200515"
+#define   IWMFIND_VERSION     "iwmfind4_20200531"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -153,7 +153,7 @@ INT *$aiNow = 0;
 // 検索dir
 //
 MBS **$aDirList = {0};
-INT $aDirListCnt = 0;
+UINT $aDirListSize = 0;
 //
 // 入力DB
 // -in=STR | -i=STR
@@ -283,7 +283,7 @@ main()
 	// コマンド名／引数
 	$program      = iCmdline_getCmd();
 	$args         = iCmdline_getArgs();
-	$argsSize     = $IWM_uAryUsed;
+	$argsSize     = iary_size($args);
 	$colorDefault = iConsole_getBgcolor(); // 現在の文字色／背景色
 	$execMS       = iExecSec_init(); // 実行開始時間
 
@@ -319,7 +319,7 @@ main()
 	{
 		MBS **_as1 = ija_split($args[$i1], "=", "\"\"\'\'", FALSE);
 		MBS **_as2 = ija_split(_as1[1], ",", "\"\"\'\'", TRUE);
-		INT _as2_cnt = $IWM_uAryUsed;
+		UINT _as2Size = iary_size(_as2);
 
 		// -r | -recursive
 		if(imb_cmpp(_as1[0], "-r") || imb_cmpp(_as1[0], "-recursive"))
@@ -331,7 +331,7 @@ main()
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
 		if(imb_cmpp(_as1[0], "-d") || imb_cmpp(_as1[0], "-depth"))
 		{
-			if(_as2_cnt > 1)
+			if(_as2Size > 1)
 			{
 				$iDepthMin = inum_atoi(_as2[0]);
 				$iDepthMax = inum_atoi(_as2[1]);
@@ -343,7 +343,7 @@ main()
 					$iDepthMax = $i2;
 				}
 			}
-			else if(_as2_cnt == 1)
+			else if(_as2Size == 1)
 			{
 				$iDepthMin = $iDepthMax = inum_atoi(_as2[0]);
 			}
@@ -384,7 +384,7 @@ main()
 			}
 			// 上位Dirのみ取得
 			$aDirList = iary_higherDir($ap1, $iDepthMax);
-			$aDirListCnt = $IWM_uAryUsed;
+			$aDirListSize = iary_size($aDirList);
 		ifree($ap1);
 	}
 
@@ -393,19 +393,19 @@ main()
 	{
 		MBS **_as1 = ija_split($args[$i1], "=", "\"\"\'\'", FALSE);
 		MBS **_as2 = ija_split(_as1[1], ",", "\"\"\'\'", TRUE);
-		INT _as2_cnt = $IWM_uAryUsed;
+		UINT _as2Size = iary_size(_as2);
 
 		// -i | -in
 		if(imb_cmpp(_as1[0], "-i") || imb_cmpp(_as1[0], "-in"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				if(iFchk_typePathA(_as2[0]) != 2)
 				{
 					P("[Err] -in '%s' は存在しない!\n", _as2[0]);
 					imain_end();
 				}
-				else if($aDirListCnt)
+				else if($aDirListSize)
 				{
 					P("[Err] Dir と -in は併用できない!\n");
 					imain_end();
@@ -425,7 +425,7 @@ main()
 		// -o | -out
 		if(imb_cmpp(_as1[0], "-o") || imb_cmpp(_as1[0], "-out"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sOut = ims_clone(_as2[0]);
 				$sOutDbn = ims_clone($sOut);
@@ -435,7 +435,7 @@ main()
 		// --md | --mkdir
 		if(imb_cmpp(_as1[0], "--md") || imb_cmpp(_as1[0], "--mkdir"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sMd = ims_clone(_as2[0]);
 			}
@@ -444,7 +444,7 @@ main()
 		// --cp | --copy
 		if(imb_cmpp(_as1[0], "--cp") || imb_cmpp(_as1[0], "--copy"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sCp = ims_clone(_as2[0]);
 			}
@@ -453,7 +453,7 @@ main()
 		// --mv | --move
 		if(imb_cmpp(_as1[0], "--mv") || imb_cmpp(_as1[0], "--move"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sMv = ims_clone(_as2[0]);
 			}
@@ -462,7 +462,7 @@ main()
 		// --mv2 | --move2
 		if(imb_cmpp(_as1[0], "--mv2") || imb_cmpp(_as1[0], "--move2"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sMv2 = ims_clone(_as2[0]);
 			}
@@ -471,7 +471,7 @@ main()
 		// --ext1 | --extract1
 		if(imb_cmpp(_as1[0], "--ext1") || imb_cmpp(_as1[0], "--extract1"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sExt1 = ims_clone(_as2[0]);
 			}
@@ -480,7 +480,7 @@ main()
 		// --ext2 | --extract2
 		if(imb_cmpp(_as1[0], "--ext2") || imb_cmpp(_as1[0], "--extract2"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sExt2 = ims_clone(_as2[0]);
 			}
@@ -489,7 +489,7 @@ main()
 		// --rep | --replace
 		if(imb_cmpp(_as1[0], "--rep") || imb_cmpp(_as1[0], "--replace"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sRep = ims_clone(_as2[0]);
 			}
@@ -515,7 +515,7 @@ main()
 		*/
 		if(imb_cmpp(_as1[0], "-s") || imb_cmpp(_as1[0], "-select"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				// "number"位置を求める
 				$ap2 = iary_simplify(_as2, TRUE); // number表示は１個しか出来ないので重複排除
@@ -544,7 +544,7 @@ main()
 		// -st | -sort
 		if(imb_cmpp(_as1[0], "-st") || imb_cmpp(_as1[0], "-sort"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sSort = ims_clone(_as2[0]);
 			}
@@ -553,7 +553,7 @@ main()
 		// -w | -where
 		if(imb_cmpp(_as1[0], "-w") || imb_cmpp(_as1[0], "-where"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sWhere0 = sql_escape(_as2[0]);
 				snprintf($sTmp, BUF_SIZE_MAX, "WHERE %s AND", $sWhere0);
@@ -564,7 +564,7 @@ main()
 		// -g | -group
 		if(imb_cmpp(_as1[0], "-g") || imb_cmpp(_as1[0], "-group"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				snprintf($sTmp, BUF_SIZE_MAX, "GROUP BY %s", _as2[0]);
 				$sGroup = ims_clone($sTmp);
@@ -586,7 +586,7 @@ main()
 		// -qt | -quote
 		if(imb_cmpp(_as1[0], "-qt") || imb_cmpp(_as1[0], "-quote"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sQuote = ims_conv_escape(_as2[0]);
 			}
@@ -595,7 +595,7 @@ main()
 		// -sp | -separate
 		if(imb_cmpp(_as1[0], "-sp") || imb_cmpp(_as1[0], "-separate"))
 		{
-			if(_as2_cnt)
+			if(_as2Size)
 			{
 				$sSeparate = ims_conv_escape(_as2[0]);
 			}
@@ -606,7 +606,7 @@ main()
 	}
 
 	// Err
-	if(! $aDirListCnt && ! *$sIn)
+	if(! $aDirListSize && ! *$sIn)
 	{
 		P("[Err] Dir もしくは -in を指定してください!\n");
 		imain_end();
@@ -795,7 +795,7 @@ main()
 				if(*$sWhere0)
 				{
 					sql_exec($iDbs, "BEGIN", 0); // トランザクション開始
-						$p1 = ims_ncat_clone("WHERE ", $sWhere0);
+						$p1 = ims_ncat_clone("WHERE ", $sWhere0, NULL);
 							snprintf($sTmp, BUF_SIZE_MAX, UPDATE_EXEC99_1, $p1);
 						ifree($p1);
 						$p1 = M2U($sTmp); // UTF-8で処理
@@ -1316,7 +1316,7 @@ print_footer()
 		);
 	iConsole_setTextColor(ColorExp1);
 		P2("--");
-		for(UINT _u1 = 0; _u1 < $aDirListCnt; _u1++)
+		for(UINT _u1 = 0; _u1 < $aDirListSize; _u1++)
 		{
 			P("--  $aDirList(%u) \"%s\"\n", _u1 + 1, $aDirList[_u1]);
 		}
