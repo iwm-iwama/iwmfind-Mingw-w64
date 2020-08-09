@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200530"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200809"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2020 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
@@ -363,31 +363,31 @@ VOID     iary_print(MBS **ary);
 /////////////////////////////////////////////////////////////////////////////////////////
 typedef struct
 {
-	MBS      fullnameA[IMAX_PATHA];// (ó·) D:\ä‚ä‘\iwama.txt
-	UINT     iFname;               // MBS= 8Å^WCS= 6
-	UINT     iExt;                 // MBS=13Å^WCS=11
-	UINT     iEnd;                 // MBS=17Å^WCS=15
-	UINT     iAttr;                // 32
-	UINT     iFtype;               // 2 : ïsñæ=0Å^Dir=1Å^File=2
-	DOUBLE   cjdCtime;             // (DWORD)dwLowDateTime,(DWORD)dwHighDateTime
-	DOUBLE   cjdMtime;             // Å™
-	DOUBLE   cjdAtime;             // Å™
-	INT64    iFsize;               // byte (4GBëŒâû)
+	MBS      fullnameA[IMAX_PATHA]; // (ó·) D:\ä‚ä‘\iwama.txt
+	UINT     iFname;                // MBS= 8Å^WCS= 6
+	UINT     iExt;                  // MBS=13Å^WCS=11
+	UINT     iEnd;                  // MBS=17Å^WCS=15
+	UINT     iAttr;                 // 32
+	UINT     iFtype;                // 2 : ïsñæ=0Å^Dir=1Å^File=2
+	DOUBLE   cjdCtime;              // (DWORD)dwLowDateTime,(DWORD)dwHighDateTime
+	DOUBLE   cjdMtime;              // Å™
+	DOUBLE   cjdAtime;              // Å™
+	INT64    iFsize;                // byte (4GBëŒâû)
 }
 $struct_iFinfoA;
 
 typedef struct
 {
-	WCS      fullnameW[IMAX_PATHW];// (ó·) D:\ä‚ä‘\iwama.txt
-	UINT     iFname;               // MBS= 8Å^WCS= 6
-	UINT     iExt;                 // MBS=13Å^WCS=11
-	UINT     iEnd;                 // MBS=17Å^WCS=15
-	UINT     iAttr;                // 32
-	UINT     iFtype;               // 2 : ïsñæ=0Å^Dir=1Å^File=2
-	DOUBLE   cjdCtime;             // (DWORD)dwLowDateTime,(DWORD)dwHighDateTime
-	DOUBLE   cjdMtime;             // Å™
-	DOUBLE   cjdAtime;             // Å™
-	INT64    iFsize;               // byte (4GBëŒâû)
+	WCS      fullnameW[IMAX_PATHW]; // (ó·) D:\ä‚ä‘\iwama.txt
+	UINT     iFname;                // MBS= 8Å^WCS= 6
+	UINT     iExt;                  // MBS=13Å^WCS=11
+	UINT     iEnd;                  // MBS=17Å^WCS=15
+	UINT     iAttr;                 // 32
+	UINT     iFtype;                // 2 : ïsñæ=0Å^Dir=1Å^File=2
+	DOUBLE   cjdCtime;              // (DWORD)dwLowDateTime,(DWORD)dwHighDateTime
+	DOUBLE   cjdMtime;              // Å™
+	DOUBLE   cjdAtime;              // Å™
+	INT64    iFsize;                // byte (4GBëŒâû)
 }
 $struct_iFinfoW;
 
@@ -512,7 +512,7 @@ MBS      *iClipboard_getDropFn(UINT option);
 #define  CJD_TO_MJD                              (DOUBLE)(2400000.5-CJD_TO_JD)
 #define  CJD_TO_LD                               (DOUBLE)(2299159.5-CJD_TO_JD)
 
-#define	 CJD_FORMAT                              "%.8f"
+#define  CJD_FORMAT                              "%.8f"
 
 /*
 	CJDóÔ(=JDóÔ-0.5)ÇÃç≈èIì˙ NS_before[]
@@ -602,18 +602,19 @@ INT      *idate_add(INT i_y,INT i_m,INT i_d,INT i_h,INT i_n,INT i_s,INT add_y,IN
 // [8]={sign,y,m,d,h,n,s,days}
 INT      *idate_diff(INT i_y1,INT i_m1,INT i_d1,INT i_h1,INT i_n1,INT i_s1,INT i_y2,INT i_m2,INT i_d2,INT i_h2,INT i_n2,INT i_s2);
 
-//VOID     idate_diff_checker(INT from_year,INT to_year,INT repeat);
+/// VOID idate_diff_checker(INT from_year,INT to_year,INT repeat);
 
 /*
 // Ymdhns
 	%a : ójì˙(ó·:Su)
-	%A : ójì˙êî(ó·:0)
-	%c : îNì‡ÇÃí éZì˙(ó·:001)
+	%A : ójì˙êî
+	%c : îNì‡ÇÃí éZì˙
 	%C : CJDí éZì˙
-	%e : îNì‡ÇÃí éZèT(ó·:01)
-	%E : CJDí éZèT
+	%J : JDí éZì˙
+	%e : îNì‡ÇÃí éZèT
 
 // Diff
+	%Y : í éZîN
 	%M : í éZåé
 	%D : í éZì˙
 	%H : í éZéû
@@ -625,13 +626,12 @@ INT      *idate_diff(INT i_y1,INT i_m1,INT i_d1,INT i_h1,INT i_n1,INT i_s1,INT i
 // ã§í 
 	%g : Sign "-" "+"
 	%G : Sign "-" ÇÃÇ›
-	%y : îN(ó·:2016)
-	%Y : îN(ó·:16)
-	%m : åé(ó·:01)
-	%d : ì˙(ó·:01)
-	%h : éû(ó·:01)
-	%n : ï™(ó·:01)
-	%s : ïb(ó·:01)
+	%y : îN(0000)
+	%m : åé(00)
+	%d : ì˙(00)
+	%h : éû(00)
+	%n : ï™(00)
+	%s : ïb(00)
 	%% : "%"
 	\a
 	\n
@@ -643,17 +643,7 @@ MBS      *idate_format_diff(MBS *format,INT i_sign,INT i_y,INT i_m,INT i_d,INT i
 
 MBS      *idate_format_iAryToA(MBS *format,INT *ymdhns);
 MBS      *idate_format_cjdToA(MBS *format,DOUBLE cjd);
-/*
-	ëÂï∂éö => "yyyy-mm-dd 00:00:00"
-	è¨ï∂éö => "yyyy-mm-dd hh:nn:ss"
-		Y,y : îN
-		M,m : åé
-		W,w : èT
-		D,d : ì˙
-		H,h : éû
-		N,n : ï™
-		S,s : ïb
-*/
+
 MBS      *idate_replace_format_ymdhns(MBS *pM,MBS *quote1,MBS *quote2,MBS *add_quote,CONST INT i_y,CONST INT i_m,CONST INT i_d,CONST INT i_h,CONST INT i_n,CONST INT i_s);
 #define  idate_format_nowToYmdhns(i_y,i_m,i_d,i_h,i_n,i_s) \
                                                  (MBS*)idate_replace_format_ymdhns("[]","[","]","",i_y,i_m,i_d,i_h,i_n,i_s)

@@ -33,7 +33,7 @@
 /* 2014-02-13
 	変数ルール
 		◆INT    ： 当面の標準
-		◆UINT   ： (要注意)「FILE関係」「整数長の扱い」のみ ⇒ 頃合みて INT64 に移行する
+		◆UINT   ： (要注意)「FILE関係」「正数」のみ ⇒ 頃合みて INT64 に移行する
 		◆DOUBLE ： 小数点の扱い全て
 */
 /* 2016-08-19
@@ -75,10 +75,11 @@
 		経過時間は 0 に戻ります。
 */
 /* (例)
-	UINT _exec_cjd = 0;
-	_exec_cjd = iExecSec_init();
-	// 処理
-	P("-- %.3fsec\n\n", iExecSec_next(_exec_cjd));
+	UINT TmBgn = iExecSec_init(); // 実行開始時間
+	Sleep(2000);
+	P("-- %.6fsec\n\n", iExecSec_next(TmBgn));
+	Sleep(1000);
+	P("-- %.6fsec\n\n", iExecSec_next(TmBgn));
 */
 // v2015-10-24
 UINT
@@ -136,9 +137,8 @@ VOID
 )
 {
 	UINT size2 = sizeof($struct_icallocMap);
-	//
+
 	// 初回 __icallocMap を更新
-	//
 	if(__icallocMapSize == 0)
 	{
 		__icallocMapSize = IcallocDiv;
@@ -154,26 +154,21 @@ VOID
 			icalloc_err(__icallocMap);
 		memset(__icallocMap + uOldSize, 0, (IcallocDiv * size2)); // realloc() 部分を初期化
 	}
-	//
+
 	// 引数にポインタ割当
-	//
 	VOID *rtn = calloc(ceilX8(n), size);
 		icalloc_err(rtn); // 戻値が 0 なら exit()
-	//
+
 	// ポインタ
-	//
 	(__icallocMap + __icallocMapEOD)->ptr = rtn;
-	//
+
 	// 配列
-	//
 	(__icallocMap + __icallocMapEOD)->num = (aryOn ? n : 0);
-	//
+
 	// サイズ
-	//
 	(__icallocMap + __icallocMapEOD)->size = ceilX8(n) * size;
-	//
+
 	// 順番
-	//
 	++__icallocMapId;
 	(__icallocMap + __icallocMapEOD)->id = __icallocMapId;
 	++__icallocMapEOD;
@@ -219,9 +214,9 @@ VOID
 	}
 	return rtn;
 }
-//-------------------------------
+//--------------------------------
 // icalloc, ireallocのエラー処理
-//-------------------------------
+//--------------------------------
 /* (例)
 	// 通常
 	MBS *p1 = icalloc_MBS(1000);
@@ -256,14 +251,10 @@ icalloc_free(
 		map = (__icallocMap + u1);
 		if(ptr == (map->ptr))
 		{
-			//
 			// 配列から先に free
-			//
 			if(map->num)
 			{
-				//
 				// 1次元削除
-				//
 				u2 = 0;
 				while(u2 < (map->num))
 				{
@@ -275,9 +266,8 @@ icalloc_free(
 					++u2;
 				}
 				++__icallocMapFreeCnt;
-				//
+
 				// 2次元削除
-				//
 				memset(map->ptr, 0, map->size);
 				free(map->ptr);
 				memset(map, 0, __sizeof_icallocMap);
@@ -320,15 +310,12 @@ icalloc_freeAll()
 VOID
 icalloc_mapSweep()
 {
-	//
 	// 毎回呼び出しても影響ない
-	//
 	UINT uSweep = 0;
 	$struct_icallocMap *map1 = 0, *map2 = 0;
 	UINT u1 = 0, u2 = 0;
-	//
+
 	// 隙間を詰める
-	//
 	u1 = 0;
 	while(u1 < __icallocMapEOD)
 	{
@@ -1581,9 +1568,8 @@ icmpOperator_extractHead(
 	{
 		return rtn;
 	}
-	//
+
 	// 先頭の空白のみ特例
-	//
 	while(*pM == ' ')
 	{
 		++pM;
@@ -1782,15 +1768,15 @@ icmpOperator_chkDBL(
 	MBS *p1 = "2014年 4月29日  {(18時 42分) 00秒}";
 	MBS *tokens = "年月日時分秒 ";
 	MBS **ary = {0};
-	//ary = ija_split(p1, tokens, "{}[]", FALSE); //=> [0]"2014" [1]"4" [2]"29" [3]"{(18時 42分) 00秒}"
-	//ary = ija_split(p1, tokens, "{}[]", TRUE);  //=> [0]"2014" [1]"4" [2]"29" [3]"(18時 42分) 00秒"
-	// 第３引数 = NULL | "" のとき、以降の引数は無視される
-	//ary = ija_split(p1, tokens, "", FALSE);     //=> [0]"2014" [1]"4" [2]"29" [3]"{<18" [4]"42" [5]")" [6]"00" [7]"}"
-	//ary = ija_split(p1, tokens, "", TRUE);      //=> [0]"2014" [1]"4" [2]"29" [3]"{<18" [4]"42" [5]")" [6]"00" [7]"}"
-	//ary = ija_split(p1, "", "", FALSE);         // 1文字ずつ返す
-	//ary = ija_split(p1, "", "", TRUE);          // 1文字ずつ返す
-	//ary = ija_split(p1, NULL, "", FALSE);       // pを返す
-	//ary = ija_split(p1, NULL, "", TRUE);        // pを返す
+	// ary = ija_split(p1, tokens, "{}[]", FALSE); //=> [0]"2014" [1]"4" [2]"29" [3]"{(18時 42分) 00秒}"
+	// ary = ija_split(p1, tokens, "{}[]", TRUE);  //=> [0]"2014" [1]"4" [2]"29" [3]"(18時 42分) 00秒"
+	// 第3引数 = NULL | "" のとき、以降の引数は無視される
+	// ary = ija_split(p1, tokens, "", FALSE);     //=> [0]"2014" [1]"4" [2]"29" [3]"{<18" [4]"42" [5]")" [6]"00" [7]"}"
+	// ary = ija_split(p1, tokens, "", TRUE);      //=> [0]"2014" [1]"4" [2]"29" [3]"{<18" [4]"42" [5]")" [6]"00" [7]"}"
+	// ary = ija_split(p1, "", "", FALSE);         // 1文字ずつ返す
+	// ary = ija_split(p1, "", "", TRUE);          // 1文字ずつ返す
+	// ary = ija_split(p1, NULL, "", FALSE);       // pを返す
+	// ary = ija_split(p1, NULL, "", TRUE);        // pを返す
 	iary_print(ary);
 	ifree(ary);
 */
@@ -2032,11 +2018,9 @@ MBS
 	MBS *rtn = icalloc_MBS(u1 * 2);
 	MBS *pRtnE = rtn;
 	MBS *p1 = 0;
-	//
+
 	// "-000123456.7890" のとき
-	//
 	// (1) 先頭の [\S*] を探す
-	//
 	MBS *pB = pM;
 	MBS *pE = pM;
 	while(*pE)
@@ -2048,9 +2032,8 @@ MBS
 		++pE;
 	}
 	pRtnE = imp_pcpy(pRtnE, pB, pE);
-	//
+
 	// (2) [0-9] 間を探す => "000123456"
-	//
 	pB = pE;
 	while(*pE)
 	{
@@ -2060,17 +2043,15 @@ MBS
 		}
 		++pE;
 	}
-	//
+
 	// (2-11) 先頭は [.] か？
-	//
 	if(*pB == '.')
 	{
 		pRtnE = imp_cpy(pRtnE, "0");
 		imp_cpy(pRtnE, pB);
 	}
-	//
+
 	// (2-21) 連続する 先頭の[0] を調整 => "123456"
-	//
 	else
 	{
 		while(*pB)
@@ -2085,9 +2066,8 @@ MBS
 		{
 			--pB;
 		}
-		//
+
 		// (2-22) ", " 付与 => "123, 456"
-		//
 		p1 = ims_pclone(pB, pE);
 			u1 = pE - pB;
 			if(u1 > 3)
@@ -2112,9 +2092,8 @@ MBS
 				pRtnE = imp_cpy(pRtnE, p1);
 			}
 		ifree(p1);
-		//
+
 		// (2-23) 残り => ".7890"
-		//
 		imp_cpy(pRtnE, pE);
 	}
 	return rtn;
@@ -2450,11 +2429,11 @@ inum_atof(
 	}
 	return atof(pM);
 }
-//---------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 // Copyright (C) 1997 - 2002, Makoto Matsumoto and Takuji Nishimura, All rights reserved.
 //  A C-program for MT19937, with initialization improved 2002/1/26.
 //  Coded by Takuji Nishimura and Makoto Matsumoto.
-//---------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------------------
 /*
 	http: //www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/MT2002/CODES/mt19937ar.c
 	上記コードを元に以下の関数についてカスタマイズを行った。
@@ -2922,18 +2901,15 @@ MBS
 // 配列から空白／重複を除く
 //---------------------------
 /*
-	//
 	// 有効配列マッピング
 	//  (例)TRUE
 	//    {"aaa", "AAA", "BBB", "", "bbb"}
 	//    { 1   ,  -1  ,  -1  ,  0,  1   } // Flg
-	//
 	MBS *args[] = {"aaa", "AAA", "BBB", "", "bbb", NULL};
-	//
+
 	// 大小区別
 	//   TRUE  => "aaa", "bbb"
 	//   FALSE => "aaa", "AAA", "bbb", "BBB"
-	//
 	MBS **pAryUsed = iary_simplify(args, TRUE);
 	UINT uAryUsed = iary_size(pAryUsed);
 	UINT u1 = 0;
@@ -3013,25 +2989,21 @@ MBS
 // 上位Dirを抽出
 //----------------
 /*
-	//
 	// 有効配列マッピング
 	//  (例)
 	//    {"c:\", "", "c:\A\B\", "d:\A\B\", "C:\"}
 	//    { 0   ,  0,  2       ,  2       ,  0   } // Depth : 0-MAX_PATH
 	//    { 1   ,  0,  -1      ,  -1      ,  -1  } // Flg   : 1=OK , 0="" , -1=ダブリ
-	//
 	//  (注)実在しないDirは無視される
-	//
 	MBS *args[] = {"d:", "d:\\A\\B", "d:\\A\\B\\C\\D\\E\\", "", "D:\\A\\B\\", NULL};
 	MBS **pAryUsed = iary_higherDir(args, 2); // 階層=2
 	UINT uAryUsed = iary_size(pAryUsed);
-	//
+
 	// depth
 	//   0 => "d:\", "d:\A\B\", "d:\A\B\C\D\E\"
 	//   1 => "d:\", "d:\A\B\", "d:\A\B\C\D\E\"
 	//   2 => "d:\", "d:\A\B\C\D\E\"
 	//   3 => "d:\"
-	//
 	UINT u1 = 0;
 		while(u1 < uAryUsed)
 		{
@@ -3327,29 +3299,26 @@ iFinfo_initA(
 	{
 		return FALSE;
 	}
-	//
 	// FI->iAttr
-	//
 	FI->iAttr = (UINT)F->dwFileAttributes; // DWORD => UINT
+
 	// <32768
 	if((FI->iAttr) >> 15)
 	{
 		iFinfo_clearA(FI);
 		return FALSE;
 	}
-	//
+
 	// FI->fullnameW
 	// FI->iFname
 	// FI->iEnd
-	//
 	MBS *p1 = imp_cpy(FI->fullnameA, dir);
 	MBS *p2 = imp_cpy(p1, name);
 	UINT u1 = p2 - p1;
-	//
+
 	// FI->iFtype
 	// FI->iExt
 	// FI->iFsize
-	//
 	if((FI->iAttr & FILE_ATTRIBUTE_DIRECTORY))
 	{
 		if(u1)
@@ -3374,12 +3343,11 @@ iFinfo_initA(
 		}
 		(FI->iFsize) = (INT64)F->nFileSizeLow + (F->nFileSizeHigh ? (INT64)(F->nFileSizeHigh) * MAXDWORD + 1 : 0);
 	}
-	//
+
 	// JST変換
 	// FI->cftime
 	// FI->mftime
 	// FI->aftime
-	//
 	// (例)"c:\"
 	if((FI->iEnd) <= 3)
 	{
@@ -3412,29 +3380,27 @@ iFinfo_initW(
 	{
 		return FALSE;
 	}
-	//
+
 	// FI->iAttr
-	//
 	FI->iAttr = (UINT)F->dwFileAttributes; // DWORD => UINT
+
 	// <32768
 	if((FI->iAttr) >> 15)
 	{
 		iFinfo_clearW(FI);
 		return FALSE;
 	}
-	//
+
 	// FI->fullnameW
 	// FI->iFname
 	// FI->iEnd
-	//
 	WCS *p1 = iwp_cpy(FI->fullnameW, dir);
 	WCS *p2 = iwp_cpy(p1, name);
 	UINT u1 = p2 - p1;
-	//
+
 	// FI->iFtype
 	// FI->iExt
 	// FI->iFsize
-	//
 	if((FI->iAttr & FILE_ATTRIBUTE_DIRECTORY))
 	{
 		if(u1)
@@ -3459,12 +3425,11 @@ iFinfo_initW(
 		}
 		(FI->iFsize) = (INT64)F->nFileSizeLow + (F->nFileSizeHigh ? (INT64)(F->nFileSizeHigh) * MAXDWORD + 1 : 0);
 	}
-	//
+
 	// JST変換
 	// FI->cftime
 	// FI->mftime
 	// FI->aftime
-	//
 	// (例)"c:\"
 	if((FI->iEnd) <= 3)
 	{
@@ -4003,7 +3968,6 @@ iFchk_existPathA(
 	//
 	// 存在チェックはしない
 	// 必要に応じて iFchk_existPathA() で前処理
-	//
 	P83(iFchk_typePathA("."));                       //=> 1
 	P83(iFchk_typePathA(".."));                      //=> 1
 	P83(iFchk_typePathA("\\"));                      //=> 1
@@ -4023,9 +3987,9 @@ iFchk_typePathA(
 	}
 	return (PathIsDirectoryA(path) ? 1 : 2);
 }
-//-----------------------------
+//-------------------------------
 // Binary File のときTRUEを返す
-//-----------------------------
+//-------------------------------
 /* (例)
 	P83(iFchk_Bfile("aaa.exe")); //=> TRUE
 	P83(iFchk_Bfile("aaa.txt")); //=> FALSE
@@ -4678,9 +4642,9 @@ idate_ymdhnsToCjd(
 	}
 	return cjd + ((i_h * 3600 + i_n * 60 + i_s) / 86400.0);
 }
-//----------------------
+//--------------------
 // CJDを時分秒に変換
-//----------------------
+//--------------------
 // v2016-01-06
 INT
 *idate_cjd_to_iAryHhs(
@@ -4689,7 +4653,7 @@ INT
 {
 	INT *rtn = icalloc_INT(3);
 	INT i_h = 0, i_n = 0, i_s = 0;
-	//
+
 	// 小数点部分を抽出
 	// [sec][補正前]  [cjd]
 	//   0  =  0   -  0.00000000000000000
@@ -4702,7 +4666,6 @@ INT
 	//   7  =  7   -  0.00008101851851852
 	//   8  =  8   -  0.00009259259259259
 	//   9  =  9   -  0.00010416666666667
-	//
 	DOUBLE d1 = (cjd - (INT)cjd);
 		d1 += 0.00001; // 補正
 		d1 *= 24.0;
@@ -4718,9 +4681,9 @@ INT
 	*(rtn + 2) = i_s;
 	return rtn;
 }
-//----------------------------------------------------
+//--------------------
 // CJDをYMDHNSに変換
-//----------------------------------------------------
+//--------------------
 // v2014-10-19
 INT
 *idate_cjd_to_iAryYmdhns(
@@ -4806,9 +4769,9 @@ idate_cjd_iWday(
 {
 	return (INT)((INT)cjd + 1) % 7;
 }
-//---------------------------------------
+//-----------------------------------------
 // cjd通日から日="Su", 月="Mo", ...を返す
-//---------------------------------------
+//-----------------------------------------
 // v2013-03-21
 MBS
 *idate_cjd_mWday(
@@ -4831,9 +4794,9 @@ idate_cjd_yeardays(
 	ifree(ai);
 	return (INT)(cjd-idate_ymdhnsToCjd(i1, 1, 0, 0, 0, 0));
 }
-//-------------------------------
+//--------------------------------------
 // 日付の前後 [6] = {y, m, d, h, n, s}
-//-------------------------------
+//--------------------------------------
 /* (例)
 	INT *ai = idate_add(2012, 1, 31, 0, 0, 0, 0, 1, 0, 0, 0, 0);
 	INT i1 = 0;
@@ -4851,22 +4814,21 @@ INT
 	INT i_h,   // 時
 	INT i_n,   // 分
 	INT i_s,   // 秒
-	INT	add_y, // 年
-	INT	add_m, // 月
-	INT	add_d, // 日
-	INT	add_h, // 時
-	INT	add_n, // 分
-	INT	add_s  // 秒
+	INT add_y, // 年
+	INT add_m, // 月
+	INT add_d, // 日
+	INT add_h, // 時
+	INT add_n, // 分
+	INT add_s  // 秒
 )
 {
 	INT *ai1 = 0;
 	INT *ai2 = idate_reYmdhns(i_y, i_m, i_d, i_h, i_n, i_s); // 正規化
 	INT i1 = 0, i2 = 0, flg = 0;
 	DOUBLE cjd = 0.0;
-	//
+
 	// 個々に計算
 	// 手を抜くと「1582-11-10 -1m, -1d」のとき、1582-10-04(期待値は1582-10-03)となる
-	//
 	if(add_y != 0 || add_m != 0)
 	{
 		i1 = (INT)idate_month_end(*(ai2 + 0) + add_y, *(ai2 + 1) + add_m);
@@ -4926,13 +4888,13 @@ INT
 	ifree(ai2);
 	return ai1;
 }
-//---------------------------------------------------------------------
+//-------------------------------------------------------
 // 日付の差 [8] = {sign, y, m, d, h, n, s, days}
 //   (注)便宜上、(日付1<=日付2)に変換して計算するため、
 //       結果は以下のとおりとなるので注意。
 //       ・5/31⇒6/30 :  + 1m
 //       ・6/30⇒5/31 : -30d
-//---------------------------------------------------------------------
+//-------------------------------------------------------
 /* (例)
 	INT *ai = idate_diff(2012, 1, 31, 0, 0, 0, 2012, 2, 29, 0, 0, 0); //=> sign=1, y = 0, m=1, d = 0, h = 0, n = 0, s = 0, days=29
 	INT i1 = 0;
@@ -5140,11 +5102,13 @@ idate_diff_checker(
 // Ymdhns
 	%a : 曜日(例:Su)
 	%A : 曜日数(例:0)
-	%c : 年内の通算日(例:001)
+	%c : 年内の通算日
 	%C : CJD通算日
-	%e : 年内の通算週(例:01)
-	%E : CJD通算週
+	%J : JD通算日
+	%e : 年内の通算週
+
 // Diff
+	%Y : 通算年
 	%M : 通算月
 	%D : 通算日
 	%H : 通算時
@@ -5152,16 +5116,16 @@ idate_diff_checker(
 	%S : 通算秒
 	%W : 通算週
 	%w : 通算週の余日
+
 // 共通
 	%g : Sign "-" "+"
 	%G : Sign "-" のみ
-	%y : 年(例:2016)
-	%Y : 年(例:16)
-	%m : 月(例:01)
-	%d : 日(例:01)
-	%h : 時(例:01)
-	%n : 分(例:01)
-	%s : 秒(例:01)
+	%y : 年(0000)
+	%m : 月(00)
+	%d : 日(00)
+	%h : 時(00)
+	%n : 分(00)
+	%s : 秒(00)
 	%% : "%"
 	\a
 	\n
@@ -5182,7 +5146,7 @@ idate_diff_checker(
 	ifree(s1);
 	ifree(ai);
 */
-// v2019-07-10
+// v2020-08-08
 MBS
 *idate_format_diff(
 	MBS *format, //
@@ -5205,6 +5169,7 @@ MBS
 	MBS s1[32] = "";
 	// Ymdhns で使用
 	DOUBLE cjd = (i_days ? 0.0 : idate_ymdhnsToCjd(i_y, i_m, i_d, i_h, i_n, i_s));
+	DOUBLE jd = idate_cjdToJd(cjd);
 	// 符号チェック
 	if(i_y < 0)
 	{
@@ -5223,13 +5188,13 @@ MBS
 					pEnd = imp_cpy(pEnd, idate_cjd_mWday(cjd));
 					break;
 
-				case 'A': // 曜日数(例:0)
+				case 'A': // 曜日数
 					sprintf(s1, "%d", idate_cjd_iWday(cjd));
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'c': // 年内の通算日(例:001)
-					sprintf(s1, "%03d", idate_cjd_yeardays(cjd));
+				case 'c': // 年内の通算日
+					sprintf(s1, "%d", idate_cjd_yeardays(cjd));
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
@@ -5238,17 +5203,22 @@ MBS
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'e': // 年内の通算週(例:01)
-					sprintf(s1, "%02d", idate_cjd_yearweeks(cjd));
+				case 'J': // JD通算日
+					sprintf(s1, CJD_FORMAT, jd);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'E': // CJD通算週
-					sprintf(s1, "%d", (INT)(cjd / 7) + 1);
+				case 'e': // 年内の通算週
+					sprintf(s1, "%d", idate_cjd_yearweeks(cjd));
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
 				// Diff
+				case 'Y': // 通算年
+					sprintf(s1, "%d", i_y);
+					pEnd = imp_cpy(pEnd, s1);
+					break;
+
 				case 'M': // 通算月
 					sprintf(s1, "%d", (i_y * 12) + i_m);
 					pEnd = imp_cpy(pEnd, s1);
@@ -5260,17 +5230,17 @@ MBS
 					break;
 
 				case 'H': // 通算時
-					sprintf(s1, "%d", (i_days * 24) + i_h);
+					sprintf(s1, "%I64d", ((INT64)i_days * 24) + i_h);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
 				case 'N': // 通算分
-					sprintf(s1, "%d", (i_days * 24 * 60) + (i_h * 60) + i_n);
+					sprintf(s1, "%I64d", ((INT64)i_days * 24 * 60) + (i_h * 60) + i_n);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
 				case 'S': // 通算秒
-					sprintf(s1, "%d", (i_days * 24 * 60 * 60) + (i_h * 60 * 60) + (i_n * 60) + i_s);
+					sprintf(s1, "%I64d", ((INT64)i_days * 24 * 60 * 60) + (i_h * 60 * 60) + (i_n * 60) + i_s);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
@@ -5298,33 +5268,32 @@ MBS
 					}
 					break;
 
-				case 'y': // 年(例:2011)
-				case 'Y': // 年(例:11)
+				case 'y': // 年
 					sprintf(s1, "%04d", i_y);
-					pEnd = imp_cpy(pEnd, (*format == 'y' ? s1 : s1 + 2));
+					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'm': // 月(例:01)
+				case 'm': // 月
 					sprintf(s1, "%02d", i_m);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'd': // 日(例:01)
+				case 'd': // 日
 					sprintf(s1, "%02d", i_d);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'h': // 時(例:01)
+				case 'h': // 時
 					sprintf(s1, "%02d", i_h);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 'n': // 分(例:01)
+				case 'n': // 分
 					sprintf(s1, "%02d", i_n);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
 
-				case 's': // 秒(例:01)
+				case 's': // 秒
 					sprintf(s1, "%02d", i_s);
 					pEnd = imp_cpy(pEnd, s1);
 					break;
@@ -5447,17 +5416,15 @@ MBS
 	MBS *pEnd = 0;
 	INT i1 = iji_searchCnt(pM, quoteBgn);
 	MBS *rtn = icalloc_MBS(imi_len(pM) + (32 * i1));
-	//
+
 	// quoteBgn がないとき、pのクローンを返す
-	//
 	if(!i1)
 	{
 		imp_cpy(rtn, pM);
 		return rtn;
 	}
-	//
+
 	// add_quoteの除外文字
-	//
 	MBS *pAddQuote = (
 		(*add_quote >= '0' && *add_quote <= '9') || *add_quote == '+' || *add_quote == '-' ?
 		"" :
@@ -5471,32 +5438,27 @@ MBS
 	BOOL flg = FALSE;
 	BOOL zero = FALSE;
 	MBS *ts1 = icalloc_MBS(imi_len(pM));
-	//
+
 	// quoteBgn - quoteEnd を日付に変換
-	//
 	p1 = p2 = pM;
 	pEnd = rtn;
 	while(*p2)
 	{
-		//
 		// "[" を探す
 		// pM = "[[", quoteBgn = "["のときを想定しておく
-		//
 		if(*quoteBgn && imb_cmpf(p2, quoteBgn) && !imb_cmpf(p2 + iQuote1, quoteBgn))
 		{
-			bAdd = FALSE; // 初期化
+			bAdd = FALSE;  // 初期化
 			p2 += iQuote1; // quoteBgn.len
 			p1 = p2;
-			//
+
 			// "]" を探す
-			//
 			if(*quoteEnd)
 			{
 				p2 = ijp_searchL(p1, quoteEnd);
 				imp_pcpy(ts1, p1, p2); // 解析用文字列
-				//
+
 				// "[]" の中に数字が含まれているか
-				//
 				i1 = 0;
 				p3 = ts1;
 				while(*p3)
@@ -5508,9 +5470,8 @@ MBS
 					}
 					++p3;
 				}
-				//
+
 				// 例外
-				//
 				p3 = 0;
 				switch((p2 - p1))
 				{
@@ -5609,9 +5570,8 @@ MBS
 						}
 						++p3;
 					}
-					//
+
 					// 略記か日付か
-					//
 					cntPercent = 0;
 					if(bAdd)
 					{
@@ -5624,9 +5584,8 @@ MBS
 							}
 							++p3;
 						}
-						//
+
 						// ±日時
-						//
 						ai = idate_add(
 							i_y, i_m, i_d, i_h, i_n, i_s,
 							add_y, add_m, add_d, add_h, add_n, add_s
@@ -5636,9 +5595,8 @@ MBS
 						{
 							*(ai + 3) = *(ai + 4) = *(ai + 5) = 0;
 						}
-						//
+
 						// 初期化
-						//
 						flg = FALSE;
 						add_y = add_m = add_d = add_h = add_n = add_s = 0;
 					}
@@ -5656,9 +5614,8 @@ MBS
 						}
 						ai = idate_MBS_to_iAryYmdhns(ts1);
 					}
-					//
+
 					// bAddの処理を引き継ぎ
-					//
 					p5 = idate_format_ymdhns(
 						IDATE_FORMAT_STD,
 						*(ai + 0), *(ai + 1), *(ai + 2), *(ai + 3), *(ai + 4), *(ai + 5)
@@ -5803,9 +5760,7 @@ iConsole_progress(
 	P(" =");
 	for(ln = cnt = 0; allCnt > ln; ln++)
 	{
-		//
 		// (実処理を記述)
-		//
 		Sleep(wait_ms); // 必要に応じてsleep
 		for(; d1 <= (ln + 1); d1 += d2, cnt++)
 		{
