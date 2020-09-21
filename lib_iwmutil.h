@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200809"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200831"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2020 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
@@ -364,11 +364,11 @@ VOID     iary_print(MBS **ary);
 typedef struct
 {
 	MBS      fullnameA[IMAX_PATHA]; // (ó·) D:\ä‚ä‘\iwama.txt
-	UINT     iFname;                // MBS= 8Å^WCS= 6
-	UINT     iExt;                  // MBS=13Å^WCS=11
-	UINT     iEnd;                  // MBS=17Å^WCS=15
+	UINT     iFname;                // MBS =  8Å^WCS =  6
+	UINT     iExt;                  // MBS = 13Å^WCS = 11
+	UINT     iEnd;                  // MBS = 17Å^WCS = 15
 	UINT     iAttr;                 // 32
-	UINT     iFtype;                // 2 : ïsñæ=0Å^Dir=1Å^File=2
+	UINT     iFtype;                // 2 : ïsñæ = 0Å^Dir = 1Å^File = 2
 	DOUBLE   cjdCtime;              // (DWORD)dwLowDateTime,(DWORD)dwHighDateTime
 	DOUBLE   cjdMtime;              // Å™
 	DOUBLE   cjdAtime;              // Å™
@@ -379,11 +379,11 @@ $struct_iFinfoA;
 typedef struct
 {
 	WCS      fullnameW[IMAX_PATHW]; // (ó·) D:\ä‚ä‘\iwama.txt
-	UINT     iFname;                // MBS= 8Å^WCS= 6
-	UINT     iExt;                  // MBS=13Å^WCS=11
-	UINT     iEnd;                  // MBS=17Å^WCS=15
+	UINT     iFname;                // MBS =  8Å^WCS =  6
+	UINT     iExt;                  // MBS = 13Å^WCS = 11
+	UINT     iEnd;                  // MBS = 17Å^WCS = 15
 	UINT     iAttr;                 // 32
-	UINT     iFtype;                // 2 : ïsñæ=0Å^Dir=1Å^File=2
+	UINT     iFtype;                // 2 : ïsñæ = 0Å^Dir = 1Å^File = 2
 	DOUBLE   cjdCtime;              // (DWORD)dwLowDateTime,(DWORD)dwHighDateTime
 	DOUBLE   cjdMtime;              // Å™
 	DOUBLE   cjdAtime;              // Å™
@@ -448,7 +448,7 @@ BOOL     iFchk_existPathA(MBS *path);
 UINT     iFchk_typePathA(MBS *path);
 
 BOOL     iFchk_Bfile(MBS *fn);
-#define  iFchk_Tfile(fn)                         (BOOL)(iFchk_typePathA(fn)==2 && !iFchk_Bfile(fn) ? TRUE : FALSE)
+#define  iFchk_Tfile(fn)                         (BOOL)(iFchk_typePathA(fn) == 2 && !iFchk_Bfile(fn) ? TRUE : FALSE)
 
 #define  ichk_attrDirFile(attr)                  (UINT)(((UINT)attr & FILE_ATTRIBUTE_DIRECTORY) ? 1 : 2)
 

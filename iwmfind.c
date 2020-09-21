@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20200531"
+#define   IWMFIND_VERSION     "iwmfind4_20200921"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -1185,13 +1185,14 @@ sql_result_exec(
 				}
 				// êÊ
 				snprintf($sTmp, BUF_SIZE_MAX, "%s\\%s", $sMdOp, p2);
-				p3 = ims_clone($sTmp);
+				p3 = $sTmp;
 					// I_EXT1, I_EXT2ã§ÅAìØñºfileÇÕè„èëÇ´
 					if($iExec == I_EXT1)
 					{
 						if(CopyFile(p1, p3, FALSE))
 						{
-							P("ext1 <= %s\n", p3); // fileÇï\é¶
+							P("cp   <= %s\n", p3); // fileÇï\é¶
+
 							++$uRowCnt;
 						}
 					}
@@ -1213,7 +1214,6 @@ sql_result_exec(
 							++$uRowCnt;
 						}
 					}
-				ifree(p3);
 			ifree(p2);
 			ifree(p1);
 		break;

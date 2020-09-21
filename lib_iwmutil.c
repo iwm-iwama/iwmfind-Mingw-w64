@@ -1198,7 +1198,7 @@ MBS
 // lstrcmp()Å^lstrcmpi()ÇÊÇËà¿ëS
 //--------------------------------
 /*
-	lstrcmp() ÇÕëÂè¨î‰ärÇµÇ©ÇµÇ»Ç¢(TRUE = 0, FALSE=1 or -1)ÇÃÇ≈ÅA
+	lstrcmp() ÇÕëÂè¨î‰ärÇµÇ©ÇµÇ»Ç¢(TRUE = 0, FALSE = 1 or -1)ÇÃÇ≈ÅA
 	î‰ärÇ∑ÇÈï∂éöóÒí∑ÇëµÇ¶ÇƒÇ‚ÇÈïKóvÇ™Ç†ÇÈ.
 */
 /* (ó·)
@@ -2645,7 +2645,7 @@ MBS
 )
 {
 	MBS *rtn = icalloc_MBS(size);
-	MBS *w = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&@"; // FALSE=61Å^TRUE =67
+	MBS *w = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%&@"; // FALSE = 61Å^TRUE = 67
 	UINT uMax = (ext ? 67 : 61);
 	UINT u1 = 0;
 	while(u1 < size)
@@ -2996,7 +2996,7 @@ MBS
 	//    { 1   ,  0,  -1      ,  -1      ,  -1  } // Flg   : 1=OK , 0="" , -1=É_ÉuÉä
 	//  (íç)é¿ç›ÇµÇ»Ç¢DirÇÕñ≥éãÇ≥ÇÍÇÈ
 	MBS *args[] = {"d:", "d:\\A\\B", "d:\\A\\B\\C\\D\\E\\", "", "D:\\A\\B\\", NULL};
-	MBS **pAryUsed = iary_higherDir(args, 2); // äKëw=2
+	MBS **pAryUsed = iary_higherDir(args, 2); // äKëw = 2
 	UINT uAryUsed = iary_size(pAryUsed);
 
 	// depth
@@ -4758,9 +4758,9 @@ INT
 	DOUBLE cjd = idate_ymdhnsToCjd(i_y, i_m, i_d, i_h, i_n, i_s);
 	return idate_cjd_to_iAryYmdhns(cjd);
 }
-//-----------------------------------------
-// cjdí ì˙Ç©ÇÁójì˙(ì˙ = 0, åé=1...)Çï‘Ç∑
-//-----------------------------------------
+//-------------------------------------------
+// cjdí ì˙Ç©ÇÁójì˙(ì˙ = 0, åé = 1...)Çï‘Ç∑
+//-------------------------------------------
 // v2013-03-21
 INT
 idate_cjd_iWday(
@@ -4896,7 +4896,7 @@ INT
 //       ÅE6/30ÅÀ5/31 : -30d
 //-------------------------------------------------------
 /* (ó·)
-	INT *ai = idate_diff(2012, 1, 31, 0, 0, 0, 2012, 2, 29, 0, 0, 0); //=> sign=1, y = 0, m=1, d = 0, h = 0, n = 0, s = 0, days=29
+	INT *ai = idate_diff(2012, 1, 31, 0, 0, 0, 2012, 2, 29, 0, 0, 0); //=> sign = 1, y = 0, m = 1, d = 0, h = 0, n = 0, s = 0, days = 29
 	INT i1 = 0;
 	for(i1 = 0; i1 < 7; i1++) P("[%d]%d\n", i1, *(ai + i1)); //=> 2012, 2, 29, 0, 0, 0, 29
 */
@@ -5655,7 +5655,7 @@ MBS
 // ç°ì˙ÇÃymdhnsÇï‘Ç∑
 //---------------------
 /* (ó·)
-	// ç°ì˙=2012-06-19 00:00:00 ÇÃÇ∆Ç´ÅA
+	// ç°ì˙ = 2012-06-19 00:00:00 ÇÃÇ∆Ç´ÅA
 	idate_now_to_iAryYmdhns(0); // System(-9h) => 2012, 6, 18, 15, 0, 0
 	idate_now_to_iAryYmdhns(1); // Local       => 2012, 6, 19,  0, 0, 0
 */
@@ -5846,7 +5846,7 @@ rtnGeo10toIBL(
 	$Geo geo = rtnGeoVincentry(35.685187, 139.752274, 24.449582, 122.934340);
 	printf("%fkm %fìx\n", geo.dist, geo.angle);
 */
-// v2019-12-29
+// v2020-08-29
 $Geo
 rtnGeoVincentry(
 	DOUBLE lat1, // äJénÅ`à‹ìx
@@ -5861,9 +5861,9 @@ rtnGeoVincentry(
 	}
 
 	/// CONST DOUBLE _A = 6378137.0;
-	CONST DOUBLE _B   = 6356752.314;
-	CONST DOUBLE _F   = 1 / 298.257222101;
-	CONST DOUBLE _RAD = M_PI / 180.0;
+	CONST DOUBLE _B   = 6356752.314140356;    // GRS80
+	CONST DOUBLE _F   = 0.003352810681182319; // 1 / 298.257222101
+	CONST DOUBLE _RAD = 0.017453292519943295; // ÉŒ / 180
 
 	CONST DOUBLE latR1 = lat1 * _RAD;
 	CONST DOUBLE lngR1 = lng1 * _RAD;
@@ -5874,10 +5874,10 @@ rtnGeoVincentry(
 
 	CONST DOUBLE omega = lngR2 - lngR1;
 	CONST DOUBLE tanU1 = f1 * tan(latR1);
-	CONST DOUBLE cosU1 = 1 / sqrt(1 + (tanU1 * tanU1));
+	CONST DOUBLE cosU1 = 1 / sqrt(1 + tanU1 * tanU1);
 	CONST DOUBLE sinU1 = tanU1 * cosU1;
 	CONST DOUBLE tanU2 = f1 * tan(latR2);
-	CONST DOUBLE cosU2 = 1 / sqrt(1 + (tanU2 * tanU2));
+	CONST DOUBLE cosU2 = 1 / sqrt(1 + tanU2 * tanU2);
 	CONST DOUBLE sinU2 = tanU2 * cosU2;
 
 	DOUBLE lamda  = omega;
@@ -5911,10 +5911,6 @@ rtnGeoVincentry(
 		sinAlpha = cosU1 * cosU2 * sinLamda / sinSigma;
 		cos2alpha = 1 - sinAlpha * sinAlpha;
 		cos2sm = cosSigma - 2 * sinU1 * sinU2 / cos2alpha;
-		if(!cos2sm)
-		{
-			cos2sm = 0;
-		}
 		c = _F / 16 * cos2alpha * (4 + _F * (4 - 3 * cos2alpha));
 		dLamda = lamda;
 		lamda = omega + (1 - c) * _F * sinAlpha * (sigma + c * sinSigma * (cos2sm + c * cosSigma * (-1 + 2 * cos2sm * cos2sm)));
@@ -5929,7 +5925,7 @@ rtnGeoVincentry(
 	DOUBLE a = 1 + u2 / 16384 * (4096 + u2 * (-768 + u2 * (320 - 175 * u2)));
 	DOUBLE b = u2 / 1024 * (256 + u2 * (-128 + u2 * (74 - 47 * u2)));
 	DOUBLE dSigma = b * sinSigma * (cos2sm + b / 4 * (cosSigma * (-1 + 2 * cos2sm * cos2sm) - b / 6 * cos2sm * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2sm * cos2sm)));
-	DOUBLE angle = atan2(cosU2 * sinLamda, cosU1 * sinU2 - sinU1 * cosU2 * cosLamda) * 180 / M_PI;
+	DOUBLE angle = atan2(cosU2 * sinLamda, cosU1 * sinU2 - sinU1 * cosU2 * cosLamda) * 57.29577951308232;
 	DOUBLE dist = _B * a * (sigma - dSigma);
 
 	// ïœä∑
