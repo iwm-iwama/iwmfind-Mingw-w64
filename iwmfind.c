@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20200921"
+#define   IWMFIND_VERSION     "iwmfind4_20201025"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -518,21 +518,23 @@ main()
 			if(_as2Size)
 			{
 				// "number"位置を求める
-				$ap2 = iary_simplify(_as2, TRUE); // number表示は１個しか出来ないので重複排除
-					$iSelectPosNumber = 0;
-					while(($p2 = $ap2[$iSelectPosNumber]))
-					{
-						if(imb_cmppi($p2, "number"))
+				$ap2 = ija_token(_as2[0], ", ");
+					$ap3 = iary_simplify($ap2, TRUE); // number表示は１個しか出来ないので重複排除
+						$iSelectPosNumber = 0;
+						while(($p2 = $ap3[$iSelectPosNumber]))
 						{
-							break;
+							if(imb_cmppi($p2, "number"))
+							{
+								break;
+							}
+							++$iSelectPosNumber;
 						}
-						++$iSelectPosNumber;
-					}
-					if(! $p2)
-					{
-						$iSelectPosNumber = -1;
-					}
-					$sSelect = iary_join($ap2, ",");
+						if(! $p2)
+						{
+							$iSelectPosNumber = -1;
+						}
+						$sSelect = iary_join($ap3, ",");
+					ifree($ap3);
 				ifree($ap2);
 			}
 			else
