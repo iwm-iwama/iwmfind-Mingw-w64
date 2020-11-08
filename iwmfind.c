@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20201025"
+#define   IWMFIND_VERSION     "iwmfind4_20201104X"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -1513,7 +1513,7 @@ print_help()
 		P2("   -separate=STR | -sp=STR");
 	iConsole_setTextColor(ColorText1);
 		P2("       ãÊêÿÇËï∂éö");
-		P2("       (ó·) -sp=\"'\"");
+		P2("       (ó·) -sp=\"\\t\"");
 	iConsole_setTextColor(ColorExp3);
 		NL();
 		P2("   --mkdir=DIR | --md=DIR");
