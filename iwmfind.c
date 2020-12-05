@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20201104X"
+#define   IWMFIND_VERSION     "iwmfind4_20201205"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
