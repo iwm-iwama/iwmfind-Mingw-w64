@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20201205"
-#define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2020 iwm-iwama"
+#define   IWMFIND_VERSION     "iwmfind4_20210104"
+#define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
 #include  "sqlite3.h"
@@ -111,7 +111,7 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 				T_FILE.atime_cjd AS atime_cjd, \
 				datetime(T_FILE.atime_cjd - 0.5) AS atime, \
 				T_FILE.size AS size, \
-				T_FILE.number AS number, \
+				T_FILE.number AS LN, \
 				T_FILE.flg AS flg, \
 				depth, \
 				step_byte \
@@ -125,9 +125,9 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   SELECT_VIEW \
 			"SELECT %s FROM V_INDEX %s %s %s ORDER BY %s;"
 #define   OP_SELECT_0 \
-			"number,path"
+			"LN,path"
 #define   OP_SELECT_1 \
-			"number,path,depth,type,size,ctime,mtime,atime"
+			"LN,path,depth,type,size,ctime,mtime,atime"
 #define   OP_SELECT_MKDIR \
 			"step_byte,dir,name,path"
 #define   OP_SELECT_EXTRACT \
@@ -171,7 +171,7 @@ MBS *$sOutDbn = "";
 // -select=STR | -s=STR
 //
 MBS *$sSelect = OP_SELECT_0;
-INT $iSelectPosNumber = 0; // "number"の配列位置
+INT $iSelectPosNumber = 0; // "LN"の配列位置
 //
 // where 句
 // -where=STR | -w=STR
@@ -517,13 +517,13 @@ main()
 		{
 			if(_as2Size)
 			{
-				// "number"位置を求める
+				// "LN"位置を求める
 				$ap2 = ija_token(_as2[0], ", ");
-					$ap3 = iary_simplify($ap2, TRUE); // number表示は１個しか出来ないので重複排除
+					$ap3 = iary_simplify($ap2, TRUE); // LN表示は１個しか出来ないので重複排除
 						$iSelectPosNumber = 0;
 						while(($p2 = $ap3[$iSelectPosNumber]))
 						{
-							if(imb_cmppi($p2, "number"))
+							if(imb_cmppi($p2, "LN"))
 							{
 								break;
 							}
@@ -811,7 +811,7 @@ main()
 				// $sIn, $sOut 両指定のときは, 途中, ファイル名が逆になるので, 後でswap
 				sql_saveOrLoadMemdb($iDbs, (*$sIn ? $sInDbn : $sOutDbn), TRUE);
 				// outDb
-				sql_exec($iDbs, "SELECT number FROM V_INDEX;", sql_result_countOnly); // "SELECT *" は遅い
+				sql_exec($iDbs, "SELECT LN FROM V_INDEX;", sql_result_countOnly); // "SELECT *" は遅い
 			}
 			else
 			{
@@ -1049,7 +1049,7 @@ sql_result_std(
 
 	for(INT _i1 = 0; _i1 < iColumnCount; _i1++)
 	{
-		// [number]
+		// [LN]
 		if(_i1 == $iSelectPosNumber)
 		{
 			$uTmp += snprintf(
@@ -1375,7 +1375,7 @@ print_help()
 		P (" (使用例1) ");
 	iConsole_setTextColor(ColorText1);
 		P2("検索");
-		P ("   %s DIR -r -s=number,path,size -w=\"ext like 'exe'\"\n\n", $program);
+		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $program);
 	iConsole_setTextColor(ColorExp1);
 		P (" (使用例2) ");
 	iConsole_setTextColor(ColorText1);
@@ -1409,7 +1409,7 @@ print_help()
 		NL();
 		P2("   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...");
 	iConsole_setTextColor(ColorText1);
-		P2("       number    (NUM) 表\示順");
+		P2("       LN        (NUM) 表\示順");
 		P2("       path      (STR) dir\\name");
 		P2("       dir       (STR) ディレクトリ名");
 		P2("       name      (STR) ファイル名");
