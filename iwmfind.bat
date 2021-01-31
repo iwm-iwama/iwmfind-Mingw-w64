@@ -8,24 +8,25 @@
 	set fn=%~n0
 	set src=%fn%.c
 	set exec=%fn%.exe
+	set cc=gcc.exe
 	set lib=lib_iwmutil.a sqlite3.a
-	set option=-O2 -lgdi32 -luser32 -lshlwapi
+	set option=-O2 -Wall -lgdi32 -luser32 -lshlwapi
 
 :: make ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 	echo --- Compile -S ------------------------------------
 	for %%s in (%src%) do (
-		gcc.exe %%s -S %option%
+		%cc% %%s -S %option%
 		wc -l %%~ns.s
 	)
 	echo.
 
 	echo --- Make ------------------------------------------
 	for %%s in (%src%) do (
-		gcc.exe %%s -g -c -Wall %option%
+		%cc% %%s -g -c %option%
 		objdump -S -d %%~ns.o > %%~ns.objdump.txt
 	)
-	gcc.exe *.o %lib% -o %exec% %option%
+	%cc% *.o %lib% -o %exec% %option%
 	echo %exec%
 
 	:: å„èàóù

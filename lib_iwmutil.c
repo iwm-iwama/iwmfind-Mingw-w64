@@ -4530,9 +4530,9 @@ idate_MBStoCjd(
 	ifree(p1);
 	return rtn;
 }
-//--------------------------
-// strÇîNåéì˙Ç…ï™äÑ(char)
-//--------------------------
+//--------------------
+// strÇîNåéì˙Ç…ï™äÑ
+//--------------------
 /* (ó·)
 	MBS **ary = idate_MBS_to_mAryYmdhns("-2012-8-12 12:45:00");
 		iary_print(ary); //=> "-2012" "8" "12" "12" "45" "00"
@@ -5393,7 +5393,7 @@ MBS
 	ifree(p1);
 	ifree(ai1);
 */
-// v2016-01-18
+// v2021-01-31
 MBS
 *idate_replace_format_ymdhns(
 	MBS *pM,        // ïœä∑ëŒè€ï∂éöóÒ
@@ -5502,7 +5502,7 @@ MBS
 						{
 							case 'Y': // îN => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 'y': // îN => "yyyy-mm-dd hh:nn:ss"
 								add_y = i1;
 								flg = TRUE;
@@ -5511,7 +5511,7 @@ MBS
 
 							case 'M': // åé => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 'm': // åé => "yyyy-mm-dd hh:nn:ss"
 								add_m = i1;
 								flg = TRUE;
@@ -5520,7 +5520,7 @@ MBS
 
 							case 'W': // èT => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 'w': // èT => "yyyy-mm-dd hh:nn:ss"
 								add_d = i1 * 7;
 								flg = TRUE;
@@ -5529,7 +5529,7 @@ MBS
 
 							case 'D': // ì˙ => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 'd': // ì˙ => "yyyy-mm-dd hh:nn:ss"
 								add_d = i1;
 								flg = TRUE;
@@ -5538,7 +5538,7 @@ MBS
 
 							case 'H': // éû => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 'h': // éû => "yyyy-mm-dd hh:nn:ss"
 								add_h = i1;
 								flg = TRUE;
@@ -5547,7 +5547,7 @@ MBS
 
 							case 'N': // ï™ => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 'n': // ï™ => "yyyy-mm-dd hh:nn:ss"
 								add_n = i1;
 								flg = TRUE;
@@ -5556,7 +5556,7 @@ MBS
 
 							case 'S': // ïb => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								continue;
+								/* Falls through. */ // -Wimplicit-fallthrough=3
 							case 's': // ïb => "yyyy-mm-dd hh:nn:ss"
 								add_s = i1;
 								flg = TRUE;
@@ -5846,7 +5846,7 @@ rtnGeo10toIBL(
 	$Geo geo = rtnGeoVincentry(35.685187, 139.752274, 24.449582, 122.934340);
 	printf("%fkm %fìx\n", geo.dist, geo.angle);
 */
-// v2020-08-29
+// v2020-08-31
 $Geo
 rtnGeoVincentry(
 	DOUBLE lat1, // äJénÅ`à‹ìx

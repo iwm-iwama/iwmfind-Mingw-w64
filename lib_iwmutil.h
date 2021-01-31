@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20200831"
-#define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2020 iwm-iwama"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20210131"
+#define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2021 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
 #include <ctype.h>
