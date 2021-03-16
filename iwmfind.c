@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20210109"
+#define   IWMFIND_VERSION     "iwmfind4_20210316"
 #define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -1353,14 +1353,10 @@ VOID
 print_version()
 {
 	LN();
-	P(" %s\n",
-		IWMFIND_COPYRIGHT
-	);
-	P("   Ver.%s+%s+SQLite%s\n",
-		IWMFIND_VERSION,
-		LIB_IWMUTIL_VERSION,
-		SQLITE_VERSION
-	);
+	P(" %s", IWMFIND_COPYRIGHT);
+	NL();
+	P("   Ver.%s+%s+SQLite%s", IWMFIND_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
+	NL();
 }
 
 VOID
@@ -1370,30 +1366,38 @@ print_help()
 		print_version();
 		LN();
 	iConsole_setTextColor(ColorBgText1);
-		P (" %s [Dir] [Option] \n\n", $program);
+		P (" %s [Dir] [Option] ", $program);
 	iConsole_setTextColor(ColorExp1);
+		NL();
+		NL();
 		P (" (例１) ");
 	iConsole_setTextColor(ColorText1);
 		P2("検索");
-		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $program);
+		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"", $program);
 	iConsole_setTextColor(ColorExp1);
+		NL();
+		NL();
 		P (" (例２) ");
 	iConsole_setTextColor(ColorText1);
 		P2("検索結果をファイルへ保存");
-		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]\n\n", $program);
+		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]", $program);
 	iConsole_setTextColor(ColorExp1);
+		NL();
+		NL();
 		P (" (例３) ");
 	iConsole_setTextColor(ColorText1);
 		P2("検索対象をファイルから読込");
-		P ("   %s -i=FILE [Option]\n\n", $program);
+		P ("   %s -i=FILE [Option]", $program);
 	iConsole_setTextColor(ColorExp2);
+		NL();
+		NL();
 		P2(" [Dir]");
 	iConsole_setTextColor(ColorText1);
 		P2("   検索対象 dir");
 		P2("   (注) 複数指定の場合、上位Dirに集約する");
 		P2("   (例) \"c:\\\" \"c:\\windows\\\" => \"c:\\\"");
-		NL();
 	iConsole_setTextColor(ColorExp2);
+		NL();
 		P2(" [Option]");
 	iConsole_setTextColor(ColorExp3);
 		P2("   -out=FILE | -o=FILE");
@@ -1428,7 +1432,9 @@ print_help()
 		P2("       atime     (STR) アクセス日時 ctime参照");
 		NL();
 		P2("       ※１ COLUMN指定なしの場合");
-		P ("            %s 順で表\示\n\n", OP_SELECT_1);
+		P ("            %s 順で表\示", OP_SELECT_1);
+		NL();
+		NL();
 		P2("       ※２ SQLite演算子／関数を利用可能\");
 		P2("            (例)");
 		P2("              abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
@@ -1473,8 +1479,8 @@ print_help()
 	iConsole_setTextColor(ColorText1);
 		P2("       (例) -st=\"STR1 ASC, STR2 DESC\"");
 		P2("            STR1を順ソ\ート, STR2を逆順ソ\ート");
-		NL();
 	iConsole_setTextColor(ColorExp3);
+		NL();
 		P2("   -recursive | -r");
 	iConsole_setTextColor(ColorText1);
 		P2("       下階層を全検索");
