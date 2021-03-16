@@ -43,6 +43,7 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 //  4 = Maroon   5 = Purple   6 = Olive    7 = Silver
 //  8 = Gray     9 = Blue    10 = Lime    11 = Aqua
 // 12 = Red     13 = Fuchsia 14 = Yellow  15 = White
+#define   ColorTitle          (15 + ( 9 * 16))
 #define   ColorHeaderFooter   ( 7 + ( 0 * 16))
 #define   ColorBgText1        (15 + (12 * 16))
 #define   ColorExp1           (13 + ( 0 * 16))
@@ -1365,11 +1366,17 @@ print_help()
 	iConsole_setTextColor(ColorHeaderFooter);
 		print_version();
 		LN();
+	iConsole_setTextColor(ColorTitle);
+		P (" ÉtÉ@ÉCÉãåüçı ");
+	iConsole_setTextColor($colorDefault);
+		NL();
+		NL();
 	iConsole_setTextColor(ColorBgText1);
 		P (" %s [Dir] [Option] ", $program);
+	iConsole_setTextColor($colorDefault);
+		NL();
+		NL();
 	iConsole_setTextColor(ColorExp1);
-		NL();
-		NL();
 		P (" (ó·ÇP) ");
 	iConsole_setTextColor(ColorText1);
 		P2("åüçı");
