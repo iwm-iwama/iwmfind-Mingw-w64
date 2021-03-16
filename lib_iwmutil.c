@@ -1992,16 +1992,16 @@ MBS
 // ”Žš•¶Žš—ñ‚ð‹æØ‚é
 //---------------------
 /* (—á)
-	P82(ims_addTokenNStr(" + 000123456.7890"));   //=> " + 123, 456.7890"
-	P82(ims_addTokenNStr(".000123456.7890"));     //=> "0.000123456.7890"
-	P82(ims_addTokenNStr("+.000123456.7890"));    //=> " + 0.000123456.7890"
-	P82(ims_addTokenNStr("0000abcdefg.7890"));    //=> "0abcdefg.7890"
-	P82(ims_addTokenNStr("1234abcdefg.7890"));    //=> "1, 234abcdefg.7890"
-	P82(ims_addTokenNStr(" + 0000abcdefg.7890")); //=> " + 0abcdefg.7890"
-	P82(ims_addTokenNStr(" + 1234abcdefg.7890")); //=> " + 1, 234abcdefg.7890"
-	P82(ims_addTokenNStr("+abcdefg.7890"));       //=> "+abcdefg0.7890"
-	P82(ims_addTokenNStr("}1234567890.12345"));  //=> "}1, 234, 567, 890.12345"
-	P82(ims_addTokenNStr("aiu‚ ‚¢‚¤@ŠâŠÔ"));      //=> "aiu‚ ‚¢‚¤@ŠâŠÔ"
+	P82(ims_addTokenNStr("+000123456.7890"));    //=> "+123,456.7890"
+	P82(ims_addTokenNStr(".000123456.7890"));    //=> "0.000123456.7890"
+	P82(ims_addTokenNStr("+.000123456.7890"));   //=> "+0.000123456.7890"
+	P82(ims_addTokenNStr("0000abcdefg.7890"));   //=> "0abcdefg.7890"
+	P82(ims_addTokenNStr("1234abcdefg.7890"));   //=> "1,234abcdefg.7890"
+	P82(ims_addTokenNStr("+0000abcdefg.7890"));  //=> "+0abcdefg.7890"
+	P82(ims_addTokenNStr("+1234abcdefg.7890"));  //=> "+1,234abcdefg.7890"
+	P82(ims_addTokenNStr("+abcdefg.7890"));      //=> "+abcdefg0.7890"
+	P82(ims_addTokenNStr("}1234567890.12345")); //=> "}1,234,567,890.12345"
+	P82(ims_addTokenNStr("aiu‚ ‚¢‚¤@ŠâŠÔ"));     //=> "aiu‚ ‚¢‚¤@ŠâŠÔ"
 */
 // v2016-02-18
 MBS
@@ -2067,7 +2067,7 @@ MBS
 			--pB;
 		}
 
-		// (2-22) ", " •t—^ => "123, 456"
+		// (2-22) ", " •t—^ => "123,456"
 		p1 = ims_pclone(pB, pE);
 			u1 = pE - pB;
 			if(u1 > 3)
@@ -2081,7 +2081,7 @@ MBS
 				{
 					if(u2 > 0 && u2 < u1)
 					{
-						pRtnE = imp_cpy(pRtnE, ", ");
+						pRtnE = imp_cpy(pRtnE, ",");
 					}
 					pRtnE = imp_pcpy(pRtnE, p1 + u2, p1 + u2 + 3);
 					u2 += 3;
@@ -2487,7 +2487,7 @@ MT_initByAry(
 	MT_au1 = icalloc(MT_N, sizeof(UINT), FALSE);
 	// SeedÝ’è
 	#define InitLen 4
-	UINT init_key[InitLen] = {0x217, 0x426, 0x1210, 0xBBBB};
+	UINT init_key[InitLen] = {0x217, 0x1226, 0x1210, 0xBBBB};
 	// fixOn == FALSE ‚Ì‚Æ‚«ŽžŠÔ‚ÅƒVƒƒƒbƒtƒ‹
 	if(!fixOn)
 	{
@@ -5846,7 +5846,7 @@ rtnGeo10toIBL(
 	$Geo geo = rtnGeoVincentry(35.685187, 139.752274, 24.449582, 122.934340);
 	printf("%fkm %f“x\n", geo.dist, geo.angle);
 */
-// v2020-08-31
+// v2021-03-05
 $Geo
 rtnGeoVincentry(
 	DOUBLE lat1, // ŠJŽn`ˆÜ“x
@@ -5894,9 +5894,7 @@ rtnGeoVincentry(
 	DOUBLE cos2sm    = 0.0;
 	DOUBLE c = 0.0;
 
-	INT count = 0;
-
-	do
+	while(TRUE)
 	{
 		sinLamda = sin(lamda);
 		cosLamda = cos(lamda);
@@ -5914,12 +5912,11 @@ rtnGeoVincentry(
 		c = _F / 16 * cos2alpha * (4 + _F * (4 - 3 * cos2alpha));
 		dLamda = lamda;
 		lamda = omega + (1 - c) * _F * sinAlpha * (sigma + c * sinSigma * (cos2sm + c * cosSigma * (-1 + 2 * cos2sm * cos2sm)));
-		if(count++ > 10)
+		if(fabs(lamda - dLamda) <= 1e-12)
 		{
 			break;
 		}
 	}
-	while(fabs(lamda - dLamda) > 1e-12);
 
 	DOUBLE u2 = cos2alpha * (1 - f1 * f1) / (f1 * f1);
 	DOUBLE a = 1 + u2 / 16384 * (4096 + u2 * (-768 + u2 * (320 - 175 * u2)));
