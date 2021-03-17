@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------
-#define   IWMFIND_VERSION     "iwmfind4_20210316"
-#define   IWMFIND_COPYRIGHT   "Copyright (C)2009-2021 iwm-iwama"
+#define   IWM_VERSION         "iwmfind4_20210317"
+#define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
 #include  "sqlite3.h"
@@ -43,16 +43,22 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 //  4 = Maroon   5 = Purple   6 = Olive    7 = Silver
 //  8 = Gray     9 = Blue    10 = Lime    11 = Aqua
 // 12 = Red     13 = Fuchsia 14 = Yellow  15 = White
-#define   ColorTitle          (15 + ( 9 * 16))
-#define   ColorHeaderFooter   ( 7 + ( 0 * 16))
-#define   ColorBgText1        (15 + (12 * 16))
-#define   ColorExp1           (13 + ( 0 * 16))
-#define   ColorExp2           (14 + ( 0 * 16))
-#define   ColorExp3           (11 + ( 0 * 16))
-#define   ColorText1          (15 + ( 0 * 16))
+
+// タイトル
+#define   COLOR01             (15 + ( 9 * 16))
+// 入力例／注
+#define   COLOR11             (15 + (12 * 16))
+#define   COLOR12             (13 + ( 0 * 16))
+#define   COLOR13             (12 + ( 0 * 16))
+// 引数
+#define   COLOR21             (14 + ( 0 * 16))
+#define   COLOR22             (11 + ( 0 * 16))
+// 説明
+#define   COLOR91             (15 + ( 0 * 16))
+#define   COLOR92             ( 7 + ( 0 * 16))
 
 #define   MEMDB     ":memory:"
-#define   OLDDB     ("iwmfind.db."IWMFIND_VERSION)
+#define   OLDDB     ("iwmfind.db."IWM_VERSION)
 #define   CREATE_T_DIR \
 			"CREATE TABLE T_DIR( \
 				dir_id INTEGER, \
@@ -299,7 +305,6 @@ main()
 	if(imb_cmpp($args[0], "-v") || imb_cmpp($args[0], "-version"))
 	{
 		print_version();
-		LN();
 		imain_end();
 	}
 
@@ -850,8 +855,8 @@ main()
 		print_footer();
 	}
 
-	// デバッグ
-	/// icalloc_mapPrint();ifree_all();icalloc_mapPrint();
+	// Debug
+	/// icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
 
 	imain_end();
 }
@@ -1020,7 +1025,7 @@ sql_columnName(
 	MBS **sColumnNames
 )
 {
-	iConsole_setTextColor(ColorExp3);
+	PZ(COLOR22, NULL);
 		for(INT _i1 = 0; _i1 < iColumnCount; _i1++)
 		{
 			MBS *p1 = U2M(sColumnNames[_i1]);
@@ -1031,7 +1036,7 @@ sql_columnName(
 			);
 			ifree(p1);
 		}
-	iConsole_setTextColor($colorDefault); // 現在の文字色／背景色
+	PZ($colorDefault, NULL);
 	return SQLITE_OK;
 }
 
@@ -1309,7 +1314,7 @@ VOID
 print_footer()
 {
 	MBS *p1 = 0;
-	iConsole_setTextColor(ColorExp3);
+	PZ(COLOR22, NULL);
 		LN();
 		P(
 			"-- %u row%s in set ( %.3f sec)\n",
@@ -1317,7 +1322,7 @@ print_footer()
 			($uRowCnt > 1 ? "s" : ""), // 複数形
 			iExecSec_next($execMS)
 		);
-	iConsole_setTextColor(ColorExp1);
+	PZ(COLOR12, NULL);
 		P2("--");
 		for(UINT _u1 = 0; _u1 < $aDirListSize; _u1++)
 		{
@@ -1347,79 +1352,49 @@ print_footer()
 			P("--  -separate    \"%s\"\n", $sSeparate);
 		}
 		P2("--");
-	iConsole_setTextColor($colorDefault); // 現在の文字色／背景色
+	PZ($colorDefault, NULL);
 }
 
 VOID
 print_version()
 {
 	LN();
-	P(" %s", IWMFIND_COPYRIGHT);
-	NL();
-	P("   Ver.%s+%s+SQLite%s", IWMFIND_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
-	NL();
+	P (" %s\n", IWM_COPYRIGHT);
+	P ("   Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
+	LN();
 }
 
 VOID
 print_help()
 {
-	iConsole_setTextColor(ColorHeaderFooter);
+	PZ(COLOR92, NULL);
 		print_version();
-		LN();
-	iConsole_setTextColor(ColorTitle);
-		P (" ファイル検索 ");
-	iConsole_setTextColor($colorDefault);
-		NL();
-		NL();
-	iConsole_setTextColor(ColorBgText1);
-		P (" %s [Dir] [Option] ", $program);
-	iConsole_setTextColor($colorDefault);
-		NL();
-		NL();
-	iConsole_setTextColor(ColorExp1);
-		P (" (例１) ");
-	iConsole_setTextColor(ColorText1);
-		P2("検索");
-		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"", $program);
-	iConsole_setTextColor(ColorExp1);
-		NL();
-		NL();
-		P (" (例２) ");
-	iConsole_setTextColor(ColorText1);
-		P2("検索結果をファイルへ保存");
-		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]", $program);
-	iConsole_setTextColor(ColorExp1);
-		NL();
-		NL();
-		P (" (例３) ");
-	iConsole_setTextColor(ColorText1);
-		P2("検索対象をファイルから読込");
-		P ("   %s -i=FILE [Option]", $program);
-	iConsole_setTextColor(ColorExp2);
-		NL();
-		NL();
-		P2(" [Dir]");
-	iConsole_setTextColor(ColorText1);
-		P2("   検索対象 dir");
-		P2("   (注) 複数指定の場合、上位Dirに集約する");
-		P2("   (例) \"c:\\\" \"c:\\windows\\\" => \"c:\\\"");
-	iConsole_setTextColor(ColorExp2);
-		NL();
-		P2(" [Option]");
-	iConsole_setTextColor(ColorExp3);
-		P2("   -out=FILE | -o=FILE");
-	iConsole_setTextColor(ColorText1);
-		P2("       出力ファイル");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -in=FILE | -i=FILE");
-	iConsole_setTextColor(ColorText1);
-		P2("       入力ファイル");
-		P2("       (注) 検索対象 dir と併用できない");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...");
-	iConsole_setTextColor(ColorText1);
+	PZ(COLOR01, " ファイル検索 \n\n");
+	PZ(COLOR11, " %s [Dir] [Option] \n\n", $program);
+	PZ(COLOR12, " (例１) ");
+	PZ(COLOR91, "検索\n");
+		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $program);
+	PZ(COLOR12, " (例２) ");
+	PZ(COLOR91, "検索結果をファイルへ保存\n");
+		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]\n\n", $program);
+	PZ(COLOR12, " (例３) ");
+	PZ(COLOR91, "検索対象をファイルから読込\n");
+		P ("   %s -i=FILE [Option]\n\n", $program);
+	PZ(COLOR21, " [Dir]\n");
+	PZ(COLOR91, "   検索対象 dir\n");
+	PZ(COLOR12, "   (例) ");
+	PZ(COLOR91, "\"c:\\\" \"c:\\windows\\\" => \"c:\\\"\n");
+	PZ(COLOR13, "   (注) ");
+	PZ(COLOR91, "複数指定の場合、上位Dirに集約する\n\n");
+	PZ(COLOR21, " [Option]\n");
+	PZ(COLOR22, "   -out=FILE | -o=FILE\n");
+	PZ(COLOR91, "       出力ファイル\n\n");
+	PZ(COLOR22, "   -in=FILE | -i=FILE\n");
+	PZ(COLOR91, "       入力ファイル\n");
+	PZ(COLOR13, "       (注) ");
+	PZ(COLOR91, "検索対象 dir と併用できない\n\n");
+	PZ(COLOR22, "   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...\n");
+	PZ(COLOR91, NULL);
 		P2("       LN        (NUM) 表\示順");
 		P2("       path      (STR) dir\\name");
 		P2("       dir       (STR) ディレクトリ名");
@@ -1436,14 +1411,12 @@ print_help()
 		P2("       mtime_cjd (NUM) 更新日時     ctime_cjd参照");
 		P2("       mtime     (STR) 更新日時     ctime参照");
 		P2("       atime_cjd (NUM) アクセス日時 ctime_cjd参照");
-		P2("       atime     (STR) アクセス日時 ctime参照");
-		NL();
+		P2("       atime     (STR) アクセス日時 ctime参照\n");
 		P2("       ※１ COLUMN指定なしの場合");
-		P ("            %s 順で表\示", OP_SELECT_1);
-		NL();
-		NL();
+		P ("            %s 順で表\示\n\n", OP_SELECT_1);
 		P2("       ※２ SQLite演算子／関数を利用可能\");
-		P2("            (例)");
+	PZ(COLOR12, "            (例)\n");
+	PZ(COLOR91, NULL);
 		P2("              abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
 		P2("              glob(X, Y)  ifnull(X, Y)  instr(X, Y)  hex(X)");
 		P2("              last_insert_rowid()  length(X)");
@@ -1458,125 +1431,82 @@ print_help()
 		P2("              sqlite_version()  substr(X, Y, Z) substr(X, Y)");
 		P2("              total_changes()  trim(X) trim(X, Y)  typeof(X)  unlikely(X)");
 		P2("              unicode(X)  upper(X)  zeroblob(N)");
-		P2("           (注) マルチバイト文字を１文字として処理.");
-		P2("           (参考) http://www.sqlite.org/lang_corefunc.html");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -where=STR | -w=STR");
-	iConsole_setTextColor(ColorText1);
-		P2("       (例１) \"size<=100 or size>1000000\"");
-		P2("       (例２) \"type like 'f' and name like 'abc??.*'\"");
+	PZ(COLOR13, "           (注) ");
+	PZ(COLOR91, "マルチバイト文字を１文字として処理\n");
+		P2("           (参考) http://www.sqlite.org/lang_corefunc.html\n");
+	PZ(COLOR22, "   -where=STR | -w=STR\n");
+	PZ(COLOR12, "       (例１) ");
+	PZ(COLOR91, "\"size<=100 or size>1000000\"\n");
+	PZ(COLOR12, "       (例２) ");
+	PZ(COLOR91, "\"type like 'f' and name like 'abc??.*'\"\n");
 		P2("              '?' '_' は任意の1文字");
 		P2("              '*' '%' は任意の0文字以上");
-		P2("       (例３) 基準日 \"2010-12-10 12:00:00\"のとき");
+	PZ(COLOR12, "       (例３) ");
+	PZ(COLOR91, "基準日 \"2010-12-10 12:00:00\"のとき\n");
 		P2("              \"ctime>[-10D]\"   => \"ctime>'2010-11-30 00:00:00'\"");
 		P2("              \"ctime>[-10d]\"   => \"ctime>'2010-11-30 12:00:00'\"");
 		P2("              \"ctime>[-10d*]\"  => \"ctime>'2010-11-30 %'\"");
 		P2("              \"ctime>[-10d%]\" => \"ctime>'2010-11-30 %'\"");
-		P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -group=STR | -g=STR");
-	iConsole_setTextColor(ColorText1);
-		P2("       (例) -g=\"STR1, STR2\"");
-		P2("            STR1とSTR2をグループ毎にまとめる");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -sort=\"STR [ASC|DESC]\" | -st=\"STR [ASC|DESC]\"");
-	iConsole_setTextColor(ColorText1);
-		P2("       (例) -st=\"STR1 ASC, STR2 DESC\"");
-		P2("            STR1を順ソ\ート, STR2を逆順ソ\ート");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -recursive | -r");
-	iConsole_setTextColor(ColorText1);
-		P2("       下階層を全検索");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -depth=NUM1,NUM2 | -d=NUM1,NUM2");
-	iConsole_setTextColor(ColorText1);
-		P2("       検索する下階層を指定");
-		P2("       (例１) -d=\"1\"");
+		P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n");
+	PZ(COLOR22, "   -group=STR | -g=STR\n");
+	PZ(COLOR12, "       (例) ");
+	PZ(COLOR91, "-g=\"STR1, STR2\"\n");
+		P2("            STR1とSTR2をグループ毎にまとめる\n");
+	PZ(COLOR22, "   -sort=\"STR [ASC|DESC]\" | -st=\"STR [ASC|DESC]\"\n");
+	PZ(COLOR12, "       (例) ");
+	PZ(COLOR91, "-st=\"STR1 ASC, STR2 DESC\"\n");
+		P2("            STR1を順ソ\ート, STR2を逆順ソ\ート\n");
+	PZ(COLOR22, "   -recursive | -r\n");
+	PZ(COLOR91, "       下階層を全検索\n\n");
+	PZ(COLOR22, "   -depth=NUM1,NUM2 | -d=NUM1,NUM2\n");
+	PZ(COLOR91, "       検索する下階層を指定\n");
+	PZ(COLOR12, "       (例１) ");
+	PZ(COLOR91, "-d=\"1\"\n");
 		P2("              1階層のみ検索");
-		P2("       (例２) -d=\"3\",\"5\"");
-		P2("              3～5階層を検索");
-		NL();
+	PZ(COLOR12, "       (例２) ");
+	PZ(COLOR91, "-d=\"3\",\"5\"\n");
+		P2("              3～5階層を検索\n");
 		P2("       ※１ CurrentDir は \"0\"");
 		P2("       ※２ -depth と -where における depth の挙動の違い");
 		P2("            ◇(速い) -depth は指定された階層のみ検索を行う");
-		P2("            ◇(遅い) -where内でのdepthによる検索は全階層のdir／fileに対して行う");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -noheader | -nh");
-	iConsole_setTextColor(ColorText1);
-		P2("       ヘッダ情報を表\示しない");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -nofooter | -nf");
-	iConsole_setTextColor(ColorText1);
-		P2("       フッタ情報を表\示しない");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -quote=STR | -qt=STR");
-	iConsole_setTextColor(ColorText1);
-		P2("       囲み文字");
-		P2("       (例) -qt=\"'\"");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   -separate=STR | -sp=STR");
-	iConsole_setTextColor(ColorText1);
-		P2("       区切り文字");
-		P2("       (例) -sp=\"\\t\"");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --mkdir=DIR | --md=DIR");
-	iConsole_setTextColor(ColorText1);
-		P2("       検索結果からdirを抽出し DIR に作成する(階層維持)");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --copy=DIR | --cp=DIR");
-	iConsole_setTextColor(ColorText1);
-		P2("       --mkdir + 検索結果を DIR にコピーする(階層維持)");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --move=DIR | --mv=DIR");
-	iConsole_setTextColor(ColorText1);
-		P2("       --mkdir + 検索結果を DIR に移動する(階層維持)");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --move2=DIR | --mv2=DIR");
-	iConsole_setTextColor(ColorText1);
-		P2("       --mkdir + --move + 移動元の空dirを削除する(階層維持)");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --extract1=DIR | --ext1=DIR");
-	iConsole_setTextColor(ColorText1);
-		P2("       --mkdir + 検索結果ファイルのみ抽出し DIR にコピーする");
-		P2("       (注) 階層を維持しない／同名ファイルは上書き");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --extract2=DIR | --ext2=DIR");
-	iConsole_setTextColor(ColorText1);
-		P2("       --mkdir + 検索結果ファイルのみ抽出し DIR に移動する");
-		P2("       (注) 階層を維持しない／同名ファイルは上書き");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --remove | --rm");
-	iConsole_setTextColor(ColorText1);
-		P2("       検索結果のfileのみ削除する（dirは削除しない）");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --remove2 | --rm2");
-	iConsole_setTextColor(ColorText1);
-		P2("       --remove + 空dirを削除する");
-	iConsole_setTextColor(ColorExp3);
-		NL();
-		P2("   --replace=FILE | --rep=FILE");
-	iConsole_setTextColor(ColorText1);
-		P2("       検索結果(複数) を FILE の内容で置換(上書き)する／ファイル名は変更しない");
-		P2("       (例) -w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"");
-	iConsole_setTextColor(ColorHeaderFooter);
-		NL();
+		P2("            ◇(遅い) -where内でのdepthによる検索は全階層のdir／fileに対して行う\n");
+	PZ(COLOR22, "   -noheader | -nh\n");
+	PZ(COLOR91, "       ヘッダ情報を表\示しない\n\n");
+	PZ(COLOR22, "   -nofooter | -nf\n");
+	PZ(COLOR91, "       フッタ情報を表\示しない\n\n");
+	PZ(COLOR22, "   -quote=STR | -qt=STR\n");
+	PZ(COLOR91, "       囲み文字\n");
+	PZ(COLOR12, "       (例) ");
+	PZ(COLOR91, "-qt=\"'\"\n\n");
+	PZ(COLOR22, "   -separate=STR | -sp=STR\n");
+	PZ(COLOR91, "       区切り文字\n");
+	PZ(COLOR12, "       (例) ");
+	PZ(COLOR91, "-sp=\"\\t\"\n\n");
+	PZ(COLOR22, "   --mkdir=DIR | --md=DIR\n");
+	PZ(COLOR91, "       検索結果からdirを抽出し DIR に作成する(階層維持)\n\n");
+	PZ(COLOR22, "   --copy=DIR | --cp=DIR\n");
+	PZ(COLOR91, "       --mkdir + 検索結果を DIR にコピーする(階層維持)\n\n");
+	PZ(COLOR22, "   --move=DIR | --mv=DIR\n");
+	PZ(COLOR91, "       --mkdir + 検索結果を DIR に移動する(階層維持)\n\n");
+	PZ(COLOR22, "   --move2=DIR | --mv2=DIR\n");
+	PZ(COLOR91, "       --mkdir + --move + 移動元の空dirを削除する(階層維持)\n\n");
+	PZ(COLOR22, "   --extract1=DIR | --ext1=DIR\n");
+	PZ(COLOR91, "       --mkdir + 検索結果ファイルのみ抽出し DIR にコピーする\n");
+	PZ(COLOR13, "       (注) ");
+	PZ(COLOR91, "階層を維持しない／同名ファイルは上書き\n\n");
+	PZ(COLOR22, "   --extract2=DIR | --ext2=DIR\n");
+	PZ(COLOR91, "       --mkdir + 検索結果ファイルのみ抽出し DIR に移動する\n");
+	PZ(COLOR13, "       (注) ");
+	PZ(COLOR91, "階層を維持しない／同名ファイルは上書き\n\n");
+	PZ(COLOR22, "   --remove | --rm\n");
+	PZ(COLOR91, "       検索結果のfileのみ削除する（dirは削除しない）\n\n");
+	PZ(COLOR22, "   --remove2 | --rm2\n");
+	PZ(COLOR91, "       --remove + 空dirを削除する\n\n");
+	PZ(COLOR22, "   --replace=FILE | --rep=FILE\n");
+	PZ(COLOR91, "       検索結果(複数) を FILE の内容で置換(上書き)する／ファイル名は変更しない\n");
+	PZ(COLOR12, "       (例) ");
+	PZ(COLOR91, "-w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"\n\n");
+	PZ(COLOR92, NULL);
 		LN();
-	iConsole_setTextColor($colorDefault); // 元の文字色／背景色
+	PZ($colorDefault, NULL);
 }
