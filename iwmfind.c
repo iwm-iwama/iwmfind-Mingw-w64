@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210319"
+#define   IWM_VERSION         "iwmfind4_20210320"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -280,20 +280,20 @@ INT
 main()
 {
 	// lib_iwmutil 初期化
-	iCLI_getCmd();       //=> $IWM_Cmd
-	iCLI_getCmdOpt();    //=> $IWM_CmdOption, $IWM_CmdOptionSize
+	iCLI_getCMD();       //=> $IWM_CMD
+	iCLI_getARGS();      //=> $IWM_ARGV, $IWM_ARGC
 	iConsole_getColor(); //=> $IWM_ColorDefault, $IWM_StdoutHandle
 	iExecSec_init();     //=> $IWM_ExecSecBgn
 
 	// -h | -help
-	if(! $IWM_CmdOptionSize || imb_cmpp($IWM_CmdOption[0], "-h") || imb_cmpp($IWM_CmdOption[0], "-help"))
+	if(! $IWM_ARGC || imb_cmpp($IWM_ARGV[0], "-h") || imb_cmpp($IWM_ARGV[0], "-help"))
 	{
 		print_help();
 		imain_end();
 	}
 
 	// -v | -version
-	if(imb_cmpp($IWM_CmdOption[0], "-v") || imb_cmpp($IWM_CmdOption[0], "-version"))
+	if(imb_cmpp($IWM_ARGV[0], "-v") || imb_cmpp($IWM_ARGV[0], "-version"))
 	{
 		print_version();
 		imain_end();
@@ -312,9 +312,9 @@ main()
 			-depth
 		をチェック
 	*/
-	for($i1 = 0; $i1 < $IWM_CmdOptionSize; $i1++)
+	for($i1 = 0; $i1 < $IWM_ARGC; $i1++)
 	{
-		MBS **_as1 = ija_split($IWM_CmdOption[$i1], "=", "\"\"\'\'", FALSE);
+		MBS **_as1 = ija_split($IWM_ARGV[$i1], "=", "\"\"\'\'", FALSE);
 		MBS **_as2 = ija_split(_as1[1], ",", "\"\"\'\'", TRUE);
 		UINT _as2Size = iary_size(_as2);
 
@@ -357,16 +357,16 @@ main()
 	INT iArgsPos = 0;
 
 	// [0..n]
-	for($i1 = 0; $i1 < $IWM_CmdOptionSize; $i1++)
+	for($i1 = 0; $i1 < $IWM_ARGC; $i1++)
 	{
-		if(*$IWM_CmdOption[$i1] == '-')
+		if(*$IWM_ARGV[$i1] == '-')
 		{
 			break;
 		}
 		// dir不在
-		if(iFchk_typePathA($IWM_CmdOption[$i1]) != 1)
+		if(iFchk_typePathA($IWM_ARGV[$i1]) != 1)
 		{
-			P("[Err] Dir(%d) '%s' は存在しない!\n", ($i1 + 1), $IWM_CmdOption[$i1]);
+			P("[Err] Dir(%d) '%s' は存在しない!\n", ($i1 + 1), $IWM_ARGV[$i1]);
 		}
 	}
 	iArgsPos = $i1;
@@ -377,7 +377,7 @@ main()
 		$ap1 = icalloc_MBS_ary(iArgsPos);
 			for($i1 = 0; $i1 < iArgsPos; $i1++)
 			{
-				$ap1[$i1] = iFget_AdirA($IWM_CmdOption[$i1]); // 絶対PATHへ変換
+				$ap1[$i1] = iFget_AdirA($IWM_ARGV[$i1]); // 絶対PATHへ変換
 			}
 			// 上位Dirのみ取得
 			$aDirList = iary_higherDir($ap1, $iDepthMax);
@@ -386,9 +386,9 @@ main()
 	}
 
 	// [n..]
-	for($i1 = iArgsPos; $i1 < $IWM_CmdOptionSize; $i1++)
+	for($i1 = iArgsPos; $i1 < $IWM_ARGC; $i1++)
 	{
-		MBS **_as1 = ija_split($IWM_CmdOption[$i1], "=", "\"\"\'\'", FALSE);
+		MBS **_as1 = ija_split($IWM_ARGV[$i1], "=", "\"\"\'\'", FALSE);
 		MBS **_as2 = ija_split(_as1[1], ",", "\"\"\'\'", TRUE);
 		UINT _as2Size = iary_size(_as2);
 
@@ -1361,16 +1361,16 @@ print_help()
 	PZ(COLOR92, NULL);
 		print_version();
 	PZ(COLOR01, " ファイル検索 \n\n");
-	PZ(COLOR11, " %s [Dir] [Option] \n\n", $IWM_Cmd);
+	PZ(COLOR11, " %s [Dir] [Option] \n\n", $IWM_CMD);
 	PZ(COLOR12, " (例１) ");
 	PZ(COLOR91, "検索\n");
-		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $IWM_Cmd);
+		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $IWM_CMD);
 	PZ(COLOR12, " (例２) ");
 	PZ(COLOR91, "検索結果をファイルへ保存\n");
-		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]\n\n", $IWM_Cmd);
+		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]\n\n", $IWM_CMD);
 	PZ(COLOR12, " (例３) ");
 	PZ(COLOR91, "検索対象をファイルから読込\n");
-		P ("   %s -i=FILE [Option]\n\n", $IWM_Cmd);
+		P ("   %s -i=FILE [Option]\n\n", $IWM_CMD);
 	PZ(COLOR21, " [Dir]\n");
 	PZ(COLOR91, "   検索対象 dir\n");
 	PZ(COLOR12, "   (例) ");
