@@ -26,14 +26,13 @@ VOID print_help();
 INT  $i1 = 0, $i2 = 0;
 MBS  *$p1 = 0, *$p2 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0}, **$ap3 = {0};
-MBS  *$sTmp = 0;         // Tmp文字列
-UINT $uTmp = 0;          // $sTmpの文字長
-UINT $uDirId = 0;        // Dir数
-UINT $uAllCnt = 0;       // 検索数
-UINT $uStepCnt = 0;      // Currentdir位置
-UINT $uRowCnt = 0;       // 処理行数
-UINT $ifind22BufCnt = 0; // ifind22()で使用
-U8N  *$sqlU = 0;         // SQL
+MBS  *$sTmp = 0;    // Tmp文字列
+UINT $uTmp = 0;     // $sTmpの文字長
+UINT $uDirId = 0;   // Dir数
+UINT $uAllCnt = 0;  // 検索数
+UINT $uStepCnt = 0; // Currentdir位置
+UINT $uRowCnt = 0;  // 処理行数
+U8N  *$sqlU = 0;    // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   BUF_SIZE_MAX        (1024 * 8)
@@ -982,13 +981,6 @@ ifind22(
 		sqlite3_bind_double($stmt2, 8, FI->cjdAtime);
 		sqlite3_bind_int64 ($stmt2, 9, FI->iFsize);
 	sqlite3_step($stmt2);
-
-	// 待ち表示
-	if(++$ifind22BufCnt >= 1000)
-	{
-		fprintf(stderr, "Counting... %u\r", $uAllCnt);
-		$ifind22BufCnt = 0;
-	}
 }
 
 VOID
@@ -1025,7 +1017,7 @@ sql_columnName(
 )
 {
 	PZ(COLOR22, NULL);
-		for(INT $i1 = 0; $i1 < iColumnCount; $i1++)
+		for($i1 = 0; $i1 < iColumnCount; $i1++)
 		{
 			MBS *p1 = U2M(sColumnNames[$i1]);
 			P(
@@ -1052,7 +1044,7 @@ sql_result_std(
 
 	++$uRowCnt;
 
-	for(INT $i1 = 0; $i1 < iColumnCount; $i1++)
+	for($i1 = 0; $i1 < iColumnCount; $i1++)
 	{
 		// [LN]
 		if($i1 == $iSelectPosNumber)
