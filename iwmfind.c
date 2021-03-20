@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210320"
+#define   IWM_VERSION         "iwmfind4_20210321"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -26,13 +26,14 @@ VOID print_help();
 INT  $i1 = 0, $i2 = 0;
 MBS  *$p1 = 0, *$p2 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0}, **$ap3 = {0};
-MBS  *$sTmp = 0;    // 後で icalloc_MBS()
-UINT $uTmp = 0;
-UINT $uDirId = 0;   // Dir数
-UINT $uAllCnt = 0;  // 検索数
-UINT $uStepCnt = 0; // Currentdir位置
-UINT $uRowCnt = 0;  // 処理行数
-U8N  *$sqlU = 0;    // SQL
+MBS  *$sTmp = 0;         // Tmp文字列
+UINT $uTmp = 0;          // $sTmpの文字長
+UINT $uDirId = 0;        // Dir数
+UINT $uAllCnt = 0;       // 検索数
+UINT $uStepCnt = 0;      // Currentdir位置
+UINT $uRowCnt = 0;       // 処理行数
+UINT $ifind22BufCnt = 0; // ifind22()で使用
+U8N  *$sqlU = 0;         // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   BUF_SIZE_MAX        (1024 * 8)
@@ -981,6 +982,13 @@ ifind22(
 		sqlite3_bind_double($stmt2, 8, FI->cjdAtime);
 		sqlite3_bind_int64 ($stmt2, 9, FI->iFsize);
 	sqlite3_step($stmt2);
+
+	// 待ち表示
+	if(++$ifind22BufCnt >= 1000)
+	{
+		fprintf(stderr, "Counting... %u\r", $uAllCnt);
+		$ifind22BufCnt = 0;
+	}
 }
 
 VOID
@@ -1017,13 +1025,13 @@ sql_columnName(
 )
 {
 	PZ(COLOR22, NULL);
-		for(INT _i1 = 0; _i1 < iColumnCount; _i1++)
+		for(INT $i1 = 0; $i1 < iColumnCount; $i1++)
 		{
-			MBS *p1 = U2M(sColumnNames[_i1]);
+			MBS *p1 = U2M(sColumnNames[$i1]);
 			P(
 				"[%s]%s",
 				p1,
-				(_i1 == iColumnCount - 1 ? "\n" : $sSeparate)
+				($i1 == iColumnCount - 1 ? "\n" : $sSeparate)
 			);
 			ifree(p1);
 		}
@@ -1044,10 +1052,10 @@ sql_result_std(
 
 	++$uRowCnt;
 
-	for(INT _i1 = 0; _i1 < iColumnCount; _i1++)
+	for(INT $i1 = 0; $i1 < iColumnCount; $i1++)
 	{
 		// [LN]
-		if(_i1 == $iSelectPosNumber)
+		if($i1 == $iSelectPosNumber)
 		{
 			$uTmp += snprintf(
 				$sTmp + $uTmp,
@@ -1056,12 +1064,12 @@ sql_result_std(
 				$sQuote,
 				$uRowCnt,
 				$sQuote,
-				(_i1 == iColumnCount2 ? "\n" : $sSeparate)
+				($i1 == iColumnCount2 ? "\n" : $sSeparate)
 			);
 		}
 		else
 		{
-			p1 = U2M(sColumnValues[_i1]);
+			p1 = U2M(sColumnValues[$i1]);
 			$uTmp += snprintf(
 				$sTmp + $uTmp,
 				BUF_SIZE_MIN,
@@ -1069,7 +1077,7 @@ sql_result_std(
 				$sQuote,
 				p1,
 				$sQuote,
-				(_i1 == iColumnCount2 ? "\n" : $sSeparate)
+				($i1 == iColumnCount2 ? "\n" : $sSeparate)
 			);
 			ifree(p1);
 		}
@@ -1172,6 +1180,7 @@ sql_result_exec(
 			ifree(p2);
 			ifree(p1);
 		break;
+
 		case(I_EXT1): // --extract1
 		case(I_EXT2): // --extract2
 			p1 = U2M(sColumnValues[0]); // path
@@ -1216,6 +1225,7 @@ sql_result_exec(
 			ifree(p2);
 			ifree(p1);
 		break;
+
 		case(I_RP): // --replace
 			p1 = U2M(sColumnValues[0]); // type
 			p2 = U2M(sColumnValues[1]); // path
@@ -1227,6 +1237,7 @@ sql_result_exec(
 			ifree(p2);
 			ifree(p1);
 		break;
+
 		case(I_RM):  // --remove
 		case(I_RM2): // --remove2
 			p1 = U2M(sColumnValues[0]); // path
