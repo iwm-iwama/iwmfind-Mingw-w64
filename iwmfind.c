@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210321"
+#define   IWM_VERSION         "iwmfind4_20210403"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -8,6 +8,7 @@
 INT  main();
 MBS  *sql_escape(MBS *pM);
 VOID ifind10($struct_iFinfoW *FI, WCS *dir, UINT dirLenJ, INT depth);
+VOID ifind10_CallCnt(UINT uCnt);
 VOID ifind21(WCS *dir, UINT dirId, INT depth);
 VOID ifind22($struct_iFinfoW *FI, UINT dirId, WCS *fname);
 VOID sql_exec(sqlite3 *db, const MBS *sql, sqlite3_callback cb);
@@ -26,13 +27,14 @@ VOID print_help();
 INT  $i1 = 0, $i2 = 0;
 MBS  *$p1 = 0, *$p2 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0}, **$ap3 = {0};
-MBS  *$sTmp = 0;    // Tmp文字列
-UINT $uTmp = 0;     // $sTmpの文字長
-UINT $uDirId = 0;   // Dir数
-UINT $uAllCnt = 0;  // 検索数
-UINT $uStepCnt = 0; // Currentdir位置
-UINT $uRowCnt = 0;  // 処理行数
-U8N  *$sqlU = 0;    // SQL
+MBS  *$sTmp = 0;            // Tmp文字列
+UINT $uTmp = 0;             // $sTmpの文字長
+UINT $uDirId = 0;           // Dir数
+UINT $uAllCnt = 0;          // 検索数
+UINT $uCallCnt_ifind10 = 0; // ifind10()が呼ばれた回数
+UINT $uStepCnt = 0;         // CurrentDir位置
+UINT $uRowCnt = 0;          // 処理行数
+U8N  *$sqlU = 0;            // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   BUF_SIZE_MAX        (1024 * 8)
@@ -773,6 +775,8 @@ main()
 							ifind10(FI, wp1, $uStepCnt, 0); // 本処理
 						ifree(wp1);
 					}
+					// 経過を表示
+					ifind10_CallCnt(0);
 					// トランザクション終了
 					sql_exec($iDbs, "COMMIT", 0);
 					// 後処理
@@ -946,6 +950,22 @@ ifind10(
 		}
 		while(FindNextFileW(hfind, &F));
 	FindClose(hfind);
+	// 経過を表示
+	ifind10_CallCnt(++$uCallCnt_ifind10);
+}
+
+VOID
+ifind10_CallCnt(
+	UINT uCnt
+)
+{
+	if(uCnt >= 500 || ! uCnt)
+	{
+		PZ(10, NULL);
+		fprintf(stderr, " > %u\r", $uAllCnt);
+		PZ(-1, NULL);
+		$uCallCnt_ifind10 = 0;
+	}
 }
 
 VOID
