@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210403"
+#define   IWM_VERSION         "iwmfind4_20210422"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //--------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -27,8 +27,10 @@ VOID print_help();
 INT  $i1 = 0, $i2 = 0;
 MBS  *$p1 = 0, *$p2 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0}, **$ap3 = {0};
-MBS  *$sTmp = 0;            // Tmp文字列
-UINT $uTmp = 0;             // $sTmpの文字長
+MBS  *$sBuf = 0;            // Tmp文字列
+UINT $uBuf = 0;             // $sBufの文字長
+#define   BUF_SIZE_MAX        (1024 * 100)
+#define   BUF_SIZE_DMZ        (2048)
 UINT $uDirId = 0;           // Dir数
 UINT $uAllCnt = 0;          // 検索数
 UINT $uCallCnt_ifind10 = 0; // ifind10()が呼ばれた回数
@@ -37,8 +39,6 @@ UINT $uRowCnt = 0;          // 処理行数
 U8N  *$sqlU = 0;            // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
-#define   BUF_SIZE_MAX        (1024 * 8)
-#define   BUF_SIZE_MIN        (1024 * 3) // 3k-4k程度
 
 // [文字色] + ([背景色] * 16)
 //  0 = Black    1 = Navy     2 = Green    3 = Teal
@@ -129,6 +129,8 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 			"UPDATE T_FILE SET flg=1 WHERE id IN (SELECT id FROM V_INDEX %s);"
 #define   DELETE_EXEC99_1 \
 			"DELETE FROM T_FILE WHERE flg IS NULL;"
+#define   DELETE_EXEC99_2 \
+			"DELETE FROM T_FILE WHERE (dir_id IN (SELECT dir_id FROM T_DIR WHERE dir LIKE '%\\System Volume Information\\%')) AND ext_pos!=0;"
 #define   UPDATE_EXEC99_2 \
 			"UPDATE T_FILE SET flg=NULL;"
 #define   SELECT_VIEW \
@@ -302,7 +304,7 @@ main()
 	}
 
 	// 大域変数
-	$sTmp = icalloc_MBS(BUF_SIZE_MAX);
+	$sBuf = icalloc_MBS(BUF_SIZE_MAX + BUF_SIZE_DMZ);
 
 	// 現在時間
 	$aiNow = (INT*)idate_cjd_to_iAryYmdhns(idate_nowToCjd(TRUE));
@@ -557,8 +559,8 @@ main()
 			if(_as2Size)
 			{
 				$sWhere0 = sql_escape(_as2[0]);
-				snprintf($sTmp, BUF_SIZE_MAX, "WHERE %s AND", $sWhere0);
-				$sWhere1 = ims_clone($sTmp);
+				sprintf($sBuf, "WHERE %s AND", $sWhere0);
+				$sWhere1 = ims_clone($sBuf);
 			}
 		}
 
@@ -567,8 +569,8 @@ main()
 		{
 			if(_as2Size)
 			{
-				snprintf($sTmp, BUF_SIZE_MAX, "GROUP BY %s", _as2[0]);
-				$sGroup = ims_clone($sTmp);
+				sprintf($sBuf, "GROUP BY %s", _as2[0]);
+				$sGroup = ims_clone($sBuf);
 			}
 		}
 
@@ -684,8 +686,8 @@ main()
 	}
 
 	// -where 関係を一括変換
-	snprintf($sTmp, BUF_SIZE_MAX, "depth>=%d AND depth<=%d", $iDepthMin, $iDepthMax);
-	$sWhere2 = ims_clone($sTmp);
+	sprintf($sBuf, "depth>=%d AND depth<=%d", $iDepthMin, $iDepthMax);
+	$sWhere2 = ims_clone($sBuf);
 
 	// -sort 関係を一括変換
 	if($iExec >= I_MV)
@@ -724,10 +726,10 @@ main()
 
 	// SQL作成
 	// SJIS で作成（DOSプロンプト対応）
-	snprintf($sTmp, BUF_SIZE_MAX, SELECT_VIEW, $sSelect, $sWhere1, $sWhere2, $sGroup, $sSort);
+	snprintf($sBuf, BUF_SIZE_MAX, SELECT_VIEW, $sSelect, $sWhere1, $sWhere2, $sGroup, $sSort);
 
 	// SJIS を UTF-8 に変換（Sqlite3対応）
-	$sqlU = M2U($sTmp);
+	$sqlU = M2U($sBuf);
 
 	// -in DBを指定
 	// UTF-8
@@ -777,6 +779,8 @@ main()
 					}
 					// 経過を表示
 					ifind10_CallCnt(0);
+					// 文字化けを起こすSystemFileを削除
+					sql_exec($iDbs, DELETE_EXEC99_2, 0);
 					// トランザクション終了
 					sql_exec($iDbs, "COMMIT", 0);
 					// 後処理
@@ -798,10 +802,10 @@ main()
 				if(*$sWhere0)
 				{
 					sql_exec($iDbs, "BEGIN", 0); // トランザクション開始
-						$p1 = ims_ncat_clone("WHERE ", $sWhere0, NULL);
-							snprintf($sTmp, BUF_SIZE_MAX, UPDATE_EXEC99_1, $p1);
+						$p1 = ims_cats("WHERE ", $sWhere0, NULL);
+							sprintf($sBuf, UPDATE_EXEC99_1, $p1);
 						ifree($p1);
-						$p1 = M2U($sTmp); // UTF-8で処理
+						$p1 = M2U($sBuf); // UTF-8で処理
 							sql_exec($iDbs, $p1, 0);             // フラグを立てる
 							sql_exec($iDbs, DELETE_EXEC99_1, 0); // 不要データ削除
 							sql_exec($iDbs, UPDATE_EXEC99_2, 0); // フラグ初期化
@@ -825,8 +829,8 @@ main()
 					// カラム名表示
 					if(! $bNoHeader)
 					{
-						snprintf($sTmp, BUF_SIZE_MAX, "SELECT %s FROM V_INDEX WHERE id=1;", $sSelect);
-						sql_exec($iDbs, $sTmp, sql_columnName);
+						sprintf($sBuf, "SELECT %s FROM V_INDEX WHERE id=1;", $sSelect);
+						sql_exec($iDbs, $sBuf, sql_columnName);
 					}
 					sql_exec($iDbs, $sqlU, sql_result_std);
 				}
@@ -917,8 +921,9 @@ ifind10(
 		return;
 	}
 	WIN32_FIND_DATAW F;
-	WCS *wp1 = iwp_cpy(FI->fullnameW, dir);
-		iwp_cpy(wp1, L"*");
+	WCS *wp1 = FI->fullnameW + iwi_cpy(FI->fullnameW, dir);
+		*wp1 = L'*';
+		*(++wp1) = 0;
 	HANDLE hfind = FindFirstFileW(FI->fullnameW, &F);
 		// 読み飛ばす Depth
 		BOOL bMinDepthFlg = (depth >= $iDepthMin ? TRUE : FALSE);
@@ -961,7 +966,7 @@ ifind10_CallCnt(
 {
 	if(uCnt >= 500 || ! uCnt)
 	{
-		PZ(10, NULL);
+		PZ(9, NULL);
 		fprintf(stderr, " > %u\r", $uAllCnt);
 		PZ(-1, NULL);
 		$uCallCnt_ifind10 = 0;
@@ -1012,7 +1017,7 @@ sql_exec(
 {
 	MBS *p_err = 0; // SQLiteが使用
 	$uRowCnt = 0;
-	$uTmp = 0;
+	$uBuf = 0;
 
 	if(sqlite3_exec(db, sql, cb, 0, &p_err))
 	{
@@ -1022,9 +1027,9 @@ sql_exec(
 	}
 
 	// sql_result_std() 対応
-	if($uTmp)
+	if($uBuf)
 	{
-		P($sTmp);
+		P($sBuf);
 	}
 }
 
@@ -1069,9 +1074,8 @@ sql_result_std(
 		// [LN]
 		if($i1 == $iSelectPosNumber)
 		{
-			$uTmp += snprintf(
-				$sTmp + $uTmp,
-				BUF_SIZE_MIN,
+			$uBuf += sprintf(
+				$sBuf + $uBuf,
 				"%s%u%s%s",
 				$sQuote,
 				$uRowCnt,
@@ -1082,24 +1086,23 @@ sql_result_std(
 		else
 		{
 			p1 = U2M(sColumnValues[$i1]);
-			$uTmp += snprintf(
-				$sTmp + $uTmp,
-				BUF_SIZE_MIN,
-				"%s%s%s%s",
-				$sQuote,
-				p1,
-				$sQuote,
-				($i1 == iColumnCount2 ? "\n" : $sSeparate)
-			);
+				$uBuf += sprintf(
+					$sBuf + $uBuf,
+					"%s%s%s%s",
+					$sQuote,
+					p1,
+					$sQuote,
+					($i1 == iColumnCount2 ? "\n" : $sSeparate)
+				);
 			ifree(p1);
 		}
 	}
 
 	// Buf を Print
-	if($uTmp > BUF_SIZE_MIN)
+	if($uBuf > BUF_SIZE_MAX)
 	{
-		P($sTmp);
-		$uTmp = 0;
+		P($sBuf);
+		$uBuf = 0;
 	}
 
 	return SQLITE_OK;
@@ -1141,16 +1144,16 @@ sql_result_exec(
 			p2 = U2M(sColumnValues[2]);  // name
 			p3 = U2M(sColumnValues[3]);  // path
 			// mkdir
-			snprintf($sTmp, BUF_SIZE_MAX, "%s\\%s", $sMdOp, p1e);
-				if(imk_dir($sTmp))
+			sprintf($sBuf, "%s\\%s", $sMdOp, p1e);
+				if(imk_dir($sBuf))
 				{
-					P("md   => %s\n", $sTmp); // 新規dirを表示
+					P("md   => %s\n", $sBuf); // 新規dirを表示
 					++$uRowCnt;
 				}
 			// 先
 			p4 = ims_clone(p1e);
-				snprintf($sTmp, BUF_SIZE_MAX, "%s\\%s%s", $sMdOp, p4, p2);
-			p5 = ims_clone($sTmp);
+				sprintf($sBuf, "%s\\%s%s", $sMdOp, p4, p2);
+			p5 = ims_clone($sBuf);
 			if($iExec == I_CP)
 			{
 				if(CopyFile(p3, p5, FALSE))
@@ -1204,8 +1207,8 @@ sql_result_exec(
 					++$uRowCnt;
 				}
 				// 先
-				snprintf($sTmp, BUF_SIZE_MAX, "%s\\%s", $sMdOp, p2);
-				p3 = $sTmp;
+				sprintf($sBuf, "%s\\%s", $sMdOp, p2);
+				p3 = $sBuf;
 					// I_EXT1, I_EXT2共、同名fileは上書き
 					if($iExec == I_EXT1)
 					{
