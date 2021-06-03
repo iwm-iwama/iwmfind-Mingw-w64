@@ -1,7 +1,7 @@
-//--------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210422"
+//------------------------------------------------------------------------------
+#define   IWM_VERSION         "iwmfind4_20210603"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
-//--------------------------------------------------------------------
+//------------------------------------------------------------------------------
 #include  "lib_iwmutil.h"
 #include  "sqlite3.h"
 
@@ -1375,28 +1375,29 @@ print_footer()
 VOID
 print_version()
 {
+	PZ(COLOR92, NULL);
 	LN();
-	P (" %s\n", IWM_COPYRIGHT);
-	P ("   Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
+	P(" %s\n", IWM_COPYRIGHT);
+	P("   Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
 	LN();
+	PZ(-1, NULL);
 }
 
 VOID
 print_help()
 {
-	PZ(COLOR92, NULL);
-		print_version();
+	print_version();
 	PZ(COLOR01, " ファイル検索 \n\n");
 	PZ(COLOR11, " %s [Dir] [Option] \n\n", $IWM_CMD);
 	PZ(COLOR12, " (例１) ");
 	PZ(COLOR91, "検索\n");
-		P ("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $IWM_CMD);
+	P("   %s DIR -r -s=LN,path,size -w=\"ext like 'exe'\"\n\n", $IWM_CMD);
 	PZ(COLOR12, " (例２) ");
 	PZ(COLOR91, "検索結果をファイルへ保存\n");
-		P ("   %s DIR1 DIR2 ... -r -o=FILE [Option]\n\n", $IWM_CMD);
+	P("   %s DIR1 DIR2 ... -r -o=FILE [Option]\n\n", $IWM_CMD);
 	PZ(COLOR12, " (例３) ");
 	PZ(COLOR91, "検索対象をファイルから読込\n");
-		P ("   %s -i=FILE [Option]\n\n", $IWM_CMD);
+	P("   %s -i=FILE [Option]\n\n", $IWM_CMD);
 	PZ(COLOR21, " [Dir]\n");
 	PZ(COLOR91, "   検索対象 dir\n");
 	PZ(COLOR12, "   (例) ");
@@ -1412,81 +1413,81 @@ print_help()
 	PZ(COLOR91, "検索対象 dir と併用できない\n\n");
 	PZ(COLOR22, "   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...\n");
 	PZ(COLOR91, NULL);
-		P2("       LN        (NUM) 表\示順");
-		P2("       path      (STR) dir\\name");
-		P2("       dir       (STR) ディレクトリ名");
-		P2("       name      (STR) ファイル名");
-		P2("       ext       (STR) 拡張子");
-		P2("       depth     (NUM) ディレクトリ階層 = 0..");
-		P2("       type      (STR) ディレクトリ = d／ファイル = f");
-		P2("       attr_num  (NUM) 属性");
-		P2("       attr      (STR) 属性 \"[d|f][r|-][h|-][s|-][a|-]\"");
-		P2("                       [dir|file][read-only][hidden][system][archive]");
-		P2("       size      (NUM) ファイルサイズ = byte");
-		P2("       ctime_cjd (NUM) 作成日時     -4712/01/01 00:00:00始点の通算日／CJD=JD-0.5");
-		P2("       ctime     (STR) 作成日時     \"yyyy-mm-dd hh:nn:ss\"");
-		P2("       mtime_cjd (NUM) 更新日時     ctime_cjd参照");
-		P2("       mtime     (STR) 更新日時     ctime参照");
-		P2("       atime_cjd (NUM) アクセス日時 ctime_cjd参照");
-		P2("       atime     (STR) アクセス日時 ctime参照\n");
-		P2("       ※１ COLUMN指定なしの場合");
-		P ("            %s 順で表\示\n\n", OP_SELECT_1);
-		P2("       ※２ SQLite演算子／関数を利用可能\");
+	P2("       LN        (NUM) 表\示順");
+	P2("       path      (STR) dir\\name");
+	P2("       dir       (STR) ディレクトリ名");
+	P2("       name      (STR) ファイル名");
+	P2("       ext       (STR) 拡張子");
+	P2("       depth     (NUM) ディレクトリ階層 = 0..");
+	P2("       type      (STR) ディレクトリ = d／ファイル = f");
+	P2("       attr_num  (NUM) 属性");
+	P2("       attr      (STR) 属性 \"[d|f][r|-][h|-][s|-][a|-]\"");
+	P2("                       [dir|file][read-only][hidden][system][archive]");
+	P2("       size      (NUM) ファイルサイズ = byte");
+	P2("       ctime_cjd (NUM) 作成日時     -4712/01/01 00:00:00始点の通算日／CJD=JD-0.5");
+	P2("       ctime     (STR) 作成日時     \"yyyy-mm-dd hh:nn:ss\"");
+	P2("       mtime_cjd (NUM) 更新日時     ctime_cjd参照");
+	P2("       mtime     (STR) 更新日時     ctime参照");
+	P2("       atime_cjd (NUM) アクセス日時 ctime_cjd参照");
+	P2("       atime     (STR) アクセス日時 ctime参照\n");
+	P2("       ※１ COLUMN指定なしの場合");
+	P("            %s 順で表\示\n\n", OP_SELECT_1);
+	P2("       ※２ SQLite演算子／関数を利用可能\");
 	PZ(COLOR12, "            (例)\n");
 	PZ(COLOR91, NULL);
-		P2("              abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
-		P2("              glob(X, Y)  ifnull(X, Y)  instr(X, Y)  hex(X)");
-		P2("              last_insert_rowid()  length(X)");
-		P2("              like(X, Y)  like(X, Y, Z)  likelihood(X, Y)  likely(X)");
-		P2("              load_extension(X)  load_extension(X, Y)  lower(X)");
-		P2("              ltrim(X)  ltrim(X, Y)  max(X, Y, ...)  min(X, Y, ...)");
-		P2("              nullif(X, Y)  printf(FORMAT, ...)  quote(X)");
-		P2("              random()  randomblob(N)  replace(X, Y, Z)");
-		P2("              round(X)  round(X, Y)  rtrim(X)  rtrim(X, Y)");
-		P2("              soundex(X)  sqlite_compileoption_get(N)");
-		P2("              sqlite_compileoption_used(X)  sqlite_source_id()");
-		P2("              sqlite_version()  substr(X, Y, Z) substr(X, Y)");
-		P2("              total_changes()  trim(X) trim(X, Y)  typeof(X)  unlikely(X)");
-		P2("              unicode(X)  upper(X)  zeroblob(N)");
+	P2("              abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
+	P2("              glob(X, Y)  ifnull(X, Y)  instr(X, Y)  hex(X)");
+	P2("              last_insert_rowid()  length(X)");
+	P2("              like(X, Y)  like(X, Y, Z)  likelihood(X, Y)  likely(X)");
+	P2("              load_extension(X)  load_extension(X, Y)  lower(X)");
+	P2("              ltrim(X)  ltrim(X, Y)  max(X, Y, ...)  min(X, Y, ...)");
+	P2("              nullif(X, Y)  printf(FORMAT, ...)  quote(X)");
+	P2("              random()  randomblob(N)  replace(X, Y, Z)");
+	P2("              round(X)  round(X, Y)  rtrim(X)  rtrim(X, Y)");
+	P2("              soundex(X)  sqlite_compileoption_get(N)");
+	P2("              sqlite_compileoption_used(X)  sqlite_source_id()");
+	P2("              sqlite_version()  substr(X, Y, Z) substr(X, Y)");
+	P2("              total_changes()  trim(X) trim(X, Y)  typeof(X)  unlikely(X)");
+	P2("              unicode(X)  upper(X)  zeroblob(N)");
 	PZ(COLOR13, "           (注) ");
 	PZ(COLOR91, "マルチバイト文字を１文字として処理\n");
-		P2("           (参考) http://www.sqlite.org/lang_corefunc.html\n");
+	P2("           (参考) http://www.sqlite.org/lang_corefunc.html\n");
 	PZ(COLOR22, "   -where=STR | -w=STR\n");
 	PZ(COLOR12, "       (例１) ");
 	PZ(COLOR91, "\"size<=100 or size>1000000\"\n");
 	PZ(COLOR12, "       (例２) ");
 	PZ(COLOR91, "\"type like 'f' and name like 'abc??.*'\"\n");
-		P2("              '?' '_' は任意の1文字");
-		P2("              '*' '%' は任意の0文字以上");
+	P2("              '?' '_' は任意の1文字");
+	P2("              '*' '%' は任意の0文字以上");
 	PZ(COLOR12, "       (例３) ");
 	PZ(COLOR91, "基準日 \"2010-12-10 12:00:00\"のとき\n");
-		P2("              \"ctime>[-10D]\"   => \"ctime>'2010-11-30 00:00:00'\"");
-		P2("              \"ctime>[-10d]\"   => \"ctime>'2010-11-30 12:00:00'\"");
-		P2("              \"ctime>[-10d*]\"  => \"ctime>'2010-11-30 %'\"");
-		P2("              \"ctime>[-10d%]\" => \"ctime>'2010-11-30 %'\"");
-		P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n");
+	P2("              \"ctime>[-10D]\"   => \"ctime>'2010-11-30 00:00:00'\"");
+	P2("              \"ctime>[-10d]\"   => \"ctime>'2010-11-30 12:00:00'\"");
+	P2("              \"ctime>[-10d*]\"  => \"ctime>'2010-11-30 %'\"");
+	P2("              \"ctime>[-10d%]\" => \"ctime>'2010-11-30 %'\"");
+	P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n");
 	PZ(COLOR22, "   -group=STR | -g=STR\n");
 	PZ(COLOR12, "       (例) ");
 	PZ(COLOR91, "-g=\"STR1, STR2\"\n");
-		P2("            STR1とSTR2をグループ毎にまとめる\n");
+	P2("            STR1とSTR2をグループ毎にまとめる\n");
 	PZ(COLOR22, "   -sort=\"STR [ASC|DESC]\" | -st=\"STR [ASC|DESC]\"\n");
 	PZ(COLOR12, "       (例) ");
 	PZ(COLOR91, "-st=\"STR1 ASC, STR2 DESC\"\n");
-		P2("            STR1を順ソ\ート, STR2を逆順ソ\ート\n");
+	P2("            STR1を順ソ\ート, STR2を逆順ソ\ート\n");
 	PZ(COLOR22, "   -recursive | -r\n");
 	PZ(COLOR91, "       下階層を全検索\n\n");
 	PZ(COLOR22, "   -depth=NUM1,NUM2 | -d=NUM1,NUM2\n");
 	PZ(COLOR91, "       検索する下階層を指定\n");
 	PZ(COLOR12, "       (例１) ");
 	PZ(COLOR91, "-d=\"1\"\n");
-		P2("              1階層のみ検索");
+	P2("              1階層のみ検索");
 	PZ(COLOR12, "       (例２) ");
 	PZ(COLOR91, "-d=\"3\",\"5\"\n");
-		P2("              3～5階層を検索\n");
-		P2("       ※１ CurrentDir は \"0\"");
-		P2("       ※２ -depth と -where における depth の挙動の違い");
-		P2("            ◇(速い) -depth は指定された階層のみ検索を行う");
-		P2("            ◇(遅い) -where内でのdepthによる検索は全階層のdir／fileに対して行う\n");
+	P2("              3～5階層を検索\n");
+	P2("       ※１ CurrentDir は \"0\"");
+	P2("       ※２ -depth と -where における depth の挙動の違い");
+	P2("            ◇(速い) -depth は指定された階層のみ検索を行う");
+	P2("            ◇(遅い) -where内でのdepthによる検索は全階層のdir／fileに対して行う\n");
 	PZ(COLOR22, "   -noheader | -nh\n");
 	PZ(COLOR91, "       ヘッダ情報を表\示しない\n\n");
 	PZ(COLOR22, "   -nofooter | -nf\n");
@@ -1524,6 +1525,6 @@ print_help()
 	PZ(COLOR12, "       (例) ");
 	PZ(COLOR91, "-w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"\n\n");
 	PZ(COLOR92, NULL);
-		LN();
+	LN();
 	PZ(-1, NULL);
 }
