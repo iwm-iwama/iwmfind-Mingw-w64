@@ -1501,13 +1501,13 @@ print_help()
 	PZ(COLOR12, "       (例) ");
 	PZ(COLOR91, "-sp=\"\\t\"\n\n");
 	PZ(COLOR22, "   --mkdir=DIR | --md=DIR\n");
-	PZ(COLOR91, "       検索結果からdirを抽出し DIR に作成する (-recursive のとき階層維持)\n\n");
+	PZ(COLOR91, "       検索結果からdirを抽出し DIR に作成する (-recursive のとき 階層維持)\n\n");
 	PZ(COLOR22, "   --copy=DIR | --cp=DIR\n");
-	PZ(COLOR91, "       --mkdir + 検索結果を DIR にコピーする (-recursive のとき階層維持)\n\n");
+	PZ(COLOR91, "       --mkdir + 検索結果を DIR にコピーする (-recursive のとき 階層維持)\n\n");
 	PZ(COLOR22, "   --move=DIR | --mv=DIR\n");
-	PZ(COLOR91, "       --mkdir + 検索結果を DIR に移動する (-recursive のとき階層維持)\n\n");
+	PZ(COLOR91, "       --mkdir + 検索結果を DIR に移動する (-recursive のとき 階層維持)\n\n");
 	PZ(COLOR22, "   --move2=DIR | --mv2=DIR\n");
-	PZ(COLOR91, "       --mkdir + --move + 移動元の空dirを削除する (-recursive のとき階層維持)\n\n");
+	PZ(COLOR91, "       --mkdir + --move + 移動元の空dirを削除する (-recursive のとき 階層維持)\n\n");
 	PZ(COLOR22, "   --extract1=DIR | --ext1=DIR\n");
 	PZ(COLOR91, "       --mkdir + 検索結果ファイルのみ抽出し DIR にコピーする\n");
 	PZ(COLOR13, "       (注) ");
