@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210725"
+#define   IWM_VERSION         "iwmfind4_20210825"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //------------------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -27,16 +27,16 @@ VOID print_help();
 INT  $i1 = 0, $i2 = 0;
 MBS  *$p1 = 0, *$p2 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0}, **$ap3 = {0};
-MBS  *$sBuf = 0;            // Tmp文字列
-UINT $uBuf = 0;             // $sBufの文字長
+MBS  *$sBuf = 0;              // Tmp文字列
+UINT $uBuf = 0;               // $sBufの文字長
 #define   BUF_SIZE_MAX        (1024 * 100)
-#define   BUF_SIZE_DMZ        (2048)
-UINT $uDirId = 0;           // Dir数
-UINT $uAllCnt = 0;          // 検索数
-UINT $uCallCnt_ifind10 = 0; // ifind10()が呼ばれた回数
-UINT $uStepCnt = 0;         // CurrentDir位置
-UINT $uRowCnt = 0;          // 処理行数
-U8N  *$sqlU = 0;            // SQL
+#define   BUF_SIZE_DMZ        (1024 * 2)
+UINT $uDirId = 0;             // Dir数
+UINT $uAllCnt = 0;            // 検索数
+UINT $uCallCnt_ifind10 = 0;   // ifind10()が呼ばれた回数
+UINT $uStepCnt = 0;           // CurrentDir位置
+UINT $uRowCnt = 0;            // 処理行数
+U8N  *$sqlU = 0;              // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 
@@ -559,8 +559,7 @@ main()
 			if(_as2Size)
 			{
 				$sWhere0 = sql_escape(_as2[0]);
-				sprintf($sBuf, "WHERE %s AND", $sWhere0);
-				$sWhere1 = ims_clone($sBuf);
+				$sWhere1 = ims_sprintf("WHERE %s AND", $sWhere0);
 			}
 		}
 
@@ -569,8 +568,7 @@ main()
 		{
 			if(_as2Size)
 			{
-				sprintf($sBuf, "GROUP BY %s", _as2[0]);
-				$sGroup = ims_clone($sBuf);
+				$sGroup = ims_sprintf("GROUP BY %s", _as2[0]);
 			}
 		}
 
@@ -686,8 +684,7 @@ main()
 	}
 
 	// -where 関係を一括変換
-	sprintf($sBuf, "depth>=%d AND depth<=%d", $iDepthMin, $iDepthMax);
-	$sWhere2 = ims_clone($sBuf);
+	$sWhere2 = ims_sprintf("depth>=%d AND depth<=%d", $iDepthMin, $iDepthMax);
 
 	// -sort 関係を一括変換
 	if($iExec >= I_MV)
@@ -726,7 +723,15 @@ main()
 
 	// SQL作成
 	// SJIS で作成（DOSプロンプト対応）
-	snprintf($sBuf, BUF_SIZE_MAX, SELECT_VIEW, $sSelect, $sWhere1, $sWhere2, $sGroup, $sSort);
+	if(BUF_SIZE_MAX > (imi_len(SELECT_VIEW) + imi_len($sSelect) + imi_len($sWhere1) + imi_len($sWhere2) + imi_len($sGroup) + imi_len($sSort)))
+	{
+		sprintf($sBuf, SELECT_VIEW, $sSelect, $sWhere1, $sWhere2, $sGroup, $sSort);
+	}
+	else
+	{
+		P("[Err] 文字数が多すぎます!\n");
+		imain_end();
+	}
 
 	// SJIS を UTF-8 に変換（Sqlite3対応）
 	$sqlU = M2U($sBuf);
@@ -829,8 +834,9 @@ main()
 					// カラム名表示
 					if(! $bNoHeader)
 					{
-						sprintf($sBuf, "SELECT %s FROM V_INDEX WHERE id=1;", $sSelect);
-						sql_exec($iDbs, $sBuf, sql_columnName);
+						$p1 = ims_sprintf("SELECT %s FROM V_INDEX WHERE id=1;", $sSelect);
+						sql_exec($iDbs, $p1, sql_columnName);
+						ifree($p1);
 					}
 					sql_exec($iDbs, $sqlU, sql_result_std);
 				}
@@ -1138,11 +1144,11 @@ sql_result_exec(
 		case(I_MV):    // --move
 		case(I_MV2):   // --move2
 			// $sMdOp\以下には、$aDirList\以下の dir を作成
-			i1 = atoi(sColumnValues[0]); // step_cnt
-			p1 = U2M(sColumnValues[1]);  // dir "\"付
-			p1e = ijp_forwardN(p1, i1);  // p1のEOD
-			p2 = U2M(sColumnValues[2]);  // name
-			p3 = U2M(sColumnValues[3]);  // path
+			i1  = atoi(sColumnValues[0]); // step_cnt
+			p1  = U2M(sColumnValues[1]);  // dir "\"付
+			p1e = ijp_forwardN(p1, i1);   // p1のEOD
+			p2  = U2M(sColumnValues[2]);  // name
+			p3  = U2M(sColumnValues[3]);  // path
 			// mkdir
 			sprintf($sBuf, "%s\\%s", $sMdOp, p1e);
 				if(imk_dir($sBuf))
