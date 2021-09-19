@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind4_20210825"
+#define   IWM_VERSION         "iwmfind4_20210919"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //------------------------------------------------------------------------------
 #include  "lib_iwmutil.h"
@@ -29,7 +29,7 @@ MBS  *$p1 = 0, *$p2 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0}, **$ap3 = {0};
 MBS  *$sBuf = 0;              // Tmp•¶Žš—ñ
 UINT $uBuf = 0;               // $sBuf‚Ì•¶Žš’·
-#define   BUF_SIZE_MAX        (1024 * 100)
+#define   BUF_SIZE_MAX        (1024 * 200)
 #define   BUF_SIZE_DMZ        (1024 * 2)
 UINT $uDirId = 0;             // Dir”
 UINT $uAllCnt = 0;            // ŒŸõ”
@@ -1035,7 +1035,7 @@ sql_exec(
 	// sql_result_std() ‘Î‰ž
 	if($uBuf)
 	{
-		P($sBuf);
+		QP($sBuf);
 	}
 }
 
@@ -1107,7 +1107,7 @@ sql_result_std(
 	// Buf ‚ð Print
 	if($uBuf > BUF_SIZE_MAX)
 	{
-		P($sBuf);
+		QP($sBuf);
 		$uBuf = 0;
 	}
 
