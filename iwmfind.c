@@ -1035,7 +1035,7 @@ sql_exec(
 	// sql_result_std() ‘Î‰ž
 	if($uBuf)
 	{
-		QP($sBuf);
+		QP($sBuf, $uBuf);
 	}
 }
 
@@ -1107,7 +1107,7 @@ sql_result_std(
 	// Buf ‚ð Print
 	if($uBuf > BUF_SIZE_MAX)
 	{
-		QP($sBuf);
+		QP($sBuf, $uBuf);
 		$uBuf = 0;
 	}
 
