@@ -797,7 +797,7 @@ main()
 			if(*$sOut)
 			{
 				// 存在する場合、削除
-				irm_file($sOutDbn);
+				DeleteFile($sOutDbn);
 				// $sIn, $sOut両指定、別ファイル名のとき
 				if(*$sIn)
 				{
@@ -1178,7 +1178,7 @@ sql_result_exec(
 				// 既存file削除
 				if(iFchk_typePathA(p5))
 				{
-					irm_file(p5);
+					DeleteFile(p5);
 				}
 				if(MoveFile(p3, p5))
 				{
@@ -1188,7 +1188,7 @@ sql_result_exec(
 				// rmdir
 				if($iExec == I_MV2)
 				{
-					if(irm_dir(p1))
+					if(RemoveDirectory(p1))
 					{
 						P("rd   => %s\n", p1); // dirを表示
 						++$uRowCnt;
@@ -1235,7 +1235,7 @@ sql_result_exec(
 						// dir存在していれば削除しておく
 						if(iFchk_typePathA(p3))
 						{
-							irm_file(p3);
+							DeleteFile(p3);
 						}
 						if(MoveFile(p1, p3))
 						{
@@ -1269,7 +1269,7 @@ sql_result_exec(
 				SetFileAttributes(p1, FALSE);
 			}
 			// file 削除
-			if(irm_file(p1))
+			if(DeleteFile(p1))
 			{
 				// fileのみ
 				P("rm   => %s\n", p1); // fileを表示
@@ -1279,7 +1279,7 @@ sql_result_exec(
 			if($iExec == I_RM2)
 			{
 				// 空dirである
-				if(irm_dir(p2))
+				if(RemoveDirectory(p2))
 				{
 					P("rd   => %s\n", p2); // dirを表示
 					++$uRowCnt;
