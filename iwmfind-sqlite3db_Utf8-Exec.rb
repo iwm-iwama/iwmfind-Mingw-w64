@@ -10,15 +10,15 @@
 #   ファイルの一括削除などを行う場合、カスタマイズして利用されたい。
 #--------------------------------------------------------------------------------------------------
 
+# TmpDB
 $db = "#{Time.now.strftime("%Y%m%d_%H%M%S_%L")}.db"
 $iCnt = 0
 
 # (例)
-#   D:フォルダ以下、24時間以内に更新されたファイル名を抽出
-%x(iwmfind.exe "d:" -r -nh -nf -o="#{$db}" -w="type like 'f' and mtime>=[-24h]")
+#   カレントフォルダ以下、24時間以内に更新されたファイル名を抽出
+%x(iwmfind.exe "." -r -nh -nf -o="#{$db}" -w="type like 'f' and mtime>=[-24h]")
 
-print "                    \r"
-
+# sqlite3.exe から直接DBファイルを操作
 %x(sqlite3.exe -separator "\t" "#{$db}" "select mtime,path from V_INDEX order by mtime;").split("\n") do
 	|ln|
 	ln.strip!
@@ -31,4 +31,5 @@ print "                    \r"
 	#
 end
 
+# TmpDB 削除
 File.delete $db
