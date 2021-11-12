@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind4_20210924"
+#define  IWM_VERSION         "iwmfind4_20211111"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil.h"
@@ -36,7 +36,7 @@ UINT $uDirId = 0;            // Dir数
 UINT $uAllCnt = 0;           // 検索数
 UINT $uCallCnt_ifind10 = 0;  // ifind10()が呼ばれた回数
 UINT $uStepCnt = 0;          // CurrentDir位置
-UINT $uRowCnt = 0;           // 処理行数
+UINT $uRowCnt = 0;           // 処理行数 <= NTFSの最大ファイル数
 U8N  *$sqlU = 0;             // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
@@ -285,19 +285,19 @@ INT
 main()
 {
 	// lib_iwmutil 初期化
-	iCLI_getARGV();      //=> $IWM_CMD, $IWM_ARGV, $IWM_ARGC
-	iConsole_getColor(); //=> $IWM_ColorDefault, $IWM_StdoutHandle
-	iExecSec_init();     //=> $IWM_ExecSecBgn
+	iCLI_getARGV();      //=> $CMD, $ARGV, $ARGC
+	iConsole_getColor(); //=> $ColorDefault, $StdoutHandle
+	iExecSec_init();     //=> $ExecSecBgn
 
 	// -h | -help
-	if(! $IWM_ARGC || imb_cmpp($IWM_ARGV[0], "-h") || imb_cmpp($IWM_ARGV[0], "-help"))
+	if(! $ARGC || iCLI_getOptMatch(0, "-h", "-help"))
 	{
 		print_help();
 		imain_end();
 	}
 
 	// -v | -version
-	if(imb_cmpp($IWM_ARGV[0], "-v") || imb_cmpp($IWM_ARGV[0], "-version"))
+	if(iCLI_getOptMatch(0, "-v", "-version"))
 	{
 		print_version();
 		imain_end();
@@ -318,26 +318,25 @@ main()
 			-depth
 		をチェック
 	*/
-	for($i1 = 0; $i1 < $IWM_ARGC; $i1++)
+	for($i1 = 0; $i1 < $ARGC; $i1++)
 	{
-		MBS **_as1 = ija_split($IWM_ARGV[$i1], "=");
-		MBS **_as2 = ija_split(_as1[1], ", ");
-		UINT _as2Size = iary_size(_as2);
-
 		// -r | -recursive
-		if(imb_cmpp(_as1[0], "-r") || imb_cmpp(_as1[0], "-recursive"))
+		if(iCLI_getOptMatch($i1, "-r", "-recursive"))
 		{
 			$iDepthMin = 0;
 			$iDepthMax = IMAX_PATHA;
 		}
 
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
-		if(imb_cmpp(_as1[0], "-d") || imb_cmpp(_as1[0], "-depth"))
+		if(($p1 = iCLI_getOptValue($i1, "-d=", "-depth=")))
 		{
-			if(_as2Size > 1)
+			$ap1 = ija_split($p1, ", ");
+			$i2 = iary_size($ap1);
+
+			if($i2 > 1)
 			{
-				$iDepthMin = inum_atoi(_as2[0]);
-				$iDepthMax = inum_atoi(_as2[1]);
+				$iDepthMin = inum_atoi($ap1[0]);
+				$iDepthMax = inum_atoi($ap1[1]);
 
 				if($iDepthMin > $iDepthMax)
 				{
@@ -346,33 +345,32 @@ main()
 					$iDepthMax = $i2;
 				}
 			}
-			else if(_as2Size == 1)
+			else if($i2 == 1)
 			{
-				$iDepthMin = $iDepthMax = inum_atoi(_as2[0]);
+				$iDepthMin = $iDepthMax = inum_atoi($ap1[0]);
 			}
 			else
 			{
 				$iDepthMin = $iDepthMax = 0;
 			}
-		}
 
-		ifree(_as2);
-		ifree(_as1);
+			ifree($ap1);
+		}
 	}
 
 	INT iArgsPos = 0;
 
 	// [0..n]
-	for($i1 = 0; $i1 < $IWM_ARGC; $i1++)
+	for($i1 = 0; $i1 < $ARGC; $i1++)
 	{
-		if(*$IWM_ARGV[$i1] == '-')
+		if(*$ARGV[$i1] == '-')
 		{
 			break;
 		}
 		// dir不在
-		if(iFchk_typePathA($IWM_ARGV[$i1]) != 1)
+		if(iFchk_typePathA($ARGV[$i1]) != 1)
 		{
-			P("[Err] Dir(%d) '%s' は存在しない!\n", ($i1 + 1), $IWM_ARGV[$i1]);
+			P("[Err] Dir(%d) '%s' は存在しない!\n", ($i1 + 1), $ARGV[$i1]);
 		}
 	}
 	iArgsPos = $i1;
@@ -383,7 +381,7 @@ main()
 		$ap1 = icalloc_MBS_ary(iArgsPos);
 			for($i1 = 0; $i1 < iArgsPos; $i1++)
 			{
-				$ap1[$i1] = iFget_AdirA($IWM_ARGV[$i1]); // 絶対PATHへ変換
+				$ap1[$i1] = iFget_AdirA($ARGV[$i1]); // 絶対PATHへ変換
 			}
 			// 上位Dirのみ取得
 			$aDirList = iary_higherDir($ap1, $iDepthMax);
@@ -392,18 +390,16 @@ main()
 	}
 
 	// [n..]
-	for($i1 = iArgsPos; $i1 < $IWM_ARGC; $i1++)
+	for($i1 = iArgsPos; $i1 < $ARGC; $i1++)
 	{
-		MBS **_as1 = ija_split($IWM_ARGV[$i1], "=");
-
 		// -i | -in
-		if(imb_cmpp(_as1[0], "-i") || imb_cmpp(_as1[0], "-in"))
+		if(($p1 = iCLI_getOptValue($i1, "-i=", "-in=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				if(iFchk_typePathA(_as1[1]) != 2)
+				if(iFchk_typePathA($p1) != 2)
 				{
-					P("[Err] -in '%s' は存在しない!\n", _as1[1]);
+					P("[Err] -in '%s' は存在しない!\n", $p1);
 					imain_end();
 				}
 				else if($aDirListSize)
@@ -413,7 +409,7 @@ main()
 				}
 				else
 				{
-					$sIn = ims_clone(_as1[1]);
+					$sIn = ims_clone($p1);
 					$sInDbn = ims_clone($sIn);
 
 					// -in のときは -recursive 自動付与
@@ -424,86 +420,86 @@ main()
 		}
 
 		// -o | -out
-		if(imb_cmpp(_as1[0], "-o") || imb_cmpp(_as1[0], "-out"))
+		if(($p1 = iCLI_getOptValue($i1, "-o=", "-out=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sOut = ims_clone(_as1[1]);
+				$sOut = ims_clone($p1);
 				$sOutDbn = ims_clone($sOut);
 			}
 		}
 
 		// --md | --mkdir
-		if(imb_cmpp(_as1[0], "--md") || imb_cmpp(_as1[0], "--mkdir"))
+		if(($p1 = iCLI_getOptValue($i1, "--md=", "--mkdir=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sMd = ims_clone(_as1[1]);
+				$sMd = ims_clone($p1);
 			}
 		}
 
 		// --cp | --copy
-		if(imb_cmpp(_as1[0], "--cp") || imb_cmpp(_as1[0], "--copy"))
+		if(($p1 = iCLI_getOptValue($i1, "--cp=", "--copy=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sCp = ims_clone(_as1[1]);
+				$sCp = ims_clone($p1);
 			}
 		}
 
 		// --mv | --move
-		if(imb_cmpp(_as1[0], "--mv") || imb_cmpp(_as1[0], "--move"))
+		if(($p1 = iCLI_getOptValue($i1, "--mv=", "--move=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sMv = ims_clone(_as1[1]);
+				$sMv = ims_clone($p1);
 			}
 		}
 
 		// --mv2 | --move2
-		if(imb_cmpp(_as1[0], "--mv2") || imb_cmpp(_as1[0], "--move2"))
+		if(($p1 = iCLI_getOptValue($i1, "--mv2=", "--move2=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sMv2 = ims_clone(_as1[1]);
+				$sMv2 = ims_clone($p1);
 			}
 		}
 
 		// --ext1 | --extract1
-		if(imb_cmpp(_as1[0], "--ext1") || imb_cmpp(_as1[0], "--extract1"))
+		if(($p1 = iCLI_getOptValue($i1, "--ext1=", "--extract1=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sExt1 = ims_clone(_as1[1]);
+				$sExt1 = ims_clone($p1);
 			}
 		}
 
 		// --ext2 | --extract2
-		if(imb_cmpp(_as1[0], "--ext2") || imb_cmpp(_as1[0], "--extract2"))
+		if(($p1 = iCLI_getOptValue($i1, "--ext2=", "--extract2=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sExt2 = ims_clone(_as1[1]);
+				$sExt2 = ims_clone($p1);
 			}
 		}
 
 		// --rep | --replace
-		if(imb_cmpp(_as1[0], "--rep") || imb_cmpp(_as1[0], "--replace"))
+		if(($p1 = iCLI_getOptValue($i1, "--rep=", "--replace=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sRep = ims_clone(_as1[1]);
+				$sRep = ims_clone($p1);
 			}
 		}
 
 		// --rm | --remove
-		if(imb_cmpp(_as1[0], "--rm") || imb_cmpp(_as1[0], "--remove"))
+		if(iCLI_getOptMatch($i1, "--rm", "--remove"))
 		{
 			$iRm = I_RM;
 		}
 
 		// --rm2 | --remove2
-		if(imb_cmpp(_as1[0], "--rm2") || imb_cmpp(_as1[0], "--remove2"))
+		if(iCLI_getOptMatch($i1, "--rm2", "--remove2"))
 		{
 			$iRm = I_RM2;
 		}
@@ -514,17 +510,14 @@ main()
 			-select (none) : OP_SELECT_1
 			-select="COLUMN1,COLUMN2,..."
 		*/
-		if(imb_cmpp(_as1[0], "-s") || imb_cmpp(_as1[0], "-select"))
+		if(($p1 = iCLI_getOptValue($i1, "-s=", "-select=")))
 		{
-				MBS *aStripM[] = {" ", "\"", NULL};
-				$p1 = ijs_cutAry(_as1[1], aStripM, aStripM);
-			MBS **_as2 = ija_split($p1, ", ");
-				ifree($p1);
+			$ap1 = ija_split($p1, ", ");
 
-			if(*_as2[0])
+			if(*$ap1[0])
 			{
 				// "LN"位置を求める
-				$ap2 = iary_simplify(_as2, TRUE); // LN表示は１個のみなので重複排除
+				$ap2 = iary_simplify($ap1, TRUE); // LN表示は１個のみなので重複排除
 					$iSelectPosNumber = 0;
 					while(($p2 = $ap2[$iSelectPosNumber]))
 					{
@@ -546,68 +539,66 @@ main()
 				$sSelect = OP_SELECT_1;
 			}
 
-			ifree(_as2);
+			ifree($ap1);
 		}
 
 		// -st | -sort
-		if(imb_cmpp(_as1[0], "-st") || imb_cmpp(_as1[0], "-sort"))
+		if(($p1 = iCLI_getOptValue($i1, "-st=", "-sort=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sSort = ims_clone(_as1[1]);
+				$sSort = ims_clone($p1);
 			}
 		}
 
 		// -w | -where
-		if(imb_cmpp(_as1[0], "-w") || imb_cmpp(_as1[0], "-where"))
+		if(($p1 = iCLI_getOptValue($i1, "-w=", "-where=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sWhere0 = sql_escape(_as1[1]);
-				$sWhere1 = ims_sprintf("WHERE %s AND", $sWhere0);
+				$sWhere0 = sql_escape($p1);
+				$sWhere1 = ims_cats("WHERE ", $sWhere0, " AND", NULL);
 			}
 		}
 
 		// -g | -group
-		if(imb_cmpp(_as1[0], "-g") || imb_cmpp(_as1[0], "-group"))
+		if(($p1 = iCLI_getOptValue($i1, "-g=", "-group=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sGroup = ims_sprintf("GROUP BY %s", _as1[1]);
+				$sGroup = ims_cats("GROUP BY ", $p1, NULL);
 			}
 		}
 
 		// -nh | -noheader
-		if(imb_cmpp(_as1[0], "-nh") || imb_cmpp(_as1[0], "-noheader"))
+		if(iCLI_getOptMatch($i1, "-nh", "-noheader"))
 		{
 			$bNoHeader = TRUE;
 		}
 
 		// -nf | -nofooter
-		if(imb_cmpp(_as1[0], "-nf") || imb_cmpp(_as1[0], "-nofooter"))
+		if(iCLI_getOptMatch($i1, "-nf", "-nofooter"))
 		{
 			$bNoFooter = TRUE;
 		}
 
 		// -qt | -quote
-		if(imb_cmpp(_as1[0], "-qt") || imb_cmpp(_as1[0], "-quote"))
+		if(($p1 = iCLI_getOptValue($i1, "-qt=", "-quote=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sQuote = ims_conv_escape(_as1[1]);
+				$sQuote = ims_conv_escape($p1);
 			}
 		}
 
 		// -sp | -separate
-		if(imb_cmpp(_as1[0], "-sp") || imb_cmpp(_as1[0], "-separate"))
+		if(($p1 = iCLI_getOptValue($i1, "-sp=", "-separate=")))
 		{
-			if(*_as1[1])
+			if(*$p1)
 			{
-				$sSeparate = ims_conv_escape(_as1[1]);
+				$sSeparate = ims_conv_escape($p1);
 			}
 		}
-
-		ifree(_as1);
 	}
 
 	// Err
@@ -836,7 +827,7 @@ main()
 					// カラム名表示
 					if(! $bNoHeader)
 					{
-						$p1 = ims_sprintf("SELECT %s FROM V_INDEX WHERE id=1;", $sSelect);
+						$p1 = ims_cats("SELECT ", $sSelect, " FROM V_INDEX WHERE id=1;", NULL);
 						sql_exec($iDbs, $p1, sql_columnName);
 						ifree($p1);
 					}
@@ -1402,16 +1393,16 @@ print_help()
 {
 	print_version();
 	PZ(COLOR01, " ファイル検索 \n\n");
-	PZ(COLOR11, " %s [Dir] [Option] \n\n", $IWM_CMD);
+	PZ(COLOR11, " %s [Dir] [Option] \n\n", $CMD);
 	PZ(COLOR12, " (例１) ");
 	PZ(COLOR91, "検索\n");
-	P("   %s DIR -r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $IWM_CMD);
+	P("   %s DIR -r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $CMD);
 	PZ(COLOR12, " (例２) ");
 	PZ(COLOR91, "検索結果をファイルへ保存\n");
-	P("   %s DIR1 DIR2 -r -o=FILE\n\n", $IWM_CMD);
+	P("   %s DIR1 DIR2 -r -o=FILE\n\n", $CMD);
 	PZ(COLOR12, " (例３) ");
 	PZ(COLOR91, "検索対象をファイルから読込\n");
-	P("   %s -i=FILE\n\n", $IWM_CMD);
+	P("   %s -i=FILE\n\n", $CMD);
 	PZ(COLOR21, " [Dir]\n");
 	PZ(COLOR91, "   検索対象 dir\n");
 	PZ(COLOR12, "   (例) ");
@@ -1476,10 +1467,10 @@ print_help()
 	P2("              '*' '%' は任意の0文字以上");
 	PZ(COLOR12, "       (例３) ");
 	PZ(COLOR91, "基準日 \"2010-12-10 12:00:00\"のとき\n");
-	P2("              \"ctime>[-10D]\"  => \"ctime>'2010-11-30 00:00:00'\"");
-	P2("              \"ctime>[-10d]\"  => \"ctime>'2010-11-30 12:00:00'\"");
-	P2("              \"ctime>[-10d*]\" => \"ctime>'2010-11-30 %'\"");
-	P2("              \"ctime>[-10d%]\" => \"ctime>'2010-11-30 %'\"");
+	P2("              \"ctime>=[-10D]\"  => \"ctime>='2010-11-30 00:00:00'\"");
+	P2("              \"ctime>=[-10d]\"  => \"ctime>='2010-11-30 12:00:00'\"");
+	P2("              \"ctime>=[-10d*]\" => \"ctime>='2010-11-30 %'\"");
+	P2("              \"ctime>=[-10d%]\" => \"ctime>='2010-11-30 %'\"");
 	P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n");
 	PZ(COLOR22, "   -group=STR | -g=STR\n");
 	PZ(COLOR12, "       (例) ");
