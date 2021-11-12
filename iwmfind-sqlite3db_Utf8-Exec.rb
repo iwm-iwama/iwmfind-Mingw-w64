@@ -16,7 +16,7 @@ $iCnt = 0
 
 # (例)
 #   カレントフォルダ以下、24時間以内に更新されたファイル名を抽出
-print %x(./iwmfind.exe "." -nh -nf -o="#{$db}" -w="type like 'f' and mtime>=[-24h]")
+print %x(./iwmfind.exe "." -r -nh -nf -o="#{$db}" -w="type like 'f' and mtime>=[-24h]")
 
 # sqlite3.exe から直接DBファイルを操作
 %x(./sqlite3.exe -separator "\t" "#{$db}" "select mtime,path from V_INDEX order by mtime;").split("\n") do
