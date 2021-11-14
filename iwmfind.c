@@ -27,7 +27,7 @@ VOID print_help();
 INT  $i1 = 0, $i2 = 0;
 MBS  *$p1 = 0, *$p2 = 0, *$p3 = 0;
 MBS  **$ap1 = {0}, **$ap2 = {0};
-#define  BUF_SIZE_MAX        (1024 * 400) // 100 - 800 ‚©‚ç‘I‘ð
+#define  BUF_SIZE_MAX        (1024 * 1000)
 #define  BUF_SIZE_DMZ        (1024 * 2)
 MBS  *$pBuf = 0;             // Tmp•¶Žš—ñ
 MBS  *$pBufE = 0;            // Tmp•¶Žš—ñ––”ö
