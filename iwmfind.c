@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind4_20211111"
+#define  IWM_VERSION         "iwmfind4_20211118"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil.h"
@@ -324,7 +324,7 @@ main()
 		if(iCLI_getOptMatch($i1, "-r", "-recursive"))
 		{
 			$iDepthMin = 0;
-			$iDepthMax = IMAX_PATHA;
+			$iDepthMax = IMAX_PATH;
 		}
 
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
@@ -378,15 +378,9 @@ main()
 	// $aDirList ÇçÏê¨
 	if(iArgsPos)
 	{
-		$ap1 = icalloc_MBS_ary(iArgsPos);
-			for($i1 = 0; $i1 < iArgsPos; $i1++)
-			{
-				$ap1[$i1] = iFget_AdirA($ARGV[$i1]); // ê‚ëŒPATHÇ÷ïœä∑
-			}
 			// è„à DirÇÃÇ›éÊìæ
-			$aDirList = iary_higherDir($ap1, $iDepthMax);
+			$aDirList = iary_higherDir($ARGV);
 			$aDirListSize = iary_size($aDirList);
-		ifree($ap1);
 	}
 
 	// [n..]
@@ -414,7 +408,7 @@ main()
 
 					// -in ÇÃÇ∆Ç´ÇÕ -recursive é©ìÆïtó^
 					$iDepthMin = 0;
-					$iDepthMax = IMAX_PATHA;
+					$iDepthMax = IMAX_PATH;
 				}
 			}
 		}
