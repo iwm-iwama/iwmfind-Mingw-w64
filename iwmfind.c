@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind4_20211118"
+#define  IWM_VERSION         "iwmfind4_20211202"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil.h"
@@ -11,7 +11,7 @@ VOID ifind10($struct_iFinfoW *FI, WCS *dir, UINT dirLenJ, INT depth);
 VOID ifind10_CallCnt(UINT uCnt);
 VOID ifind21(WCS *dir, UINT dirId, INT depth);
 VOID ifind22($struct_iFinfoW *FI, UINT dirId, WCS *fname);
-VOID sql_exec(sqlite3 *db, const MBS *sql, sqlite3_callback cb);
+VOID sql_exec(sqlite3 *db, CONST MBS *sql, sqlite3_callback cb);
 INT  sql_columnName(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
 INT  sql_result_std(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
 INT  sql_result_countOnly(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
@@ -64,9 +64,9 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define  OLDDB               ("iwmfind.db."IWM_VERSION)
 #define  CREATE_T_DIR \
 			"CREATE TABLE T_DIR( \
-				dir_id INTEGER, \
-				dir TEXT, \
-				depth INTEGER, \
+				dir_id    INTEGER, \
+				dir       TEXT, \
+				depth     INTEGER, \
 				step_byte INTEGER \
 			);"
 #define  INSERT_T_DIR \
@@ -83,9 +83,9 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 				name      TEXT, \
 				ext_pos   INTEGER, \
 				attr_num  INTEGER, \
-				ctime_cjd DOUBLE, \
-				mtime_cjd DOUBLE, \
-				atime_cjd DOUBLE, \
+				ctime_cjd REAL, \
+				mtime_cjd REAL, \
+				atime_cjd REAL, \
 				size      INTEGER, \
 				number    INTEGER, \
 				flg       INTEGER \
@@ -398,7 +398,7 @@ main()
 				}
 				else if($aDirListSize)
 				{
-					P("[Err] Dir と -in は併用できない!\n");
+					P2("[Err] Dir と -in は併用できない!");
 					imain_end();
 				}
 				else
@@ -551,7 +551,7 @@ main()
 			if(*$p1)
 			{
 				$sWhere0 = sql_escape($p1);
-				$sWhere1 = ims_cats("WHERE ", $sWhere0, " AND", NULL);
+				$sWhere1 = ims_cats(3, "WHERE ", $sWhere0, " AND");
 			}
 		}
 
@@ -560,7 +560,7 @@ main()
 		{
 			if(*$p1)
 			{
-				$sGroup = ims_cats("GROUP BY ", $p1, NULL);
+				$sGroup = ims_cats(2, "GROUP BY ", $p1);
 			}
 		}
 
@@ -598,7 +598,7 @@ main()
 	// Err
 	if(! $aDirListSize && ! *$sIn)
 	{
-		P("[Err] Dir もしくは -in を指定してください!\n");
+		P2("[Err] Dir もしくは -in を指定してください!");
 		imain_end();
 	}
 
@@ -716,7 +716,7 @@ main()
 	}
 	else
 	{
-		P("[Err] 文字数が多すぎます!\n");
+		P2("[Err] 文字数が多すぎます!");
 		imain_end();
 	}
 
@@ -738,17 +738,17 @@ main()
 			if(! *$sIn)
 			{
 				$struct_iFinfoW *FI = iFinfo_allocW();
-					/*
+					/* 2021-11-30修正
 						【重要】UTF-8でDB構築
-							データ入力(INSERT)は、
-								・PRAGMA encoding = 'TTF-16le'
-								・bind_text16()
-							を使用して、"UTF-16LE"で登録可能だが、
-							出力(SELECT)は、exec()が"UTF-8"しか扱わないため本時点では、
-								＜入力＞ UTF-16 => UTF-8
-								＜SQL＞  SJIS   => UTF-8
-								＜出力＞ UTF-8  => SJIS
-							の方法に辿り着いた。
+							データ登録(INSERT)は、
+								・PRAGMA encoding='UTF-16le'
+								・sqlite3_bind_text16()
+							で、"UTF-16LE"が利用可能だが、
+							出力(SELECT)に"UTF-8"を使用しないと、sql_exec()がエラーを返すので、
+								＜入力＞ UTF-16(CharW)  => UTF-8(SQLite3)
+								＜SQL＞  SJIS(CharA)    => UTF-8(SQLite3)
+								＜出力＞ UTF-8(SQLite3) => SJIS(CharA)
+							の方法に落ち着いた。
 					*/
 					sql_exec($iDbs, "PRAGMA encoding='UTF-8';", 0);
 					// TABLE作成
@@ -794,7 +794,7 @@ main()
 				if(*$sWhere0)
 				{
 					sql_exec($iDbs, "BEGIN", 0); // トランザクション開始
-						$p1 = ims_cats("WHERE ", $sWhere0, NULL);
+						$p1 = ims_cats(2, "WHERE ", $sWhere0);
 							sprintf($pBuf, UPDATE_EXEC99_1, $p1);
 						ifree($p1);
 						$p1 = M2U($pBuf); // UTF-8で処理
@@ -821,7 +821,7 @@ main()
 					// カラム名表示
 					if(! $bNoHeader)
 					{
-						$p1 = ims_cats("SELECT ", $sSelect, " FROM V_INDEX WHERE id=1;", NULL);
+						$p1 = ims_cats(3, "SELECT ", $sSelect, " FROM V_INDEX WHERE id=1;");
 						sql_exec($iDbs, $p1, sql_columnName);
 						ifree($p1);
 					}
@@ -1010,7 +1010,7 @@ ifind22(
 VOID
 sql_exec(
 	sqlite3 *db,
-	const MBS *sql,
+	CONST MBS *sql,
 	sqlite3_callback cb
 )
 {
@@ -1357,7 +1357,7 @@ print_footer()
 		}
 		if($bNoFooter)
 		{
-			P("--  -nofooter\n");
+			P2("--  -nofooter");
 		}
 		if(*$sQuote)
 		{
