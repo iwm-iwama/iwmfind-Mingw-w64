@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind4_20211202"
-#define  IWM_COPYRIGHT       "Copyright (C)2009-2021 iwm-iwama"
+#define  IWM_VERSION         "iwmfind4_20220313"
+#define  IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil.h"
 #include "sqlite3.h"
@@ -41,24 +41,21 @@ U8N  *$sqlU = 0;             // SQL
 sqlite3      *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 
-// [文字色] + ([背景色] * 16)
-//  0 = Black    1 = Navy     2 = Green    3 = Teal
-//  4 = Maroon   5 = Purple   6 = Olive    7 = Silver
-//  8 = Gray     9 = Blue    10 = Lime    11 = Aqua
-// 12 = Red     13 = Fuchsia 14 = Yellow  15 = White
-
-// タイトル
-#define  COLOR01             (15 + ( 9 * 16))
+// リセット
+#define  PRGB00()            P0("\033[0m")
+// ラベル
+#define  PRGB01()            P0("\033[38;2;255;255;0m")    // 黄
+#define  PRGB02()            P0("\033[38;2;255;255;255m")  // 白
 // 入力例／注
-#define  COLOR11             (15 + (12 * 16))
-#define  COLOR12             (13 + ( 0 * 16))
-#define  COLOR13             (12 + ( 0 * 16))
-// 引数
-#define  COLOR21             (14 + ( 0 * 16))
-#define  COLOR22             (11 + ( 0 * 16))
-// 説明
-#define  COLOR91             (15 + ( 0 * 16))
-#define  COLOR92             ( 7 + ( 0 * 16))
+#define  PRGB11()            P0("\033[38;2;255;255;100m")  // 黄
+#define  PRGB12()            P0("\033[38;2;255;220;150m")  // 橙
+#define  PRGB13()            P0("\033[38;2;100;100;255m")  // 青
+// オプション
+#define  PRGB21()            P0("\033[38;2;80;255;255m")   // 水
+#define  PRGB22()            P0("\033[38;2;255;100;255m")  // 紅紫
+// 本文
+#define  PRGB91()            P0("\033[38;2;255;255;255m")  // 白
+#define  PRGB92()            P0("\033[38;2;200;200;200m")  // 銀
 
 #define  MEMDB               ":memory:"
 #define  OLDDB               ("iwmfind.db."IWM_VERSION)
@@ -225,8 +222,8 @@ MBS *$sSeparate = " | ";
 // 検索Dir位置
 // -depth=NUM1,NUM2 | -d=NUM1,NUM2
 //
-INT $iDepthMin = 0; // 下階層～開始位置(相対)
-INT $iDepthMax = 0; // 下階層～終了位置(相対)
+INT $iDepthMin = 0; // 階層～開始位置(相対)
+INT $iDepthMax = 0; // 階層～終了位置(相対)
 //
 // mkdir STR
 // --mkdir=STR | --md=STR
@@ -285,9 +282,9 @@ INT
 main()
 {
 	// lib_iwmutil 初期化
-	iCLI_getARGV();      //=> $CMD, $ARGV, $ARGC
-	iConsole_getColor(); //=> $ColorDefault, $StdoutHandle
-	iExecSec_init();     //=> $ExecSecBgn
+	iExecSec_init();  //=> $ExecSecBgn
+	iCLI_getARGV();   //=> $CMD, $ARGV, $ARGC
+	iConsole_EscOn();
 
 	// -h | -help
 	if(! $ARGC || iCLI_getOptMatch(0, "-h", "-help"))
@@ -965,9 +962,9 @@ ifind10_CallCnt(
 
 	if(uCnt >= 500)
 	{
-		PZ(9, NULL);
+		PRGB21();
 		fprintf(stderr, " > %u\r", $uAllCnt);
-		PZ(-1, NULL);
+		PRGB00();
 		$uCallCnt_ifind10 = 0;
 	}
 }
@@ -1041,7 +1038,7 @@ sql_columnName(
 	MBS **sColumnNames
 )
 {
-	PZ(COLOR22, NULL);
+	PRGB21();
 		for($i1 = 0; $i1 < iColumnCount; $i1++)
 		{
 			MBS *p1 = U2M(sColumnNames[$i1]);
@@ -1052,7 +1049,7 @@ sql_columnName(
 			);
 			ifree(p1);
 		}
-	PZ(-1, NULL);
+	PRGB00();
 	return SQLITE_OK;
 }
 
@@ -1330,7 +1327,7 @@ VOID
 print_footer()
 {
 	MBS *p1 = 0;
-	PZ(COLOR22, NULL);
+	PRGB21();
 		LN();
 		P(
 			"-- %u row%s in set ( %.3f sec)\n",
@@ -1338,7 +1335,7 @@ print_footer()
 			($uRowCnt > 1 ? "s" : ""), // 複数形
 			iExecSec_next()
 		);
-	PZ(COLOR12, NULL);
+	PRGB22();
 		P2("--");
 		for(UINT _u1 = 0; _u1 < $aDirListSize; _u1++)
 		{
@@ -1368,50 +1365,72 @@ print_footer()
 			P("--  -separate    \"%s\"\n", $sSeparate);
 		}
 		P2("--");
-	PZ(-1, NULL);
+	PRGB00();
 }
 
 VOID
 print_version()
 {
-	PZ(COLOR92, NULL);
+	PRGB92();
 	LN();
-	P(" %s\n", IWM_COPYRIGHT);
-	P("   Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
+	P (" %s\n", IWM_COPYRIGHT);
+	P ("   Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
 	LN();
-	PZ(-1, NULL);
+	PRGB00();
 }
 
 VOID
 print_help()
 {
 	print_version();
-	PZ(COLOR01, " ファイル検索 \n\n");
-	PZ(COLOR11, " %s [Dir] [Option] \n\n", $CMD);
-	PZ(COLOR12, " (例１) ");
-	PZ(COLOR91, "検索\n");
-	P("   %s DIR -r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $CMD);
-	PZ(COLOR12, " (例２) ");
-	PZ(COLOR91, "検索結果をファイルへ保存\n");
-	P("   %s DIR1 DIR2 -r -o=FILE\n\n", $CMD);
-	PZ(COLOR12, " (例３) ");
-	PZ(COLOR91, "検索対象をファイルから読込\n");
-	P("   %s -i=FILE\n\n", $CMD);
-	PZ(COLOR21, " [Dir]\n");
-	PZ(COLOR91, "   検索対象 dir\n");
-	PZ(COLOR12, "   (例) ");
-	PZ(COLOR91, "\"c:\\\" \"c:\\windows\\\" => \"c:\\\"\n");
-	PZ(COLOR13, "   (注) ");
-	PZ(COLOR91, "複数指定の場合、上位Dirに集約する\n\n");
-	PZ(COLOR21, " [Option]\n");
-	PZ(COLOR22, "   -out=FILE | -o=FILE\n");
-	PZ(COLOR91, "       出力ファイル\n\n");
-	PZ(COLOR22, "   -in=FILE | -i=FILE\n");
-	PZ(COLOR91, "       入力ファイル\n");
-	PZ(COLOR13, "       (注) ");
-	PZ(COLOR91, "検索対象 dir と併用できない\n\n");
-	PZ(COLOR22, "   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...\n");
-	PZ(COLOR91, NULL);
+	PRGB01();
+	P2("\033[48;2;80;80;250m ファイル検索 \033[49m");
+	NL();
+	PRGB02();
+	P ("\033[48;2;250;80;80m %s [Dir] [Option] \033[49m\n\n", $CMD);
+	PRGB11();
+	P0(" (例１) ");
+	PRGB91();
+	P2("検索");
+	P ("   %s \033[38;2;255;150;150mDIR \033[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $CMD);
+	PRGB11();
+	P0(" (例２) ");
+	PRGB91();
+	P2("検索結果をファイルへ保存");
+	P ("   %s \033[38;2;255;150;150mDIR1 DIR2 \033[38;2;150;150;255m-r -o=FILE\n\n", $CMD);
+	PRGB11();
+	P0(" (例３) ");
+	PRGB91();
+	P2("検索対象をファイルから読込");
+	P ("   %s \033[38;2;150;150;255m-i=FILE\n\n", $CMD);
+	PRGB02();
+	P2("\033[48;2;250;80;80m [Dir] \033[49m");
+	PRGB91();
+	P2("   検索対象 dir");
+	PRGB11();
+	P0("   (例) ");
+	PRGB91();
+	P2("\"c:\\\" \"c:\\windows\\\" => \"c:\\\"");
+	PRGB12();
+	P2("        複数指定の場合、上位Dirに集約する");
+	NL();
+	PRGB02();
+	P2("\033[48;2;250;80;80m [Option] \033[49m");
+	PRGB21();
+	P2("   -out=FILE | -o=FILE");
+	PRGB91();
+	P2("       出力ファイル");
+	NL();
+	PRGB21();
+	P2("   -in=FILE | -i=FILE");
+	PRGB91();
+	P2("       入力ファイル");
+	PRGB12();
+	P2("       検索対象 dir と併用できない");
+	NL();
+	PRGB21();
+	P2("   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...");
+	PRGB91();
 	P2("       LN        (NUM) 連番／1回のみ指定可");
 	P2("       path      (STR) dir\\name");
 	P2("       dir       (STR) ディレクトリ名");
@@ -1429,102 +1448,181 @@ print_help()
 	P2("       mtime     (STR) 更新日時     ctime参照");
 	P2("       atime_cjd (NUM) アクセス日時 ctime_cjd参照");
 	P2("       atime     (STR) アクセス日時 ctime参照");
-	P2("       *         全項目表\示\n");
+	P2("       *         全項目表\示");
+	NL();
+	PRGB22();
 	P2("       ※１ COLUMN指定なしの場合");
-	P("            %s 順で表\示\n", OP_SELECT_1);
+	PRGB91();
+	P ("            %s 順で表\示\n", OP_SELECT_1);
+	PRGB22();
 	P2("       ※２ SQLite演算子／関数を利用可能\");
-	PZ(COLOR12, "            (例)\n");
-	PZ(COLOR91, NULL);
-	P2("              abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
-	P2("              glob(X, Y)  ifnull(X, Y)  instr(X, Y)  hex(X)");
-	P2("              last_insert_rowid()  length(X)");
-	P2("              like(X, Y)  like(X, Y, Z)  likelihood(X, Y)  likely(X)");
-	P2("              load_extension(X)  load_extension(X, Y)  lower(X)");
-	P2("              ltrim(X)  ltrim(X, Y)  max(X, Y, ...)  min(X, Y, ...)");
-	P2("              nullif(X, Y)  printf(FORMAT, ...)  quote(X)");
-	P2("              random()  randomblob(N)  replace(X, Y, Z)");
-	P2("              round(X)  round(X, Y)  rtrim(X)  rtrim(X, Y)");
-	P2("              soundex(X)  sqlite_compileoption_get(N)");
-	P2("              sqlite_compileoption_used(X)  sqlite_source_id()");
-	P2("              sqlite_version()  substr(X, Y, Z) substr(X, Y)");
-	P2("              total_changes()  trim(X) trim(X, Y)  typeof(X)  unlikely(X)");
-	P2("              unicode(X)  upper(X)  zeroblob(N)");
-	PZ(COLOR13, "           (注) ");
-	PZ(COLOR91, "マルチバイト文字を１文字として処理\n");
-	P2("           (参考) http://www.sqlite.org/lang_corefunc.html\n");
-	PZ(COLOR22, "   -where=STR | -w=STR\n");
-	PZ(COLOR12, "       (例１) ");
-	PZ(COLOR91, "\"size<=100 or size>1000000\"\n");
-	PZ(COLOR12, "       (例２) ");
-	PZ(COLOR91, "\"type like 'f' and name like 'abc??.*'\"\n");
+	PRGB91();
+	P2("            abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
+	P2("            glob(X, Y)  ifnull(X, Y)  instr(X, Y)  hex(X)");
+	P2("            last_insert_rowid()  length(X)");
+	P2("            like(X, Y)  like(X, Y, Z)  likelihood(X, Y)  likely(X)");
+	P2("            load_extension(X)  load_extension(X, Y)  lower(X)");
+	P2("            ltrim(X)  ltrim(X, Y)  max(X, Y, ...)  min(X, Y, ...)");
+	P2("            nullif(X, Y)  printf(FORMAT, ...)  quote(X)");
+	P2("            random()  randomblob(N)  replace(X, Y, Z)");
+	P2("            round(X)  round(X, Y)  rtrim(X)  rtrim(X, Y)");
+	P2("            soundex(X)  sqlite_compileoption_get(N)");
+	P2("            sqlite_compileoption_used(X)  sqlite_source_id()");
+	P2("            sqlite_version()  substr(X, Y, Z) substr(X, Y)");
+	P2("            total_changes()  trim(X) trim(X, Y)  typeof(X)  unlikely(X)");
+	P2("            unicode(X)  upper(X)  zeroblob(N)");
+	PRGB12();
+	P2("           マルチバイトを１文字として処理");
+	PRGB13();
+	P2("           (参考) http://www.sqlite.org/lang_corefunc.html");
+	NL();
+	PRGB21();
+	P2("   -where=STR | -w=STR");
+	PRGB11();
+	P0("       (例１) ");
+	PRGB91();
+	P2("\"size<=100 or size>1000000\"");
+	PRGB11();
+	P0("       (例２) ");
+	PRGB91();
+	P2("\"type like 'f' and name like 'abc??.*'\"");
 	P2("              '?' '_' は任意の1文字");
 	P2("              '*' '%' は任意の0文字以上");
-	PZ(COLOR12, "       (例３) ");
-	PZ(COLOR91, "基準日 \"2010-12-10 12:00:00\"のとき\n");
+	PRGB11();
+	P0("       (例３) ");
+	PRGB91();
+	P2("基準日 \"2010-12-10 12:00:00\"のとき");
 	P2("              \"ctime>=[-10D]\"  => \"ctime>='2010-11-30 00:00:00'\"");
 	P2("              \"ctime>=[-10d]\"  => \"ctime>='2010-11-30 12:00:00'\"");
 	P2("              \"ctime>=[-10d*]\" => \"ctime>='2010-11-30 %'\"");
 	P2("              \"ctime>=[-10d%]\" => \"ctime>='2010-11-30 %'\"");
-	P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n");
-	PZ(COLOR22, "   -group=STR | -g=STR\n");
-	PZ(COLOR12, "       (例) ");
-	PZ(COLOR91, "-g=\"STR1, STR2\"\n");
-	P2("            STR1とSTR2をグループ毎にまとめる\n");
-	PZ(COLOR22, "   -sort=\"STR [ASC|DESC]\" | -st=\"STR [ASC|DESC]\"\n");
-	PZ(COLOR12, "       (例) ");
-	PZ(COLOR91, "-st=\"STR1 ASC, STR2 DESC\"\n");
-	P2("            STR1を順ソ\ート, STR2を逆順ソ\ート\n");
-	PZ(COLOR22, "   -recursive | -r\n");
-	PZ(COLOR91, "       下階層を全検索\n\n");
-	PZ(COLOR22, "   -depth=NUM1,NUM2 | -d=NUM1,NUM2\n");
-	PZ(COLOR91, "       検索する下階層を指定\n");
-	PZ(COLOR12, "       (例１) ");
-	PZ(COLOR91, "-d=\"1\"\n");
+	P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s");
+	NL();
+	PRGB21();
+	P2("   -group=STR | -g=STR");
+	PRGB11();
+	P0("       (例) ");
+	PRGB91();
+	P2("-g=\"STR1, STR2\"");
+	P2("            STR1とSTR2をグループ毎にまとめる");
+	NL();
+	PRGB21();
+	P2("   -sort=\"STR [ASC|DESC]\" | -st=\"STR [ASC|DESC]\"");
+	PRGB11();
+	P0("       (例) ");
+	PRGB91();
+	P2("-st=\"STR1 ASC, STR2 DESC\"");
+	P2("            STR1を順ソ\ート, STR2を逆順ソ\ート");
+	NL();
+	PRGB21();
+	P2("   -recursive | -r");
+	PRGB91();
+	P2("       全階層を検索");
+	NL();
+	PRGB21();
+	P2("   -depth=NUM1,NUM2 | -d=NUM1,NUM2");
+	PRGB91();
+	P2("       検索する階層を指定");
+	PRGB11();
+	P0("       (例１) ");
+	PRGB91();
+	P2("-d=\"1\"");
 	P2("              1階層のみ検索");
-	PZ(COLOR12, "       (例２) ");
-	PZ(COLOR91, "-d=\"3\",\"5\"\n");
-	P2("              3～5階層を検索\n");
+	PRGB11();
+	P0("       (例２) ");
+	PRGB91();
+	P2("-d=\"3\",\"5\"");
+	P2("              3～5階層を検索");
+	NL();
+	PRGB22();
 	P2("       ※１ CurrentDir は \"0\"");
 	P2("       ※２ -depth と -where における depth の挙動の違い");
-	P2("            ◇(速い) -depth は指定された階層のみ検索を行う");
-	P2("            ◇(遅い) -where内でのdepthによる検索は全階層のdir／fileに対して行う\n");
-	PZ(COLOR22, "   -noheader | -nh\n");
-	PZ(COLOR91, "       ヘッダ情報を表\示しない\n\n");
-	PZ(COLOR22, "   -nofooter | -nf\n");
-	PZ(COLOR91, "       フッタ情報を表\示しない\n\n");
-	PZ(COLOR22, "   -quote=STR | -qt=STR\n");
-	PZ(COLOR91, "       囲み文字\n");
-	PZ(COLOR12, "       (例) ");
-	PZ(COLOR91, "-qt=\"'\"\n\n");
-	PZ(COLOR22, "   -separate=STR | -sp=STR\n");
-	PZ(COLOR91, "       区切り文字\n");
-	PZ(COLOR12, "       (例) ");
-	PZ(COLOR91, "-sp=\"\\t\"\n\n");
-	PZ(COLOR22, "   --mkdir=DIR | --md=DIR\n");
-	PZ(COLOR91, "       検索結果からdirを抽出し DIR に作成する (-recursive のとき 階層維持)\n\n");
-	PZ(COLOR22, "   --copy=DIR | --cp=DIR\n");
-	PZ(COLOR91, "       --mkdir + 検索結果を DIR にコピーする (-recursive のとき 階層維持)\n\n");
-	PZ(COLOR22, "   --move=DIR | --mv=DIR\n");
-	PZ(COLOR91, "       --mkdir + 検索結果を DIR に移動する (-recursive のとき 階層維持)\n\n");
-	PZ(COLOR22, "   --move2=DIR | --mv2=DIR\n");
-	PZ(COLOR91, "       --mkdir + --move + 移動元の空dirを削除する (-recursive のとき 階層維持)\n\n");
-	PZ(COLOR22, "   --extract1=DIR | --ext1=DIR\n");
-	PZ(COLOR91, "       --mkdir + 検索結果ファイルのみ抽出し DIR にコピーする\n");
-	PZ(COLOR13, "       (注) ");
-	PZ(COLOR91, "階層を維持しない／同名ファイルは上書き\n\n");
-	PZ(COLOR22, "   --extract2=DIR | --ext2=DIR\n");
-	PZ(COLOR91, "       --mkdir + 検索結果ファイルのみ抽出し DIR に移動する\n");
-	PZ(COLOR13, "       (注) ");
-	PZ(COLOR91, "階層を維持しない／同名ファイルは上書き\n\n");
-	PZ(COLOR22, "   --remove | --rm\n");
-	PZ(COLOR91, "       検索結果のfileのみ削除する（dirは削除しない）\n\n");
-	PZ(COLOR22, "   --remove2 | --rm2\n");
-	PZ(COLOR91, "       --remove + 空dirを削除する\n\n");
-	PZ(COLOR22, "   --replace=FILE | --rep=FILE\n");
-	PZ(COLOR91, "       検索結果(複数) を FILE の内容で置換(上書き)する／ファイル名は変更しない\n");
-	PZ(COLOR12, "       (例) ");
-	PZ(COLOR91, "-w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"\n\n");
-	PZ(COLOR92, NULL);
+	PRGB91();
+	P2("            \033[38;2;255;150;150m◇速い\033[39m -depth は指定された階層のみ検索を行う");
+	P2("            \033[38;2;150;150;255m◇遅い\033[39m -where内でのdepthによる検索は全階層のdir／fileに対して行う");
+	NL();
+	PRGB21();
+	P2("   -noheader | -nh");
+	PRGB91();
+	P2("       ヘッダ情報を表\示しない");
+	NL();
+	PRGB21();
+	P2("   -nofooter | -nf");
+	PRGB91();
+	P2("       フッタ情報を表\示しない");
+	NL();
+	PRGB21();
+	P2("   -quote=STR | -qt=STR");
+	PRGB91();
+	P2("       囲み文字");
+	PRGB11();
+	P0("       (例) ");
+	PRGB91();
+	P2("-qt=\"'\"");
+	NL();
+	PRGB21();
+	P2("   -separate=STR | -sp=STR");
+	PRGB91();
+	P2("       区切り文字");
+	PRGB11();
+	P0("       (例) ");
+	PRGB91();
+	P2("-sp=\"\\t\"");
+	NL();
+	PRGB21();
+	P2("   --mkdir=DIR | --md=DIR");
+	PRGB91();
+	P2("       検索結果からdirを抽出し DIR に作成する (-recursive のとき 階層維持)");
+	NL();
+	PRGB21();
+	P2("   --copy=DIR | --cp=DIR");
+	PRGB91();
+	P2("       --mkdir + 検索結果を DIR にコピーする (-recursive のとき 階層維持)");
+	NL();
+	PRGB21();
+	P2("   --move=DIR | --mv=DIR");
+	PRGB91();
+	P2("       --mkdir + 検索結果を DIR に移動する (-recursive のとき 階層維持)");
+	NL();
+	PRGB21();
+	P2("   --move2=DIR | --mv2=DIR");
+	PRGB91();
+	P2("       --mkdir + --move + 移動元の空dirを削除する (-recursive のとき 階層維持)");
+	NL();
+	PRGB21();
+	P2("   --extract1=DIR | --ext1=DIR");
+	PRGB91();
+	P2("       --mkdir + 検索結果ファイルのみ抽出し DIR にコピーする");
+	PRGB12();
+	P2("       階層を維持しない／同名ファイルは上書き");
+	NL();
+	PRGB21();
+	P2("   --extract2=DIR | --ext2=DIR");
+	PRGB91();
+	P2("       --mkdir + 検索結果ファイルのみ抽出し DIR に移動する");
+	PRGB12();
+	P2("       階層を維持しない／同名ファイルは上書き");
+	NL();
+	PRGB21();
+	P2("   --remove | --rm");
+	PRGB91();
+	P2("       検索結果のfileのみ削除する（dirは削除しない）");
+	NL();
+	PRGB21();
+	P2("   --remove2 | --rm2");
+	PRGB91();
+	P2("       --remove + 空dirを削除する");
+	NL();
+	PRGB21();
+	P2("   --replace=FILE | --rep=FILE");
+	PRGB91();
+	P2("       検索結果(複数) を FILE の内容で置換(上書き)する／ファイル名は変更しない");
+	PRGB11();
+	P0("       (例) ");
+	PRGB91();
+	P2("-w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"");
+	NL();
+	PRGB92();
 	LN();
-	PZ(-1, NULL);
+	PRGB00();
 }
