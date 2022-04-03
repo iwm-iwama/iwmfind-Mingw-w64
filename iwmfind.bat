@@ -8,8 +8,7 @@
 	set exec=%fn%.exe
 	set cc=gcc.exe
 	set lib=lib_iwmutil.a sqlite3.a
-	:: 2021-09-23Œ»İ
-	::   -Os ‚Ì•û‚ª -O2 ‚æ‚èˆÀ’è‚µ‚Ä‘¬‚¢ŒXŒü‚ ‚è
+	:: -Os ‚Å\•ª
 	set option=-Os -Wall -lgdi32 -luser32 -lshlwapi
 
 :: Make ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
