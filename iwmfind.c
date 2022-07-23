@@ -1681,7 +1681,7 @@ print_help()
 	PRGB21();
 	P2("   --delete | --del");
 	PRGB91();
-	P2("       検索結果のFileのみゴミ箱へ移動する（Dirは削除しない）");
+	P2("       検索結果のFileのみゴミ箱へ移動する（Dirは移動しない）");
 	NL();
 	PRGB21();
 	P2("   --delete2 | --del2");
