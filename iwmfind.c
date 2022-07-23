@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind4_20220429"
+#define  IWM_VERSION         "iwmfind4_20220723"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil.h"
@@ -150,50 +150,52 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define  I_MV2                4
 #define  I_EXT1               5
 #define  I_EXT2               6
-#define  I_RP                11
-#define  I_RM                21
-#define  I_RM2               22
+#define  I_DEL               11
+#define  I_DEL2              12
+#define  I_REP               20
+#define  I_RM                31
+#define  I_RM2               32
 //
 // 現在時間
 //
 INT *$aiNow = { 0 };
 //
-// 検索dir
+// 検索Dir
 //
 MBS **$aDirList = { 0 };
 INT $aDirListSize = 0;
 //
 // 入力DB
-// -in=STR | -i=STR
+// -in=Str | -i=Str
 //
 MBS *$sIn = "";
 MBS *$sInDbn = MEMDB;
 //
 // 出力DB
-// -out=STR | -o=STR
+// -out=Str | -o=Str
 //
 MBS *$sOut = "";
 MBS *$sOutDbn = "";
 //
-// select 句
-// -select=STR | -s=STR
+// select
+// -select=Str | -s=Str
 //
 MBS *$sSelect = OP_SELECT_0;
 INT $iSelectPosNumber = 0; // "LN"の配列位置
 //
-// where 句
-// -where=STR | -w=STR
+// where
+// -where=Str | -w=Str
 //
 MBS *$sWhere1 = "";
 MBS *$sWhere2 = "";
 //
-// group by 句
-// -group=STR | -g=STR
+// group by
+// -group=Str | -g=Str
 //
 MBS *$sGroup = "";
 //
-// order by 句
-// -sort=STR | -st=STR
+// order by
+// -sort=Str | -st=Str
 //
 MBS *$sSort = "";
 //
@@ -207,13 +209,13 @@ BOOL $bNoHeader = FALSE;
 //
 BOOL $bNoFooter = FALSE;
 //
-// 出力を STR で囲む
-// -quote=STR | -qt=STR
+// 出力をStrで囲む
+// -quote=Str | -qt=Str
 //
 MBS *$sQuote = "";
 //
-// 出力を STR で区切る
-// -separate=STR | -sp=STR
+// 出力をStrで区切る
+// -separate=Str | -sp=Str
 //
 MBS *$sSeparate = " | ";
 //
@@ -223,39 +225,44 @@ MBS *$sSeparate = " | ";
 INT $iDepthMin = 0; // 階層～開始位置(相対)
 INT $iDepthMax = 0; // 階層～終了位置(相対)
 //
-// mkdir STR
-// --mkdir=STR | --md=STR
+// mkdir Str
+// --mkdir=Str | --md=Str
 //
 MBS *$sMd = "";
 MBS *$sMdOp = "";
 //
-// mkdir STR & copy
-// --copy=STR | --cp=STR
+// mkdir Str & copy
+// --copy=Str | --cp=Str
 //
 MBS *$sCp = "";
 //
-// mkdir STR & move STR
-// --move=STR | --mv=STR
+// mkdir Str & move Str
+// --move=Str | --mv=Str
 //
 MBS *$sMv = "";
 //
-// mkdir STR & move STR & rmdir
-// --move2=STR | --mv2=STR
+// mkdir Str & move Str & rmdir
+// --move2=Str | --mv2=Str
 //
 MBS *$sMv2 = "";
 //
-// copy STR
-// --extract1=STR | --ext1=STR
+// copy Str
+// --extract1=Str | --ext1=Str
 //
 MBS *$sExt1 = "";
 //
-// move STR
-// --extract2=STR | --ext2=STR
+// move Str
+// --extract2=Str | --ext2=Str
 //
 MBS *$sExt2 = "";
 //
-// replace results with STR
-// --replace=STR | --rep=STR
+// --del  | --delete
+// --del2 | --delete2
+//
+INT $iDel = 0;
+//
+// replace results with Str
+// --replace=Str | --rep=Str
 //
 MBS *$sRep = "";
 MBS *$sRepOp = "";
@@ -266,13 +273,15 @@ MBS *$sRepOp = "";
 INT $iRm = 0;
 //
 // 優先順 (安全)I_MD > (危険)I_RM2
-//  I_MD  = --mkdir
-//  I_CP  = --cp
-//  I_MV  = --mv
-//  I_MV2 = --mv2
-//  I_RP  = --rep
-//  I_RM  = --rm
-//  I_RM2 = --rm2
+//  I_MD   = --mkdir
+//  I_CP   = --cp
+//  I_MV   = --mv
+//  I_MV2  = --mv2
+//  I_DEL  = --del
+//  I_DEL2 = --del2
+//  I_REP  = --rep
+//  I_RM   = --rm
+//  I_RM2  = --rm2
 //
 INT $iExec = 0;
 
@@ -321,34 +330,30 @@ main()
 		if(($p1 = iCLI_getOptValue($i1, "-d=", "-depth=")))
 		{
 			$ap1 = ija_split($p1, ", ");
-			$i2 = iary_size($ap1);
-
-			if($i2 > 1)
-			{
-				$iDepthMin = inum_atoi($ap1[0]);
-				$iDepthMax = inum_atoi($ap1[1]);
-
-				if($iDepthMax > IMAX_PATH)
+				$i2 = iary_size($ap1);
+				if($i2 > 1)
 				{
-					$iDepthMax = IMAX_PATH;
+					$iDepthMin = inum_atoi($ap1[0]);
+					$iDepthMax = inum_atoi($ap1[1]);
+					if($iDepthMax > IMAX_PATH)
+					{
+						$iDepthMax = IMAX_PATH;
+					}
+					if($iDepthMin > $iDepthMax)
+					{
+						$i2 = $iDepthMin;
+						$iDepthMin = $iDepthMax;
+						$iDepthMax = $i2;
+					}
 				}
-
-				if($iDepthMin > $iDepthMax)
+				else if($i2 == 1)
 				{
-					$i2 = $iDepthMin;
-					$iDepthMin = $iDepthMax;
-					$iDepthMax = $i2;
+					$iDepthMin = $iDepthMax = inum_atoi($ap1[0]);
 				}
-			}
-			else if($i2 == 1)
-			{
-				$iDepthMin = $iDepthMax = inum_atoi($ap1[0]);
-			}
-			else
-			{
-				$iDepthMin = $iDepthMax = 0;
-			}
-
+				else
+				{
+					$iDepthMin = $iDepthMax = 0;
+				}
 			ifree($ap1);
 		}
 	}
@@ -362,7 +367,7 @@ main()
 		{
 			break;
 		}
-		// dir不在
+		// Dir不在
 		if(iFchk_typePathA($ARGV[$i1]) != 1)
 		{
 			P("[Err] Dir(%d) '%s' は存在しない!\n", ($i1 + 1), $ARGV[$i1]);
@@ -472,6 +477,18 @@ main()
 			}
 		}
 
+		// --del | --delete
+		if(iCLI_getOptMatch($i1, "--del", "--delete"))
+		{
+			$iDel = I_DEL;
+		}
+
+		// --del2 | --delete2
+		if(iCLI_getOptMatch($i1, "--del2", "--delete2"))
+		{
+			$iDel = I_DEL2;
+		}
+
 		// --rep | --replace
 		if(($p1 = iCLI_getOptValue($i1, "--rep=", "--replace=")))
 		{
@@ -497,35 +514,33 @@ main()
 		/*
 			(none)     : OP_SELECT_0
 			-select="" : Err
-			-select="COLUMN1,COLUMN2,..."
+			-select="Column1,Column2,..."
 		*/
 		if(($p1 = iCLI_getOptValue($i1, "-s=", "-select=")))
 		{
 			// "AS" 対応のため " " (空白)は不可
 			// (例) -s="dir||name AS PATH"
 			$ap1 = ija_split($p1, ",");
-
-			if($ap1[0])
-			{
-				// "LN"位置を求める
-				$ap2 = iary_simplify($ap1, TRUE); // LN表示は１個のみなので重複排除
-					$iSelectPosNumber = 0;
-					while(($p2 = $ap2[$iSelectPosNumber]))
-					{
-						if(imb_cmppi($p2, "LN"))
+				if($ap1[0])
+				{
+					// "LN"位置を求める
+					$ap2 = iary_simplify($ap1, TRUE); // LN表示は１個のみなので重複排除
+						$iSelectPosNumber = 0;
+						while(($p2 = $ap2[$iSelectPosNumber]))
 						{
-							break;
+							if(imb_cmppi($p2, "LN"))
+							{
+								break;
+							}
+							++$iSelectPosNumber;
 						}
-						++$iSelectPosNumber;
-					}
-					if(! $p2)
-					{
-						$iSelectPosNumber = -1;
-					}
-					$sSelect = iary_join($ap2, ",");
-				ifree($ap2);
-			}
-
+						if(! $p2)
+						{
+							$iSelectPosNumber = -1;
+						}
+						$sSelect = iary_join($ap2, ",");
+					ifree($ap2);
+				}
 			ifree($ap1);
 		}
 
@@ -596,7 +611,7 @@ main()
 	}
 
 	// --[exec] 関係を一括変換
-	if(*$sMd || *$sCp || *$sMv || *$sMv2 || *$sExt1 || *$sExt2 || *$sRep || $iRm)
+	if(*$sMd || *$sCp || *$sMv || *$sMv2 || *$sExt1 || *$sExt2 || $iDel || *$sRep || $iRm)
 	{
 		$bNoFooter = TRUE; // フッタ情報を非表示
 
@@ -630,6 +645,10 @@ main()
 			$iExec = I_EXT2;
 			$sMdOp = ims_clone($sExt2);
 		}
+		else if($iDel)
+		{
+			$iExec = $iDel;
+		}
 		else if(*$sRep)
 		{
 			if(iFchk_typePathA($sRep) != 2)
@@ -639,13 +658,16 @@ main()
 			}
 			else
 			{
-				$iExec = I_RP;
+				$iExec = I_REP;
 				$sRepOp = ims_clone($sRep);
 			}
 		}
 		else if($iRm)
 		{
 			$iExec = $iRm;
+		}
+		else
+		{
 		}
 
 		if($iExec <= I_EXT2)
@@ -655,7 +677,7 @@ main()
 			ifree($p1);
 			$sSelect = ($iExec <= I_MV2 ? OP_SELECT_MKDIR : OP_SELECT_EXTRACT);
 		}
-		else if($iExec == I_RP)
+		else if($iExec == I_REP)
 		{
 			$sSelect = OP_SELECT_RP;
 		}
@@ -773,15 +795,15 @@ main()
 				{
 					CopyFile($sInDbn, OLDDB, FALSE);
 				}
-				// WHERE STR のとき不要データ削除
+				// WHERE Str のとき不要データ削除
 				if(*$sWhere1)
 				{
 					sql_exec($iDbs, "BEGIN", 0);         // トランザクション開始
 					$p1 = ims_cats(2, "WHERE ", $sWhere1);
-					sprintf($pBuf, UPDATE_EXEC99_1, $p1);
+						sprintf($pBuf, UPDATE_EXEC99_1, $p1);
 					ifree($p1);
 					$p2 = M2U($pBuf);                    // UTF-8で処理
-					sql_exec($iDbs, $p2, 0);             // フラグを立てる
+						sql_exec($iDbs, $p2, 0);         // フラグを立てる
 					ifree($p2);
 					sql_exec($iDbs, DELETE_EXEC99_1, 0); // 不要データ削除
 					sql_exec($iDbs, UPDATE_EXEC99_2, 0); // フラグ初期化
@@ -848,6 +870,7 @@ MBS
 	ifree($p2);
 	$p2 = ijs_replace($p1, "?", "_", FALSE); // "?" => "_"
 	ifree($p1);
+	// [] を日付に変換
 	$p1 = idate_replace_format_ymdhns(
 			$p2,
 			"[", "]",
@@ -858,7 +881,7 @@ MBS
 			$aiNow[3],
 			$aiNow[4],
 			$aiNow[5]
-	); // [] を日付に変換
+	);
 	ifree($p2);
 	return $p1;
 }
@@ -870,13 +893,16 @@ MBS
 			d:\aaa\ccc\
 			d:\aaa\ddd.txt
 		を表示したときの違いは次のとおり。
+
 		①iwmls.exe（ls、dir互換）
 			d:\aaa\bbb\
 			d:\aaa\ccc\
 			d:\aaa\ddd.txt
+
 		②iwmfind.exe（BaseDirとFileを表示）
 			d:\aaa\
 			d:\aaa\ddd.txt
+
 		※DirとFileを別テーブルで管理／joinして使用するため、このような仕様にならざるを得ない。
 */
 VOID
@@ -921,6 +947,9 @@ ifind10(
 				else if(bMinDepthFlg)
 				{
 					ifind22(FI, dirId, F.cFileName);
+				}
+				else
+				{
 				}
 			}
 		}
@@ -1123,9 +1152,9 @@ sql_result_exec(
 		case(I_CP):    // --copy
 		case(I_MV):    // --move
 		case(I_MV2):   // --move2
-			// $sMdOp\以下には、$aDirList\以下の dir を作成
+			// $sMdOp\以下には、$aDirList\以下のDirを作成
 			i1  = atoi(sColumnValues[0]); // step_cnt
-			$p1 = U2M(sColumnValues[1]);  // dir "\"付
+			$p1 = U2M(sColumnValues[1]);  // dir + "\"
 			p1e = ijp_forwardN($p1, i1);  // $p1のEOD
 			$p2 = U2M(sColumnValues[2]);  // name
 			$p3 = U2M(sColumnValues[3]);  // path
@@ -1141,44 +1170,47 @@ sql_result_exec(
 			$p4 = ims_clone(p1e);
 				sprintf($pBuf, "%s\\%s%s", $sMdOp, $p4, $p2);
 			$p5 = ims_clone($pBuf);
-			if($iExec == I_CP)
-			{
-				if(CopyFile($p3, $p5, FALSE))
+				if($iExec == I_CP)
 				{
-					P0("cp\t<= ");
-					P2($p3);
-					++$lRowCnt;
-				}
-			}
-			else if($iExec >= I_MV)
-			{
-				// ReadOnly属性(1)を解除
-				if((1 & GetFileAttributes($p5)))
-				{
-					SetFileAttributes($p5, FALSE);
-				}
-				// 既存file削除
-				if(iFchk_typePathA($p5))
-				{
-					DeleteFile($p5);
-				}
-				if(MoveFile($p3, $p5))
-				{
-					P0("mv\t<= ");
-					P2($p3);
-					++$lRowCnt;
-				}
-				// rmdir
-				if($iExec == I_MV2)
-				{
-					if(RemoveDirectory($p1))
+					if(CopyFile($p3, $p5, FALSE))
 					{
-						P0("rd\t=> ");
-						P2($p1);
+						P0("cp\t<= ");
+						P2($p3);
 						++$lRowCnt;
 					}
 				}
-			}
+				else if($iExec >= I_MV)
+				{
+					// ReadOnly属性(1)を解除
+					if((1 & GetFileAttributes($p5)))
+					{
+						SetFileAttributes($p5, FALSE);
+					}
+					// 既存File削除
+					if(iFchk_typePathA($p5))
+					{
+						DeleteFile($p5);
+					}
+					if(MoveFile($p3, $p5))
+					{
+						P0("mv\t<= ");
+						P2($p3);
+						++$lRowCnt;
+					}
+					// rmdir
+					if($iExec == I_MV2)
+					{
+						if(RemoveDirectory($p1))
+						{
+							P0("rd\t=> ");
+							P2($p1);
+							++$lRowCnt;
+						}
+					}
+				}
+				else
+				{
+				}
 			ifree($p5);
 			ifree($p4);
 			ifree($p3);
@@ -1199,7 +1231,7 @@ sql_result_exec(
 				}
 				// 先
 				sprintf($pBuf, "%s\\%s", $sMdOp, $p2);
-				// I_EXT1, I_EXT2共、同名fileは上書き
+				// I_EXT1, I_EXT2共、同名Fileは上書き
 				if($iExec == I_EXT1)
 				{
 					if(CopyFile($p1, $pBuf, FALSE))
@@ -1216,7 +1248,7 @@ sql_result_exec(
 					{
 						SetFileAttributes($pBuf, FALSE);
 					}
-					// dir存在していれば削除しておく
+					// Dir存在していれば削除しておく
 					if(iFchk_typePathA($pBuf))
 					{
 						DeleteFile($pBuf);
@@ -1228,11 +1260,45 @@ sql_result_exec(
 						++$lRowCnt;
 					}
 				}
+				else
+				{
+				}
 			ifree($p2);
 			ifree($p1);
 		break;
 
-		case(I_RP): // --replace
+		case(I_DEL):  // --delete
+		case(I_DEL2): // --delete2
+			$p1 = U2M(sColumnValues[0]); // path
+				// ReadOnly属性(1)を解除
+				if((1 & atoi(sColumnValues[2])))
+				{
+					SetFileAttributes($p1, FALSE);
+				}
+				// Fileをゴミ箱へ移動
+				if(imv_trash($p1, FALSE))
+				{
+					P0("del\t=> ");
+					P2($p1);
+					++$lRowCnt;
+				}
+				// 空Dirをゴミ箱へ移動
+				if($iExec == I_DEL2)
+				{
+					$p2 = U2M(sColumnValues[1]); // dir
+						// 空Dirである
+						if(imv_trash($p2, TRUE))
+						{
+							P0("del\t=> ");
+							P2($p2);
+							++$lRowCnt;
+						}
+					ifree($p2);
+				}
+			ifree($p1);
+		break;
+
+		case(I_REP): // --replace
 			$p1 = U2M(sColumnValues[0]); // type
 			$p2 = U2M(sColumnValues[1]); // path
 				if(*$p1 == 'f' && CopyFile($sRepOp, $p2, FALSE))
@@ -1248,31 +1314,31 @@ sql_result_exec(
 		case(I_RM):  // --remove
 		case(I_RM2): // --remove2
 			$p1 = U2M(sColumnValues[0]); // path
-			$p2 = U2M(sColumnValues[1]); // dir
-			// ReadOnly属性(1)を解除
-			if((1 & atoi(sColumnValues[2])))
-			{
-				SetFileAttributes($p1, FALSE);
-			}
-			// file 削除
-			if(DeleteFile($p1))
-			{
-				P0("rm\t=> ");
-				P2($p1);
-				++$lRowCnt;
-			}
-			// 空dir 削除
-			if($iExec == I_RM2)
-			{
-				// 空dirである
-				if(RemoveDirectory($p2))
+				// ReadOnly属性(1)を解除
+				if((1 & atoi(sColumnValues[2])))
 				{
-					P0("rd\t=> ");
-					P2($p2);
+					SetFileAttributes($p1, FALSE);
+				}
+				// File削除
+				if(DeleteFile($p1))
+				{
+					P0("rm\t=> ");
+					P2($p1);
 					++$lRowCnt;
 				}
-			}
-			ifree($p2);
+				// 空Dir削除
+				if($iExec == I_RM2)
+				{
+					$p2 = U2M(sColumnValues[1]); // dir
+						// 空Dirである
+						if(RemoveDirectory($p2))
+						{
+							P0("rd\t=> ");
+							P2($p2);
+							++$lRowCnt;
+						}
+					ifree($p2);
+				}
 			ifree($p1);
 		break;
 	}
@@ -1282,8 +1348,8 @@ sql_result_exec(
 BOOL
 sql_saveOrLoadMemdb(
 	sqlite3 *mem_db, // ":memory:"
-	MBS *ofn,        // filename
-	BOOL save_load   // TRUE=save, FALSE=load
+	MBS *ofn,        // Filename
+	BOOL save_load   // TRUE=save／FALSE=load
 )
 {
 	INT err = 0;
@@ -1294,27 +1360,29 @@ sql_saveOrLoadMemdb(
 
 	// UTF-8で処理
 	U8N *up1 = M2U(ofn);
-		if(! (err = sqlite3_open(up1, &pFile)))
+
+	if(! (err = sqlite3_open(up1, &pFile)))
+	{
+		if(save_load)
 		{
-			if(save_load)
-			{
-				pFrom = mem_db;
-				pTo =pFile;
-			}
-			else
-			{
-				pFrom = pFile;
-				pTo = mem_db;
-			}
-			pBackup = sqlite3_backup_init(pTo, "main", pFrom, "main");
-			if(pBackup)
-			{
-				sqlite3_backup_step(pBackup, -1);
-				sqlite3_backup_finish(pBackup);
-			}
-			err = sqlite3_errcode(pTo);
+			pFrom = mem_db;
+			pTo =pFile;
 		}
-		sqlite3_close(pFile);
+		else
+		{
+			pFrom = pFile;
+			pTo = mem_db;
+		}
+		pBackup = sqlite3_backup_init(pTo, "main", pFrom, "main");
+		if(pBackup)
+		{
+			sqlite3_backup_step(pBackup, -1);
+			sqlite3_backup_finish(pBackup);
+		}
+		err = sqlite3_errcode(pTo);
+	}
+	sqlite3_close(pFile);
+
 	ifree(up1);
 
 	return (! err ? TRUE : FALSE);
@@ -1389,21 +1457,21 @@ print_help()
 	P0(" (例１) ");
 	PRGB91();
 	P2("検索");
-	P ("   %s \033[38;2;255;150;150mDIR \033[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $CMD);
+	P ("   %s \033[38;2;255;150;150mDir \033[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $CMD);
 	PRGB11();
 	P0(" (例２) ");
 	PRGB91();
 	P2("検索結果をファイルへ保存");
-	P ("   %s \033[38;2;255;150;150mDIR1 DIR2 \033[38;2;150;150;255m-r -o=FILE\n\n", $CMD);
+	P ("   %s \033[38;2;255;150;150mDir1 Dir2 \033[38;2;150;150;255m-r -o=File\n\n", $CMD);
 	PRGB11();
 	P0(" (例３) ");
 	PRGB91();
 	P2("検索対象をファイルから読込");
-	P ("   %s \033[38;2;150;150;255m-i=FILE\n\n", $CMD);
+	P ("   %s \033[38;2;150;150;255m-i=File\n\n", $CMD);
 	PRGB02();
 	P2("\033[48;2;200;50;50m [Dir] \033[0m");
 	PRGB91();
-	P2("   検索対象 dir");
+	P2("   検索対象Dir");
 	PRGB11();
 	P0("   (例) ");
 	PRGB91();
@@ -1414,41 +1482,41 @@ print_help()
 	PRGB02();
 	P2("\033[48;2;200;50;50m [Option] \033[0m");
 	PRGB21();
-	P2("   -out=FILE | -o=FILE");
+	P2("   -out=File | -o=File");
 	PRGB91();
 	P2("       出力ファイル");
 	NL();
 	PRGB21();
-	P2("   -in=FILE | -i=FILE");
+	P2("   -in=File | -i=File");
 	PRGB91();
 	P2("       入力ファイル");
 	PRGB12();
-	P2("       検索対象 dir と併用できない");
+	P2("       検索対象Dirと併用できない");
 	NL();
 	PRGB21();
-	P2("   -select=COLUMN1,COLUMN2,... | -s=COLUMN1,COLUMN2,...");
+	P2("   -select=Column1,Column2,... | -s=Column1,Column2,...");
 	PRGB91();
-	P2("       LN        (NUM) 連番／1回のみ指定可");
-	P2("       path      (STR) dir\\name");
-	P2("       dir       (STR) ディレクトリ名");
-	P2("       name      (STR) ファイル名");
-	P2("       ext       (STR) 拡張子");
-	P2("       depth     (NUM) ディレクトリ階層 = 0..");
-	P2("       type      (STR) ディレクトリ = d／ファイル = f");
-	P2("       attr_num  (NUM) 属性");
-	P2("       attr      (STR) 属性 \"[d|f][r|-][h|-][s|-][a|-]\"");
+	P2("       LN        (Num) 連番／1回のみ指定可");
+	P2("       path      (Str) dir\\name");
+	P2("       dir       (Str) ディレクトリ名");
+	P2("       name      (Str) ファイル名");
+	P2("       ext       (Str) 拡張子");
+	P2("       depth     (Num) ディレクトリ階層 = 0..");
+	P2("       type      (Str) ディレクトリ = d／ファイル = f");
+	P2("       attr_num  (Num) 属性");
+	P2("       attr      (Str) 属性 \"[d|f][r|-][h|-][s|-][a|-]\"");
 	P2("                       [dir|file][read-only][hidden][system][archive]");
-	P2("       size      (NUM) ファイルサイズ = byte");
-	P2("       ctime_cjd (NUM) 作成日時     -4712/01/01 00:00:00始点の通算日／CJD=JD-0.5");
-	P2("       ctime     (STR) 作成日時     \"yyyy-mm-dd hh:nn:ss\"");
-	P2("       mtime_cjd (NUM) 更新日時     ctime_cjd参照");
-	P2("       mtime     (STR) 更新日時     ctime参照");
-	P2("       atime_cjd (NUM) アクセス日時 ctime_cjd参照");
-	P2("       atime     (STR) アクセス日時 ctime参照");
+	P2("       size      (Num) ファイルサイズ = byte");
+	P2("       ctime_cjd (Num) 作成日時     -4712/01/01 00:00:00始点の通算日／CJD=JD-0.5");
+	P2("       ctime     (Str) 作成日時     \"yyyy-mm-dd hh:nn:ss\"");
+	P2("       mtime_cjd (Num) 更新日時     ctime_cjd参照");
+	P2("       mtime     (Str) 更新日時     ctime参照");
+	P2("       atime_cjd (Num) アクセス日時 ctime_cjd参照");
+	P2("       atime     (Str) アクセス日時 ctime参照");
 	P2("       *         全項目表\示");
 	NL();
 	PRGB22();
-	P2("       ※１ COLUMN指定なしの場合");
+	P2("       ※１ Column指定なしの場合");
 	PRGB91();
 	P ("            %s を表\示\n", OP_SELECT_0);
 	PRGB22();
@@ -1474,7 +1542,7 @@ print_help()
 	P2("           (参考) http://www.sqlite.org/lang_corefunc.html");
 	NL();
 	PRGB21();
-	P2("   -where=STR | -w=STR");
+	P2("   -where=Str | -w=Str");
 	PRGB11();
 	P0("       (例１) ");
 	PRGB91();
@@ -1496,20 +1564,20 @@ print_help()
 	P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s");
 	NL();
 	PRGB21();
-	P2("   -group=STR | -g=STR");
+	P2("   -group=Str | -g=Str");
 	PRGB11();
 	P0("       (例) ");
 	PRGB91();
-	P2("-g=\"STR1, STR2\"");
-	P2("            STR1とSTR2をグループ毎にまとめる");
+	P2("-g=\"Str1, Str2\"");
+	P2("            Str1とStr2をグループ毎にまとめる");
 	NL();
 	PRGB21();
-	P2("   -sort=\"STR [ASC|DESC]\" | -st=\"STR [ASC|DESC]\"");
+	P2("   -sort=\"Str [ASC|DESC]\" | -st=\"Str [ASC|DESC]\"");
 	PRGB11();
 	P0("       (例) ");
 	PRGB91();
-	P2("-st=\"STR1 ASC, STR2 DESC\"");
-	P2("            STR1を順ソ\ート, STR2を逆順ソ\ート");
+	P2("-st=\"Str1 ASC, Str2 DESC\"");
+	P2("            Str1を順ソ\ート, Str2を逆順ソ\ート");
 	NL();
 	PRGB21();
 	P2("   -recursive | -r");
@@ -1517,7 +1585,7 @@ print_help()
 	P2("       全階層を検索");
 	NL();
 	PRGB21();
-	P2("   -depth=NUM1,NUM2 | -d=NUM1,NUM2");
+	P2("   -depth=Num1,Num2 | -d=Num1,Num2");
 	PRGB91();
 	P2("       検索する階層を指定");
 	PRGB11();
@@ -1536,7 +1604,7 @@ print_help()
 	P2("       ※２ -depth と -where における depth の挙動の違い");
 	PRGB91();
 	P2("            \033[38;2;255;150;150m◇速い\033[39m -depth は指定された階層のみ検索を行う");
-	P2("            \033[38;2;150;150;255m◇遅い\033[39m -where内でのdepthによる検索は全階層のdir／fileに対して行う");
+	P2("            \033[38;2;150;150;255m◇遅い\033[39m -where内でのdepthによる検索は全階層のDir／Fileに対して行う");
 	NL();
 	PRGB21();
 	P2("   -noheader | -nh");
@@ -1549,7 +1617,7 @@ print_help()
 	P2("       フッタ情報を表\示しない");
 	NL();
 	PRGB21();
-	P2("   -quote=STR | -qt=STR");
+	P2("   -quote=Str | -qt=Str");
 	PRGB91();
 	P2("       囲み文字");
 	PRGB11();
@@ -1558,7 +1626,7 @@ print_help()
 	P2("-qt=\"'\"");
 	NL();
 	PRGB21();
-	P2("   -separate=STR | -sp=STR");
+	P2("   -separate=Str | -sp=Str");
 	PRGB91();
 	P2("       区切り文字");
 	PRGB11();
@@ -1567,53 +1635,63 @@ print_help()
 	P2("-sp=\"\\t\"");
 	NL();
 	PRGB21();
-	P2("   --mkdir=DIR | --md=DIR");
+	P2("   --mkdir=Dir | --md=Dir");
 	PRGB91();
-	P2("       検索結果からdirを抽出し DIR に作成する (-recursive のとき 階層維持)");
+	P2("       検索結果のDirをコピー作成する (-recursive のとき 階層維持)");
 	NL();
 	PRGB21();
-	P2("   --copy=DIR | --cp=DIR");
+	P2("   --copy=Dir | --cp=Dir");
 	PRGB91();
-	P2("       --mkdir + 検索結果を DIR にコピーする (-recursive のとき 階層維持)");
+	P2("       --mkdir + 検索結果をDirにコピーする (-recursive のとき 階層維持)");
 	NL();
 	PRGB21();
-	P2("   --move=DIR | --mv=DIR");
+	P2("   --move=Dir | --mv=Dir");
 	PRGB91();
-	P2("       --mkdir + 検索結果を DIR に移動する (-recursive のとき 階層維持)");
+	P2("       --mkdir + 検索結果をDirに移動する (-recursive のとき 階層維持)");
 	NL();
 	PRGB21();
-	P2("   --move2=DIR | --mv2=DIR");
+	P2("   --move2=Dir | --mv2=Dir");
 	PRGB91();
-	P2("       --mkdir + --move + 移動元の空dirを削除する (-recursive のとき 階層維持)");
+	P2("       --mkdir + --move + 移動元の空Dirを削除する (-recursive のとき 階層維持)");
 	NL();
 	PRGB21();
-	P2("   --extract1=DIR | --ext1=DIR");
+	P2("   --extract1=Dir | --ext1=Dir");
 	PRGB91();
-	P2("       --mkdir + 検索結果ファイルのみ抽出し DIR にコピーする");
+	P2("       --mkdir + 検索結果ファイルのみ抽出しDirにコピーする");
 	PRGB12();
 	P2("       階層を維持しない／同名ファイルは上書き");
 	NL();
 	PRGB21();
-	P2("   --extract2=DIR | --ext2=DIR");
+	P2("   --extract2=Dir | --ext2=Dir");
 	PRGB91();
-	P2("       --mkdir + 検索結果ファイルのみ抽出し DIR に移動する");
+	P2("       --mkdir + 検索結果ファイルのみ抽出しDirに移動する");
 	PRGB12();
 	P2("       階層を維持しない／同名ファイルは上書き");
 	NL();
 	PRGB21();
 	P2("   --remove | --rm");
 	PRGB91();
-	P2("       検索結果のfileのみ削除する（dirは削除しない）");
+	P2("       検索結果のFileのみ削除する（Dirは削除しない）");
 	NL();
 	PRGB21();
 	P2("   --remove2 | --rm2");
 	PRGB91();
-	P2("       --remove + 空dirを削除する");
+	P2("       --remove + 空Dirを削除する");
 	NL();
 	PRGB21();
-	P2("   --replace=FILE | --rep=FILE");
+	P2("   --delete | --del");
 	PRGB91();
-	P2("       検索結果(複数) を FILE の内容で置換(上書き)する／ファイル名は変更しない");
+	P2("       検索結果のFileのみゴミ箱へ移動する（Dirは削除しない）");
+	NL();
+	PRGB21();
+	P2("   --delete2 | --del2");
+	PRGB91();
+	P2("       --delete + 空Dirをゴミ箱へ移動する");
+	NL();
+	PRGB21();
+	P2("   --replace=File | --rep=File");
+	PRGB91();
+	P2("       検索結果(複数) をFileの内容で置換(上書き)する／ファイル名は変更しない");
 	PRGB11();
 	P0("       (例) ");
 	PRGB91();

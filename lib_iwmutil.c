@@ -3789,6 +3789,43 @@ imk_dir(
 	ifree(pBgn);
 	return (flg ? TRUE : FALSE);
 }
+//-------------------------
+// File/DirÇÉSÉ~î†Ç÷à⁄ìÆ
+//-------------------------
+/* (ó·)
+	PL3(imv_trash("Dir", TRUE));   // ãÛDIrÇÃÇ∆Ç´ÇÃÇ›ÅAÉSÉ~î†Ç÷à⁄ìÆÇ∑ÇÈ
+	PL3(imv_trash("Dir", FALSE));  // DIrÇÉSÉ~î†Ç÷à⁄ìÆÇ∑ÇÈ
+	PL3(imv_trash("File", FALSE)); // FileÇÉSÉ~î†Ç÷à⁄ìÆÇ∑ÇÈ
+*/
+// v2022-07-23
+BOOL
+imv_trash(
+	MBS *path,        // ÉtÉ@ÉCÉãÉpÉX
+	BOOL emptyDirOnly // TRUE=ãÛDirÇÃÇ›ëŒè€
+)
+{
+	// ë∂ç›Ç∑ÇÈÇ©ÅH
+	if(!iFchk_existPathA(path))
+	{
+		return FALSE;
+	}
+	// ãÛDirÇ©ÅH
+	if(emptyDirOnly && iFchk_typePathA(path) == 1 && !PathIsDirectoryEmptyA(path))
+	{
+		return FALSE;
+	}
+	// "\0" ïtó^Å^ãÊêÿÇË="\0", ññîˆ="\0\0"
+	MBS *p1 = ims_cats(2, path, "\0");
+		SHFILEOPSTRUCT sfos;
+			ZeroMemory(&sfos, sizeof(SHFILEOPSTRUCT));
+			sfos.hwnd = NULL;
+			sfos.wFunc = FO_DELETE;
+			sfos.pFrom = p1;
+			sfos.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION;
+		INT rtn = SHFileOperation(&sfos);
+	ifree(p1);
+	return (rtn ? FALSE : TRUE);
+}
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
 	Console
@@ -4978,7 +5015,7 @@ MBS
 						{
 							case 'Y': // îN => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 'y': // îN => "yyyy-mm-dd hh:nn:ss"
 								add_y = u1;
 								flg = TRUE;
@@ -4987,7 +5024,7 @@ MBS
 
 							case 'M': // åé => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 'm': // åé => "yyyy-mm-dd hh:nn:ss"
 								add_m = u1;
 								flg = TRUE;
@@ -4996,7 +5033,7 @@ MBS
 
 							case 'W': // èT => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 'w': // èT => "yyyy-mm-dd hh:nn:ss"
 								add_d = u1 * 7;
 								flg = TRUE;
@@ -5005,7 +5042,7 @@ MBS
 
 							case 'D': // ì˙ => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 'd': // ì˙ => "yyyy-mm-dd hh:nn:ss"
 								add_d = u1;
 								flg = TRUE;
@@ -5014,7 +5051,7 @@ MBS
 
 							case 'H': // éû => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 'h': // éû => "yyyy-mm-dd hh:nn:ss"
 								add_h = u1;
 								flg = TRUE;
@@ -5023,7 +5060,7 @@ MBS
 
 							case 'N': // ï™ => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 'n': // ï™ => "yyyy-mm-dd hh:nn:ss"
 								add_n = u1;
 								flg = TRUE;
@@ -5032,7 +5069,7 @@ MBS
 
 							case 'S': // ïb => "yyyy-mm-dd 00:00:00"
 								zero = TRUE;
-								/* Falls through. */ // -Wimplicit-fallthrough=3
+								[[fallthrough]];
 							case 's': // ïb => "yyyy-mm-dd hh:nn:ss"
 								add_s = u1;
 								flg = TRUE;
@@ -5177,7 +5214,7 @@ INT
 // v2021-11-15
 DOUBLE
 idate_nowToCjd(
-	BOOL area // TRUE=LOCAL, FALSE=SYSTEM
+	BOOL area // TRUE=LOCALÅ^FALSE=SYSTEM
 )
 {
 	INT *ai = idate_now_to_iAryYmdhns(area);

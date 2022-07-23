@@ -1,5 +1,5 @@
 /////////////////////////////////////////////////////////////////////////////////////////
-#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20220526"
+#define  LIB_IWMUTIL_VERSION   "lib_iwmutil_20220723"
 #define  LIB_IWMUTIL_COPYLIGHT "Copyright (C)2008-2022 iwm-iwama"
 /////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
@@ -412,6 +412,7 @@ MBS      *iFget_AdirA(MBS *path);
 MBS      *iFget_RdirA(MBS *path);
 
 BOOL     imk_dir(MBS *path);
+BOOL     imv_trash(MBS *path,BOOL emptyDirOnly);
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /*---------------------------------------------------------------------------------------
