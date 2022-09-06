@@ -1,65 +1,69 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind4_20220723"
+#define  IWM_VERSION         "iwmfind5_20220903"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
-#include "lib_iwmutil.h"
+#include "lib_iwmutil2.h"
 #include "sqlite3.h"
 
 INT      main();
-MBS      *sql_escape(MBS *pM);
+WCS      *sql_escape(WCS *pW);
 VOID     ifind10($struct_iFinfoW *FI, WCS *dir, INT dirLenJ, INT depth);
 VOID     ifind10_CallCnt(INT iCnt);
 VOID     ifind21(WCS *dir, INT dirId, INT depth);
 VOID     ifind22($struct_iFinfoW *FI, INT dirId, WCS *fname);
-VOID     sql_exec(sqlite3 *db, CONST MBS *sql, sqlite3_callback cb);
-INT      sql_columnName(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
-INT      sql_result_std(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
-INT      sql_result_countOnly(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
-INT      sql_result_exec(VOID *option, INT iColumnCount, MBS **sColumnValues, MBS **sColumnNames);
-BOOL     sql_saveOrLoadMemdb(sqlite3 *mem_db, MBS *ofn, BOOL save_load);
+VOID     sql_exec(sqlite3 *db, CONST U8N *sql, sqlite3_callback cb);
+INT      sql_columnName(VOID *option, INT iColumnCount, U8N **sColumnValues, U8N **sColumnNames);
+INT      sql_result_std(VOID *option, INT iColumnCount, U8N **sColumnValues, U8N **sColumnNames);
+INT      sql_result_countOnly(VOID *option, INT iColumnCount, U8N **sColumnValues, U8N **sColumnNames);
+INT      sql_result_exec(VOID *option, INT iColumnCount, U8N **sColumnValues, U8N **sColumnNames);
+BOOL     sql_saveOrLoadMemdb(sqlite3 *mem_db, WCS *ofn, BOOL save_load);
 VOID     print_footer();
 VOID     print_version();
 VOID     print_help();
 
 //-----------
-// ‹¤—p•Ï”
+// å…±ç”¨å¤‰æ•°
 //-----------
 INT      $i1 = 0, $i2 = 0;
-MBS      *$p1 = 0, *$p2 = 0, *$p3 = 0, *$p4 = 0, *$p5 = 0;
-MBS      **$ap1 = { 0 }, **$ap2 = { 0 };
+U8N      *$up1 = 0, *$up2 = 0;
+WCS      *$wp1 = 0, *$wp2 = 0, *$wp3 = 0, *$wp4 = 0, *$wp5 = 0, *$wp6 = 0;
+
+WCS      **$wa1 = { 0 }, **$wa2 = { 0 };
 #define  BUF_MAXCNT          5000
 #define  BUF_SIZE_MAX        (IMAX_PATH * BUF_MAXCNT)
 #define  BUF_SIZE_DMZ        (IMAX_PATH * 2)
-MBS      *$pBuf = 0;         // Tmp•¶š—ñ
-MBS      *$pBufE = 0;        // Tmp•¶š—ñ––”ö
-MBS      *$pBufMax = 0;      // Tmp•¶š—ñMax“_
-INT      $iDirId = 0;        // Dir”
-INT64    $lAllCnt = 0;       // ŒŸõ”
-INT      $iCall_ifind10 = 0; // ifind10()‚ªŒÄ‚Î‚ê‚½‰ñ”
-INT      $iStepCnt = 0;      // CurrentDirˆÊ’u
-INT64    $lRowCnt = 0;       // ˆ—s” <= NTFS‚ÌÅ‘åƒtƒ@ƒCƒ‹”(2^32 - 1 = 4,294,967,295)
+
+U8N      *$upBuf = 0;        // Tmpæ–‡å­—åˆ—
+U8N      *$upBufE = 0;       // Tmpæ–‡å­—åˆ—æœ«å°¾
+U8N      *$upBufMax = 0;     // Tmpæ–‡å­—åˆ—Maxç‚¹
+
+INT      $iDirId = 0;        // Diræ•°
+INT64    $lAllCnt = 0;       // æ¤œç´¢æ•°
+INT      $iCall_ifind10 = 0; // ifind10()ãŒå‘¼ã°ã‚ŒãŸå›æ•°
+INT      $iStepCnt = 0;      // CurrentDirä½ç½®
+INT64    $lRowCnt = 0;       // å‡¦ç†è¡Œæ•° <= NTFSã®æœ€å¤§ãƒ•ã‚¡ã‚¤ãƒ«æ•°(2^32 - 1 = 4,294,967,295)
 U8N      *$sqlU = 0;
 sqlite3  *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 
-// ƒŠƒZƒbƒg
-#define  PRGB00()            P0("\033[0m")
-// ƒ‰ƒxƒ‹
-#define  PRGB01()            P0("\033[38;2;255;255;0m")    // ‰©
-#define  PRGB02()            P0("\033[38;2;255;255;255m")  // ”’
-// “ü—Í—á^’
-#define  PRGB11()            P0("\033[38;2;255;255;100m")  // ‰©
-#define  PRGB12()            P0("\033[38;2;255;220;150m")  // ò
-#define  PRGB13()            P0("\033[38;2;100;100;255m")  // Â
-// ƒIƒvƒVƒ‡ƒ“
-#define  PRGB21()            P0("\033[38;2;80;255;255m")   // …
-#define  PRGB22()            P0("\033[38;2;255;100;255m")  // g‡
-// –{•¶
-#define  PRGB91()            P0("\033[38;2;255;255;255m")  // ”’
-#define  PRGB92()            P0("\033[38;2;200;200;200m")  // ‹â
+// ãƒªã‚»ãƒƒãƒˆ
+#define  PRGB00()            P0("\x1b[0m")
+// ãƒ©ãƒ™ãƒ«
+#define  PRGB01()            P0("\x1b[38;2;255;255;0m")    // é»„
+#define  PRGB02()            P0("\x1b[38;2;255;255;255m")  // ç™½
+// å…¥åŠ›ä¾‹ï¼æ³¨
+#define  PRGB11()            P0("\x1b[38;2;255;255;100m")  // é»„
+#define  PRGB12()            P0("\x1b[38;2;255;220;150m")  // æ©™
+#define  PRGB13()            P0("\x1b[38;2;100;100;255m")  // é’
+// ã‚ªãƒ—ã‚·ãƒ§ãƒ³
+#define  PRGB21()            P0("\x1b[38;2;80;255;255m")   // æ°´
+#define  PRGB22()            P0("\x1b[38;2;255;100;255m")  // ç´…ç´«
+// æœ¬æ–‡
+#define  PRGB91()            P0("\x1b[38;2;255;255;255m")  // ç™½
+#define  PRGB92()            P0("\x1b[38;2;200;200;200m")  // éŠ€
 
-#define  MEMDB               ":memory:"
-#define  OLDDB               ("iwmfind.db."IWM_VERSION)
+#define  MEMDB               L":memory:"
+#define  OLDDB               (L"iwmfind.db."IWM_VERSION)
 #define  CREATE_T_DIR \
 			"CREATE TABLE T_DIR( \
 				dir_id    INTEGER, \
@@ -133,17 +137,17 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define  UPDATE_EXEC99_2 \
 			"UPDATE T_FILE SET flg=NULL;"
 #define  SELECT_VIEW \
-			"SELECT %s FROM V_INDEX %s %s ORDER BY %s;"
+			L"SELECT %S FROM V_INDEX %S %S ORDER BY %S;"
 #define  OP_SELECT_0 \
-			"LN,path"
+			L"LN,path"
 #define  OP_SELECT_MKDIR \
-			"step_byte,dir,name,path"
+			L"step_byte,dir,name,path"
 #define  OP_SELECT_EXTRACT \
-			"path,name"
+			L"path,name"
 #define  OP_SELECT_RP \
-			"type,path"
+			L"type,path"
 #define  OP_SELECT_RM \
-			"path,dir,attr_num"
+			L"path,dir,attr_num"
 #define  I_MKDIR              1
 #define  I_CP                 2
 #define  I_MV                 3
@@ -156,105 +160,108 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define  I_RM                31
 #define  I_RM2               32
 //
-// Œ»İŠÔ
+// ç¾åœ¨æ™‚é–“
 //
 INT *$aiNow = { 0 };
 //
-// ŒŸõDir
+// æ¤œç´¢Dir
 //
-MBS **$aDirList = { 0 };
-INT $aDirListSize = 0;
+WCS **$waDirList = { 0 };
+INT $waDirListSize = 0;
 //
-// “ü—ÍDB
+// å…¥åŠ›DB
 // -in=Str | -i=Str
 //
-MBS *$sIn = "";
-MBS *$sInDbn = MEMDB;
+WCS *$wpIn = L"";
+U8N *$upIn = "";
+WCS *$wpInDbn = MEMDB;
+U8N *$upInDbn = "";
 //
-// o—ÍDB
+// å‡ºåŠ›DB
 // -out=Str | -o=Str
 //
-MBS *$sOut = "";
-MBS *$sOutDbn = "";
+WCS *$wpOut = L"";
+WCS *$wpOutDbn = L"";
+U8N *$upOutDbn = "";
 //
 // select
 // -select=Str | -s=Str
 //
-MBS *$sSelect = OP_SELECT_0;
-INT $iSelectPosNumber = 0; // "LN"‚Ì”z—ñˆÊ’u
+WCS *$wpSelect = OP_SELECT_0;
+INT $iSelectPosNumber = 0; // "LN"ã®é…åˆ—ä½ç½®
 //
 // where
 // -where=Str | -w=Str
 //
-MBS *$sWhere1 = "";
-MBS *$sWhere2 = "";
+WCS *$wpWhere1 = L"";
+WCS *$wpWhere2 = L"";
 //
 // group by
 // -group=Str | -g=Str
 //
-MBS *$sGroup = "";
+WCS *$wpGroup = L"";
 //
 // order by
 // -sort=Str | -st=Str
 //
-MBS *$sSort = "";
+WCS *$wpSort = L"";
 //
-// ƒwƒbƒ_î•ñ‚ğ”ñ•\¦
+// ãƒ˜ãƒƒãƒ€æƒ…å ±ã‚’éè¡¨ç¤º
 // -noheader | -nh
 //
 BOOL $bNoHeader = FALSE;
 //
-// ƒtƒbƒ^î•ñ‚ğ”ñ•\¦
+// ãƒ•ãƒƒã‚¿æƒ…å ±ã‚’éè¡¨ç¤º
 // -nofooter | -nf
 //
 BOOL $bNoFooter = FALSE;
 //
-// o—Í‚ğStr‚ÅˆÍ‚Ş
+// å‡ºåŠ›ã‚’Strã§å›²ã‚€
 // -quote=Str | -qt=Str
 //
-MBS *$sQuote = "";
+U8N *$upQuote = "";
 //
-// o—Í‚ğStr‚Å‹æØ‚é
+// å‡ºåŠ›ã‚’Strã§åŒºåˆ‡ã‚‹
 // -separate=Str | -sp=Str
 //
-MBS *$sSeparate = " | ";
+U8N *$upSeparate = " | ";
 //
-// ŒŸõDirˆÊ’u
+// æ¤œç´¢Dirä½ç½®
 // -depth=NUM1,NUM2 | -d=NUM1,NUM2
 //
-INT $iDepthMin = 0; // ŠK‘w`ŠJnˆÊ’u(‘Š‘Î)
-INT $iDepthMax = 0; // ŠK‘w`I—¹ˆÊ’u(‘Š‘Î)
+INT $iDepthMin = 0; // éšå±¤ï½é–‹å§‹ä½ç½®(ç›¸å¯¾)
+INT $iDepthMax = 0; // éšå±¤ï½çµ‚äº†ä½ç½®(ç›¸å¯¾)
 //
 // mkdir Str
 // --mkdir=Str | --md=Str
 //
-MBS *$sMd = "";
-MBS *$sMdOp = "";
+WCS *$wpMd = L"";
+WCS *$wpMdOp = L"";
 //
 // mkdir Str & copy
 // --copy=Str | --cp=Str
 //
-MBS *$sCp = "";
+WCS *$wpCp = L"";
 //
 // mkdir Str & move Str
 // --move=Str | --mv=Str
 //
-MBS *$sMv = "";
+WCS *$wpMv = L"";
 //
 // mkdir Str & move Str & rmdir
 // --move2=Str | --mv2=Str
 //
-MBS *$sMv2 = "";
+WCS *$wpMv2 = L"";
 //
 // copy Str
 // --extract1=Str | --ext1=Str
 //
-MBS *$sExt1 = "";
+WCS *$wpExt1 = L"";
 //
 // move Str
 // --extract2=Str | --ext2=Str
 //
-MBS *$sExt2 = "";
+WCS *$wpExt2 = L"";
 //
 // --del  | --delete
 // --del2 | --delete2
@@ -264,15 +271,15 @@ INT $iDel = 0;
 // replace results with Str
 // --replace=Str | --rep=Str
 //
-MBS *$sRep = "";
-MBS *$sRepOp = "";
+WCS *$wpRep = L"";
+WCS *$wpRepOp = L"";
 //
 // --rm  | --remove
 // --rm2 | --remove2
 //
 INT $iRm = 0;
 //
-// —Dæ‡ (ˆÀ‘S)I_MD > (ŠëŒ¯)I_RM2
+// å„ªå…ˆé † (å®‰å…¨)I_MD > (å±é™º)I_RM2
 //  I_MD   = --mkdir
 //  I_CP   = --cp
 //  I_MV   = --mv
@@ -288,53 +295,53 @@ INT $iExec = 0;
 INT
 main()
 {
-	// lib_iwmutil ‰Šú‰»
-	iExecSec_init();       //=> $ExecSecBgn
-	iCLI_getCommandLine(); //=> $CMD, $ARGC, $ARGV, $ARGS
+	// lib_iwmutil åˆæœŸåŒ–
+	iExecSec_init();            //=> $ExecSecBgn
+	iCLI_getCommandLine(65001); //=> $CMD, $ARGC, $ARGV, $ARGS
 	iConsole_EscOn();
 
 	// -h | -help
-	if(! $ARGC || iCLI_getOptMatch(0, "-h", "-help"))
+	if(! $ARGC || iCLI_getOptMatch(0, L"-h", L"-help"))
 	{
 		print_help();
 		imain_end();
 	}
 
 	// -v | -version
-	if(iCLI_getOptMatch(0, "-v", "-version"))
+	if(iCLI_getOptMatch(0, L"-v", L"-version"))
 	{
 		print_version();
 		imain_end();
 	}
 
-	// Œ»İŠÔ
+	// ç¾åœ¨æ™‚é–“
 	$aiNow = (INT*)idate_cjd_to_iAryYmdhns(idate_nowToCjd(TRUE));
 
 	// [0..]
 	/*
-		$aDirListæ“¾‚Å $iDepthMax ‚ğg‚¤‚½‚ßæ‚ÉA
+		$waDirListå–å¾—ã§ $iDepthMax ã‚’ä½¿ã†ãŸã‚å…ˆã«ã€
 			-recursive
 			-depth
-		‚ğƒ`ƒFƒbƒN
+		ã‚’ãƒã‚§ãƒƒã‚¯
 	*/
 	for($i1 = 0; $i1 < $ARGC; $i1++)
 	{
 		// -r | -recursive
-		if(iCLI_getOptMatch($i1, "-r", "-recursive"))
+		if(iCLI_getOptMatch($i1, L"-r", L"-recursive"))
 		{
 			$iDepthMin = 0;
 			$iDepthMax = IMAX_PATH;
 		}
 
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
-		if(($p1 = iCLI_getOptValue($i1, "-d=", "-depth=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-d=", L"-depth=")))
 		{
-			$ap1 = ija_split($p1, ", ");
-				$i2 = iary_size($ap1);
+			$wa1 = iwa_split($wp1, L", ", TRUE);
+				$i2 = iwa_size($wa1);
 				if($i2 > 1)
 				{
-					$iDepthMin = inum_atoi($ap1[0]);
-					$iDepthMax = inum_atoi($ap1[1]);
+					$iDepthMin = inum_wtoi($wa1[0]);
+					$iDepthMax = inum_wtoi($wa1[1]);
 					if($iDepthMax > IMAX_PATH)
 					{
 						$iDepthMax = IMAX_PATH;
@@ -348,13 +355,13 @@ main()
 				}
 				else if($i2 == 1)
 				{
-					$iDepthMin = $iDepthMax = inum_atoi($ap1[0]);
+					$iDepthMin = $iDepthMax = inum_wtoi($wa1[0]);
 				}
 				else
 				{
 					$iDepthMin = $iDepthMax = 0;
 				}
-			ifree($ap1);
+			ifree($wa1);
 		}
 	}
 
@@ -367,145 +374,127 @@ main()
 		{
 			break;
 		}
-		// Dir•sİ
-		if(iFchk_typePathA($ARGV[$i1]) != 1)
+		// Dirä¸åœ¨
+		if(iFchk_typePathW($ARGV[$i1]) != 1)
 		{
-			P("[Err] Dir(%d) '%s' ‚Í‘¶İ‚µ‚È‚¢!\n", ($i1 + 1), $ARGV[$i1]);
+			$up1 = W2U($ARGV[$i1]);
+				P("[Err] Dir(%d) '%s' ã¯å­˜åœ¨ã—ãªã„!\n", ($i1 + 1), $up1);
+			ifree($up1);
 		}
 	}
 	iArgsPos = $i1;
 
-	// $aDirList ‚ğì¬
+	// $waDirList ã‚’ä½œæˆ
 	if(iArgsPos)
 	{
-			// ãˆÊDir‚Ì‚İæ“¾
-			$aDirList = iary_higherDir($ARGV);
-			$aDirListSize = iary_size($aDirList);
+		// æ¡ä»¶åˆ¥Dirå–å¾—
+		$waDirList = ($iDepthMax == IMAX_PATH ? iwa_higherDir($ARGV) : iwa_getDir($ARGV));
+		$waDirListSize = iwa_size($waDirList);
 	}
 
 	// [n..]
 	for($i1 = iArgsPos; $i1 < $ARGC; $i1++)
 	{
 		// -i | -in
-		if(($p1 = iCLI_getOptValue($i1, "-i=", "-in=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-i=", L"-in=")))
 		{
-			if($p1)
+			if(iFchk_typePathW($wp1) != 2)
 			{
-				if(iFchk_typePathA($p1) != 2)
-				{
-					P("[Err] -in '%s' ‚Í‘¶İ‚µ‚È‚¢!\n", $p1);
-					imain_end();
-				}
-				else if($aDirListSize)
-				{
-					P2("[Err] Dir ‚Æ -in ‚Í•¹—p‚Å‚«‚È‚¢!");
-					imain_end();
-				}
-				else
-				{
-					$sIn = ims_clone($p1);
-					$sInDbn = ims_clone($sIn);
+				$up1 = W2U($wp1);
+					P("[Err] -in '%s' ã¯å­˜åœ¨ã—ãªã„!\n", $up1);
+				ifree($up1);
+				imain_end();
+			}
+			else if($waDirListSize)
+			{
+				P2("[Err] Dir ã¨ -in ã¯ä½µç”¨ã§ããªã„!");
+				imain_end();
+			}
+			else
+			{
+				$wpIn = iws_clone($wp1);
+				$upIn = W2U($wpIn);
 
-					// -in ‚Ì‚Æ‚«‚Í -recursive ©“®•t—^
-					$iDepthMin = 0;
-					$iDepthMax = IMAX_PATH;
-				}
+				$wpInDbn = iws_clone($wpIn);
+				$upInDbn = W2U($wpInDbn);
+
+				// -in ã®ã¨ãã¯ -recursive è‡ªå‹•ä»˜ä¸
+				$iDepthMin = 0;
+				$iDepthMax = IMAX_PATH;
 			}
 		}
 
 		// -o | -out
-		if(($p1 = iCLI_getOptValue($i1, "-o=", "-out=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-o=", L"-out=")))
 		{
-			if($p1)
-			{
-				$sOut = ims_clone($p1);
-				$sOutDbn = ims_clone($sOut);
-			}
+			$wpOut = iws_clone($wp1);
+			$wpOutDbn = iws_clone($wpOut);
+
+			$upOutDbn = W2U($wpOutDbn);
 		}
 
 		// --md | --mkdir
-		if(($p1 = iCLI_getOptValue($i1, "--md=", "--mkdir=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--md=", L"--mkdir=")))
 		{
-			if($p1)
-			{
-				$sMd = ims_clone($p1);
-			}
+			$wpMd = iws_clone($wp1);
 		}
 
 		// --cp | --copy
-		if(($p1 = iCLI_getOptValue($i1, "--cp=", "--copy=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--cp=", L"--copy=")))
 		{
-			if($p1)
-			{
-				$sCp = ims_clone($p1);
-			}
+			$wpCp = iws_clone($wp1);
 		}
 
 		// --mv | --move
-		if(($p1 = iCLI_getOptValue($i1, "--mv=", "--move=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--mv=", L"--move=")))
 		{
-			if($p1)
-			{
-				$sMv = ims_clone($p1);
-			}
+			$wpMv = iws_clone($wp1);
 		}
 
 		// --mv2 | --move2
-		if(($p1 = iCLI_getOptValue($i1, "--mv2=", "--move2=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--mv2=", L"--move2=")))
 		{
-			if($p1)
-			{
-				$sMv2 = ims_clone($p1);
-			}
+			$wpMv2 = iws_clone($wp1);
 		}
 
 		// --ext1 | --extract1
-		if(($p1 = iCLI_getOptValue($i1, "--ext1=", "--extract1=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--ext1=", L"--extract1=")))
 		{
-			if($p1)
-			{
-				$sExt1 = ims_clone($p1);
-			}
+			$wpExt1 = iws_clone($wp1);
 		}
 
 		// --ext2 | --extract2
-		if(($p1 = iCLI_getOptValue($i1, "--ext2=", "--extract2=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--ext2=", L"--extract2=")))
 		{
-			if($p1)
-			{
-				$sExt2 = ims_clone($p1);
-			}
+			$wpExt2 = iws_clone($wp1);
 		}
 
 		// --del | --delete
-		if(iCLI_getOptMatch($i1, "--del", "--delete"))
+		if(iCLI_getOptMatch($i1, L"--del", L"--delete"))
 		{
 			$iDel = I_DEL;
 		}
 
 		// --del2 | --delete2
-		if(iCLI_getOptMatch($i1, "--del2", "--delete2"))
+		if(iCLI_getOptMatch($i1, L"--del2", L"--delete2"))
 		{
 			$iDel = I_DEL2;
 		}
 
 		// --rep | --replace
-		if(($p1 = iCLI_getOptValue($i1, "--rep=", "--replace=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"--rep=", L"--replace=")))
 		{
-			if($p1)
-			{
-				$sRep = ims_clone($p1);
-			}
+			$wpRep = iws_clone($wp1);
 		}
 
 		// --rm | --remove
-		if(iCLI_getOptMatch($i1, "--rm", "--remove"))
+		if(iCLI_getOptMatch($i1, L"--rm", L"--remove"))
 		{
 			$iRm = I_RM;
 		}
 
 		// --rm2 | --remove2
-		if(iCLI_getOptMatch($i1, "--rm2", "--remove2"))
+		if(iCLI_getOptMatch($i1, L"--rm2", L"--remove2"))
 		{
 			$iRm = I_RM2;
 		}
@@ -516,150 +505,141 @@ main()
 			-select="" : Err
 			-select="Column1,Column2,..."
 		*/
-		if(($p1 = iCLI_getOptValue($i1, "-s=", "-select=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-s=", L"-select=")))
 		{
-			// "AS" ‘Î‰‚Ì‚½‚ß " " (‹ó”’)‚Í•s‰Â
-			// (—á) -s="dir||name AS PATH"
-			$ap1 = ija_split($p1, ",");
-				if($ap1[0])
+			// "AS" å¯¾å¿œã®ãŸã‚ " " (ç©ºç™½)ã¯ä¸å¯
+			// (ä¾‹) -s="dir||name AS PATH"
+			$wa1 = iwa_split($wp1, L",", TRUE);
+				if($wa1[0])
 				{
-					// "LN"ˆÊ’u‚ğ‹‚ß‚é
-					$ap2 = iary_simplify($ap1, TRUE); // LN•\¦‚Í‚PŒÂ‚Ì‚İ‚È‚Ì‚Åd•¡”rœ
+					// "LN"ä½ç½®ã‚’æ±‚ã‚ã‚‹
+					$wa2 = iwa_simplify($wa1, TRUE); // LNè¡¨ç¤ºã¯ï¼‘å€‹ã®ã¿ãªã®ã§é‡è¤‡æ’é™¤
 						$iSelectPosNumber = 0;
-						while(($p2 = $ap2[$iSelectPosNumber]))
+						while(($wp2 = $wa2[$iSelectPosNumber]))
 						{
-							if(imb_cmppi($p2, "LN"))
+							if(iwb_cmppi($wp2, L"LN"))
 							{
 								break;
 							}
 							++$iSelectPosNumber;
 						}
-						if(! $p2)
+						if(! $wp2)
 						{
 							$iSelectPosNumber = -1;
 						}
-						$sSelect = iary_join($ap2, ",");
-					ifree($ap2);
+						$wpSelect = iwa_join($wa2, L",");
+					ifree($wa2);
 				}
-			ifree($ap1);
+			ifree($wa1);
 		}
 
 		// -st | -sort
-		if(($p1 = iCLI_getOptValue($i1, "-st=", "-sort=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-st=", L"-sort=")))
 		{
-			if($p1)
-			{
-				$sSort = ims_clone($p1);
-			}
+			$wpSort = iws_clone($wp1);
 		}
 
 		// -w | -where
-		if(($p1 = iCLI_getOptValue($i1, "-w=", "-where=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-w=", L"-where=")))
 		{
-			if($p1)
-			{
-				$sWhere1 = sql_escape($p1);
-				$sWhere2 = ims_cats(2, "WHERE ", $sWhere1);
-			}
+			$wpWhere1 = sql_escape($wp1);
+			$wpWhere2 = iws_cats(2, L"WHERE ", $wpWhere1);
 		}
 
 		// -g | -group
-		if(($p1 = iCLI_getOptValue($i1, "-g=", "-group=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-g=", L"-group=")))
 		{
-			if($p1)
-			{
-				$sGroup = ims_cats(2, "GROUP BY ", $p1);
-			}
+			$wpGroup = iws_cats(2, L"GROUP BY ", $wp1);
 		}
 
 		// -nh | -noheader
-		if(iCLI_getOptMatch($i1, "-nh", "-noheader"))
+		if(iCLI_getOptMatch($i1, L"-nh", L"-noheader"))
 		{
 			$bNoHeader = TRUE;
 		}
 
 		// -nf | -nofooter
-		if(iCLI_getOptMatch($i1, "-nf", "-nofooter"))
+		if(iCLI_getOptMatch($i1, L"-nf", L"-nofooter"))
 		{
 			$bNoFooter = TRUE;
 		}
 
 		// -qt | -quote
-		if(($p1 = iCLI_getOptValue($i1, "-qt=", "-quote=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-qt=", L"-quote=")))
 		{
-			if($p1)
-			{
-				$sQuote = ims_conv_escape($p1);
-			}
+			$wp2 = iws_conv_escape($wp1);
+				$upQuote = W2U($wp2);
+			ifree($wp2);
 		}
 
 		// -sp | -separate
-		if(($p1 = iCLI_getOptValue($i1, "-sp=", "-separate=")))
+		if(($wp1 = iCLI_getOptValue($i1, L"-sp=", L"-separate=")))
 		{
-			if($p1)
-			{
-				$sSeparate = ims_conv_escape($p1);
-			}
+			$wp2 = iws_conv_escape($wp1);
+				$upSeparate = W2U($wp2);
+			ifree($wp2);
 		}
 	}
 
 	// Err
-	if(! $aDirListSize && ! *$sIn)
+	if(! $waDirListSize && ! *$wpIn)
 	{
-		P2("[Err] Dir ‚à‚µ‚­‚Í -in ‚ğw’è‚µ‚Ä‚­‚¾‚³‚¢!");
+		P2("[Err] Dir ã‚‚ã—ãã¯ -in ã‚’æŒ‡å®šã—ã¦ãã ã•ã„!");
 		imain_end();
 	}
 
-	// --[exec] ŠÖŒW‚ğˆêŠ‡•ÏŠ·
-	if(*$sMd || *$sCp || *$sMv || *$sMv2 || *$sExt1 || *$sExt2 || $iDel || *$sRep || $iRm)
+	// --[exec] é–¢ä¿‚ã‚’ä¸€æ‹¬å¤‰æ›
+	if(*$wpMd || *$wpCp || *$wpMv || *$wpMv2 || *$wpExt1 || *$wpExt2 || $iDel || *$wpRep || $iRm)
 	{
-		$bNoFooter = TRUE; // ƒtƒbƒ^î•ñ‚ğ”ñ•\¦
+		$bNoFooter = TRUE; // ãƒ•ãƒƒã‚¿æƒ…å ±ã‚’éè¡¨ç¤º
 
-		if(*$sMd)
+		if(*$wpMd)
 		{
 			$iExec = I_MKDIR;
-			$sMdOp = ims_clone($sMd);
+			$wpMdOp = iws_clone($wpMd);
 		}
-		else if(*$sCp)
+		else if(*$wpCp)
 		{
 			$iExec = I_CP;
-			$sMdOp = ims_clone($sCp);
+			$wpMdOp = iws_clone($wpCp);
 		}
-		else if(*$sMv)
+		else if(*$wpMv)
 		{
 			$iExec = I_MV;
-			$sMdOp = ims_clone($sMv);
+			$wpMdOp = iws_clone($wpMv);
 		}
-		else if(*$sMv2)
+		else if(*$wpMv2)
 		{
 			$iExec = I_MV2;
-			$sMdOp = ims_clone($sMv2);
+			$wpMdOp = iws_clone($wpMv2);
 		}
-		else if(*$sExt1)
+		else if(*$wpExt1)
 		{
 			$iExec = I_EXT1;
-			$sMdOp = ims_clone($sExt1);
+			$wpMdOp = iws_clone($wpExt1);
 		}
-		else if(*$sExt2)
+		else if(*$wpExt2)
 		{
 			$iExec = I_EXT2;
-			$sMdOp = ims_clone($sExt2);
+			$wpMdOp = iws_clone($wpExt2);
 		}
 		else if($iDel)
 		{
 			$iExec = $iDel;
 		}
-		else if(*$sRep)
+		else if(*$wpRep)
 		{
-			if(iFchk_typePathA($sRep) != 2)
+			if(iFchk_typePathW($wpRep) != 2)
 			{
-				P("[Err] --replace '%s' ‚Í‘¶İ‚µ‚È‚¢!\n", $sRep);
+				$up1 = W2U($wpRep);
+					P("[Err] --replace '%s' ã¯å­˜åœ¨ã—ãªã„!\n", $up1);
+				ifree($up1);
 				imain_end();
 			}
 			else
 			{
 				$iExec = I_REP;
-				$sRepOp = ims_clone($sRep);
+				$wpRepOp = iws_clone($wpRep);
 			}
 		}
 		else if($iRm)
@@ -672,181 +652,172 @@ main()
 
 		if($iExec <= I_EXT2)
 		{
-			$p1 = iFget_AdirA($sMdOp);
-				$sMdOp = ijs_cutR($p1, "\\");
-			ifree($p1);
-			$sSelect = ($iExec <= I_MV2 ? OP_SELECT_MKDIR : OP_SELECT_EXTRACT);
+			$wp1 = iFget_AdirW($wpMdOp);
+				$wpMdOp = iws_cutYenR($wp1);
+			ifree($wp1);
+			$wpSelect = ($iExec <= I_MV2 ? OP_SELECT_MKDIR : OP_SELECT_EXTRACT);
 		}
 		else if($iExec == I_REP)
 		{
-			$sSelect = OP_SELECT_RP;
+			$wpSelect = OP_SELECT_RP;
 		}
 		else
 		{
-			$sSelect = OP_SELECT_RM;
+			$wpSelect = OP_SELECT_RM;
 		}
 	}
 
-	// -sort ŠÖŒW‚ğˆêŠ‡•ÏŠ·
+	// -sort é–¢ä¿‚ã‚’ä¸€æ‹¬å¤‰æ›
 	if($iExec >= I_MV)
 	{
-		// Diríœ•K—v‚È‚à‚Ì‚Í "order by desc"
-		ifree($sSort);
-		$sSort = ims_clone("lower(path) desc");
+		// Dirå‰Šé™¤æ™‚å¿…è¦ãªã‚‚ã®ã¯ "order by desc"
+		ifree($wpSort);
+		$wpSort = iws_clone(L"lower(path) desc");
 	}
-	else if(! *$sSort)
+	else if(! *$wpSort)
 	{
-		ifree($sSort);
-		$sSort = ims_clone("lower(dir),lower(name)");
+		ifree($wpSort);
+		$wpSort = iws_clone(L"lower(dir),lower(name)");
 	}
 	else
 	{
 		// path, dir, name, ext
-		// ƒ\[ƒg‚ÍA‘å•¶šE¬•¶š‚ğ‹æ•Ê‚µ‚È‚¢
-		$p1 = ims_clone($sSort);
-		ifree($sSort);
-		$p2 = ijs_replace($p1, "path", "lower(path)", FALSE);
-		ifree($p1);
-		$p1 = ijs_replace($p2, "dir", "lower(dir)", FALSE);
-		ifree($p2);
-		$p2 = ijs_replace($p1, "name", "lower(name)", FALSE);
-		ifree($p1);
-		$p1 = ijs_replace($p2, "ext", "lower(ext)", FALSE);
-		ifree($p2);
-		$sSort = ims_clone($p1);
-		ifree($p1);
+		// ã‚½ãƒ¼ãƒˆã¯ã€å¤§æ–‡å­—ãƒ»å°æ–‡å­—ã‚’åŒºåˆ¥ã—ãªã„
+		$wp1 = iws_clone($wpSort);
+		ifree($wpSort);
+		$wp2 = iws_replace($wp1, L"path", L"lower(path)", FALSE);
+		ifree($wp1);
+		$wp1 = iws_replace($wp2, L"dir", L"lower(dir)", FALSE);
+		ifree($wp2);
+		$wp2 = iws_replace($wp1, L"name", L"lower(name)", FALSE);
+		ifree($wp1);
+		$wp1 = iws_replace($wp2, L"ext", L"lower(ext)", FALSE);
+		ifree($wp2);
+		$wpSort = iws_clone($wp1);
+		ifree($wp1);
 	}
 
-	// SQLì¬
-	// SJIS ‚Åì¬iDOSƒvƒƒ“ƒvƒg‘Î‰j=> UTF-8 ‚É•ÏŠ·iSqlite3‘Î‰j
-	$p1 = ims_sprintf(SELECT_VIEW, $sSelect, $sWhere2, $sGroup, $sSort);
-		$sqlU = M2U($p1);
-	ifree($p1);
+	// SQLä½œæˆ UTF-8ï¼ˆSqlite3å¯¾å¿œï¼‰
+	$wp1 = iws_sprintf(SELECT_VIEW, $wpSelect, $wpWhere2, $wpGroup, $wpSort);
+		$sqlU = W2U($wp1);
+	ifree($wp1);
 
-	// -in DB‚ğw’è
-	// UTF-8
-	U8N *up1 = M2U($sInDbn);
-		if(sqlite3_open(up1, &$iDbs))
+	// -in DBã‚’æŒ‡å®š
+	if(sqlite3_open16($wpInDbn, &$iDbs))
+	{
+		P("[Err] -in '%s' ã‚’é–‹ã‘ãªã„!\n", $upInDbn);
+		sqlite3_close($iDbs); // Errã§ã‚‚DBè§£æ”¾
+		imain_end();
+	}
+	else
+	{
+		// UTF-8 å‡ºåŠ›é ˜åŸŸ
+		$upBuf = icalloc_MBS(BUF_SIZE_MAX + BUF_SIZE_DMZ);
+		$upBufE = $upBuf;
+		$upBufMax = $upBuf + BUF_SIZE_MAX;
+
+		// DBæ§‹ç¯‰
+		if(! *$wpIn)
 		{
-			P("[Err] -in '%s' ‚ğŠJ‚¯‚È‚¢!\n", $sInDbn);
-			sqlite3_close($iDbs); // Err‚Å‚àDB‰ğ•ú
-			imain_end();
+			$struct_iFinfoW *FI = iFinfo_allocW();
+				/* 2022-09-01ä¿®æ­£
+					ï¼œå…¥åŠ›ï¼     UTF-16(WCHAR)
+					ï¼œå†…éƒ¨å‡¦ç†ï¼ UTF-16(WCHAR)
+					ï¼œSqlite3ï¼  UTF-16(WCHAR) => UTF-8(CHAR)
+					ï¼œå‡ºåŠ›ï¼     UTF-8(CHAR)
+				*/
+				sql_exec($iDbs, "PRAGMA encoding = 'UTF-8';", 0);
+				// TABLEä½œæˆ
+				sql_exec($iDbs, CREATE_T_DIR, 0);
+				sql_exec($iDbs, CREATE_T_FILE, 0);
+				// VIEWä½œæˆ
+				sql_exec($iDbs, CREATE_VIEW, 0);
+				// å‰å‡¦ç†
+				sqlite3_prepare($iDbs, INSERT_T_DIR, imn_len(INSERT_T_DIR), &$stmt1, 0);
+				sqlite3_prepare($iDbs, INSERT_T_FILE, imn_len(INSERT_T_FILE), &$stmt2, 0);
+				// ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³é–‹å§‹
+				sql_exec($iDbs, "BEGIN", 0);
+				// æ¤œç´¢ãƒ‡ãƒ¼ã‚¿ DBæ›¸è¾¼
+				for($i2 = 0; ($wp1 = $waDirList[$i2]); $i2++)
+				{
+					$iStepCnt = iwn_len($wp1);
+					ifind10(FI, $wp1, $iStepCnt, 0); // æœ¬å‡¦ç†
+				}
+				// çµŒéè¡¨ç¤ºã‚’ã‚¯ãƒªã‚¢
+				ifind10_CallCnt(0);
+				// æ–‡å­—åŒ–ã‘ã‚’èµ·ã“ã™SystemFileã‚’å‰Šé™¤
+				sql_exec($iDbs, DELETE_EXEC99_2, 0);
+				// ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³çµ‚äº†
+				sql_exec($iDbs, "COMMIT", 0);
+				// å¾Œå‡¦ç†
+				sqlite3_finalize($stmt2);
+				sqlite3_finalize($stmt1);
+			iFinfo_freeW(FI);
+		}
+		// çµæœ
+		if(*$wpOut)
+		{
+			// å­˜åœ¨ã™ã‚‹å ´åˆã€å‰Šé™¤
+			DeleteFileW($wpOutDbn);
+			// $wpIn, $wpOutä¸¡æŒ‡å®šã€åˆ¥ãƒ•ã‚¡ã‚¤ãƒ«åã®ã¨ã
+			if(*$wpIn)
+			{
+				CopyFileW($wpInDbn, OLDDB, FALSE);
+			}
+			// WHERE Str ã®ã¨ãä¸è¦ãƒ‡ãƒ¼ã‚¿å‰Šé™¤
+			if(*$wpWhere1)
+			{
+				sql_exec($iDbs, "BEGIN", 0);         // ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³é–‹å§‹
+				$up1 = W2U($wpWhere1);
+				$up2 = ims_cats(2, "WHERE ", $up1);
+					sprintf($upBuf, UPDATE_EXEC99_1, $up2);
+				ifree($up2);
+				ifree($up1);
+				sql_exec($iDbs, $upBuf, 0);          // ãƒ•ãƒ©ã‚°ã‚’ç«‹ã¦ã‚‹
+				sql_exec($iDbs, DELETE_EXEC99_1, 0); // ä¸è¦ãƒ‡ãƒ¼ã‚¿å‰Šé™¤
+				sql_exec($iDbs, UPDATE_EXEC99_2, 0); // ãƒ•ãƒ©ã‚°åˆæœŸåŒ–
+				sql_exec($iDbs, "COMMIT", 0);        // ãƒˆãƒ©ãƒ³ã‚¶ã‚¯ã‚·ãƒ§ãƒ³çµ‚äº†
+				sql_exec($iDbs, "VACUUM", 0);        // VACUUM
+			}
+			// $wpIn, $wpOut ä¸¡æŒ‡å®šã®ã¨ãã¯, é€”ä¸­, ãƒ•ã‚¡ã‚¤ãƒ«åãŒé€†ã«ãªã‚‹ã®ã§, å¾Œã§swap
+			sql_saveOrLoadMemdb($iDbs, (*$wpIn ? $wpInDbn : $wpOutDbn), TRUE);
+			// outDb
+			sql_exec($iDbs, "SELECT LN FROM V_INDEX;", sql_result_countOnly); // "SELECT *" ã¯é…ã„
 		}
 		else
 		{
-			// o—Í—Ìˆæ
-			$pBuf = icalloc_MBS(BUF_SIZE_MAX + BUF_SIZE_DMZ);
-			$pBufE = $pBuf;
-			$pBufMax = $pBuf + BUF_SIZE_MAX;
-
-			// DB\’z
-			if(! *$sIn)
+			if($iExec)
 			{
-				$struct_iFinfoW *FI = iFinfo_allocW();
-					/* 2021-11-30C³
-						yd—vzUTF-8‚ÅDB\’z
-							ƒf[ƒ^“o˜^(INSERT)‚ÍA
-								EPRAGMA encoding='UTF-16le'
-								Esqlite3_bind_text16()
-							‚ÅA"UTF-16LE"‚ª—˜—p‰Â”\‚¾‚ªA
-							o—Í(SELECT)‚É"UTF-8"‚ğg—p‚µ‚È‚¢‚ÆAsql_exec()‚ªƒGƒ‰[‚ğ•Ô‚·‚Ì‚ÅA
-								ƒ“ü—Í„ UTF-16(CharW)  => UTF-8(SQLite3)
-								ƒSQL„  SJIS(CharA)    => UTF-8(SQLite3)
-								ƒo—Í„ UTF-8(SQLite3) => SJIS(CharA)
-							‚Ì•û–@‚É—‚¿’…‚¢‚½B
-					*/
-					sql_exec($iDbs, "PRAGMA encoding = 'UTF-8';", 0);
-					// TABLEì¬
-					sql_exec($iDbs, CREATE_T_DIR, 0);
-					sql_exec($iDbs, CREATE_T_FILE, 0);
-					// VIEWì¬
-					sql_exec($iDbs, CREATE_VIEW, 0);
-					// ‘Oˆ—
-					sqlite3_prepare($iDbs, INSERT_T_DIR, imn_len(INSERT_T_DIR), &$stmt1, 0);
-					sqlite3_prepare($iDbs, INSERT_T_FILE, imn_len(INSERT_T_FILE), &$stmt2, 0);
-					// ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ŠJn
-					sql_exec($iDbs, "BEGIN", 0);
-					// ŒŸõƒf[ƒ^ DB‘
-					for($i2 = 0; ($p1 = $aDirList[$i2]); $i2++)
-					{
-						WCS *wp1 = M2W($p1);
-							$iStepCnt = iwn_len(wp1);
-							ifind10(FI, wp1, $iStepCnt, 0); // –{ˆ—
-						ifree(wp1);
-					}
-					// Œo‰ß•\¦‚ğƒNƒŠƒA
-					ifind10_CallCnt(0);
-					// •¶š‰»‚¯‚ğ‹N‚±‚·SystemFile‚ğíœ
-					sql_exec($iDbs, DELETE_EXEC99_2, 0);
-					// ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“I—¹
-					sql_exec($iDbs, "COMMIT", 0);
-					// Œãˆ—
-					sqlite3_finalize($stmt2);
-					sqlite3_finalize($stmt1);
-				iFinfo_freeW(FI);
-			}
-			// Œ‹‰Ê
-			if(*$sOut)
-			{
-				// ‘¶İ‚·‚éê‡Aíœ
-				DeleteFile($sOutDbn);
-				// $sIn, $sOut—¼w’èA•Êƒtƒ@ƒCƒ‹–¼‚Ì‚Æ‚«
-				if(*$sIn)
-				{
-					CopyFile($sInDbn, OLDDB, FALSE);
-				}
-				// WHERE Str ‚Ì‚Æ‚«•s—vƒf[ƒ^íœ
-				if(*$sWhere1)
-				{
-					sql_exec($iDbs, "BEGIN", 0);         // ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“ŠJn
-					$p1 = ims_cats(2, "WHERE ", $sWhere1);
-						sprintf($pBuf, UPDATE_EXEC99_1, $p1);
-					ifree($p1);
-					$p2 = M2U($pBuf);                    // UTF-8‚Åˆ—
-						sql_exec($iDbs, $p2, 0);         // ƒtƒ‰ƒO‚ğ—§‚Ä‚é
-					ifree($p2);
-					sql_exec($iDbs, DELETE_EXEC99_1, 0); // •s—vƒf[ƒ^íœ
-					sql_exec($iDbs, UPDATE_EXEC99_2, 0); // ƒtƒ‰ƒO‰Šú‰»
-					sql_exec($iDbs, "COMMIT", 0);        // ƒgƒ‰ƒ“ƒUƒNƒVƒ‡ƒ“I—¹
-					sql_exec($iDbs, "VACUUM", 0);        // VACUUM
-				}
-				// $sIn, $sOut —¼w’è‚Ì‚Æ‚«‚Í, “r’†, ƒtƒ@ƒCƒ‹–¼‚ª‹t‚É‚È‚é‚Ì‚Å, Œã‚Åswap
-				sql_saveOrLoadMemdb($iDbs, (*$sIn ? $sInDbn : $sOutDbn), TRUE);
-				// outDb
-				sql_exec($iDbs, "SELECT LN FROM V_INDEX;", sql_result_countOnly); // "SELECT *" ‚Í’x‚¢
+				sql_exec($iDbs, $sqlU, sql_result_exec);
 			}
 			else
 			{
-				if($iExec)
+				// ã‚«ãƒ©ãƒ åè¡¨ç¤º
+				if(! $bNoHeader)
 				{
-					sql_exec($iDbs, $sqlU, sql_result_exec);
+					$up1 = W2U($wpSelect);
+					$up2 = ims_cats(3, "SELECT ", $up1, " FROM V_INDEX WHERE id=1;");
+						sql_exec($iDbs, $up2, sql_columnName);
+					ifree($up2);
+					ifree($up1);
 				}
-				else
-				{
-					// ƒJƒ‰ƒ€–¼•\¦
-					if(! $bNoHeader)
-					{
-						$p1 = ims_cats(3, "SELECT ", $sSelect, " FROM V_INDEX WHERE id=1;");
-							sql_exec($iDbs, $p1, sql_columnName);
-						ifree($p1);
-					}
-					sql_exec($iDbs, $sqlU, sql_result_std);
-				}
+				// çµæœå‡ºåŠ›
+				sql_exec($iDbs, $sqlU, sql_result_std);
 			}
-			// DB‰ğ•ú
-			sqlite3_close($iDbs);
-			// $sIn, $sOut ƒtƒ@ƒCƒ‹–¼‚ğswap
-			if(*$sIn)
-			{
-				MoveFile($sInDbn, $sOutDbn);
-				MoveFile(OLDDB, $sInDbn);
-			}
-			// ì‹Æ—pƒtƒ@ƒCƒ‹íœ
-			DeleteFile(OLDDB);
 		}
-	ifree(up1);
+		// DBè§£æ”¾
+		sqlite3_close($iDbs);
+		// $wpIn, $wpOut ãƒ•ã‚¡ã‚¤ãƒ«åã‚’swap
+		if(*$wpIn)
+		{
+			MoveFileW($wpInDbn, $wpOutDbn);
+			MoveFileW(OLDDB, $wpInDbn);
+		}
+		// ä½œæ¥­ç”¨ãƒ•ã‚¡ã‚¤ãƒ«å‰Šé™¤
+		DeleteFileW(OLDDB);
+	}
 
-	// ƒtƒbƒ^•”
+	// ãƒ•ãƒƒã‚¿éƒ¨
 	if(! $bNoFooter)
 	{
 		print_footer();
@@ -858,23 +829,23 @@ main()
 	imain_end();
 }
 
-MBS
+WCS
 *sql_escape(
-	MBS *pM
+	WCS *pW
 )
 {
-	$p1 = ims_clone(pM);
-	$p2 = ijs_replace($p1, ";", " ", FALSE); // ";" => " " SQLƒCƒ“ƒWƒFƒNƒVƒ‡ƒ“‰ñ”ğ
-	ifree($p1);
-	$p1 = ijs_replace($p2, "*", "%", FALSE); // "*" => "%"
-	ifree($p2);
-	$p2 = ijs_replace($p1, "?", "_", FALSE); // "?" => "_"
-	ifree($p1);
-	// [] ‚ğ“ú•t‚É•ÏŠ·
-	$p1 = idate_replace_format_ymdhns(
-			$p2,
-			"[", "]",
-			"'",
+	$wp1 = iws_clone(pW);
+	$wp2 = iws_replace($wp1, L";", L" ", FALSE); // ";" => " " SQLã‚¤ãƒ³ã‚¸ã‚§ã‚¯ã‚·ãƒ§ãƒ³å›é¿
+	ifree($wp1);
+	$wp1 = iws_replace($wp2, L"*", L"%", FALSE); // "*" => "%"
+	ifree($wp2);
+	$wp2 = iws_replace($wp1, L"?", L"_", FALSE); // "?" => "_"
+	ifree($wp1);
+	// [] ã‚’æ—¥ä»˜ã«å¤‰æ›
+	$wp1 = idate_replace_format_ymdhns(
+			$wp2,
+			L"[", L"]",
+			L"'",
 			$aiNow[0],
 			$aiNow[1],
 			$aiNow[2],
@@ -882,28 +853,28 @@ MBS
 			$aiNow[4],
 			$aiNow[5]
 	);
-	ifree($p2);
-	return $p1;
+	ifree($wp2);
+	return $wp1;
 }
 
 /* 2016-08-19
-	y—¯ˆÓzDir‚Ì•\¦‚É‚Â‚¢‚Ä
-		d:\aaa\ ˆÈ‰º‚ÌA
+	ã€ç•™æ„ã€‘Dirã®è¡¨ç¤ºã«ã¤ã„ã¦
+		d:\aaa\ ä»¥ä¸‹ã®ã€
 			d:\aaa\bbb\
 			d:\aaa\ccc\
 			d:\aaa\ddd.txt
-		‚ğ•\¦‚µ‚½‚Æ‚«‚Ìˆá‚¢‚ÍŸ‚Ì‚Æ‚¨‚èB
+		ã‚’è¡¨ç¤ºã—ãŸã¨ãã®é•ã„ã¯æ¬¡ã®ã¨ãŠã‚Šã€‚
 
-		‡@iwmls.exeilsAdirŒİŠ·j
+		â‘ iwmls.exeï¼ˆlsã€diräº’æ›ï¼‰
 			d:\aaa\bbb\
 			d:\aaa\ccc\
 			d:\aaa\ddd.txt
 
-		‡Aiwmfind.exeiBaseDir‚ÆFile‚ğ•\¦j
+		â‘¡iwmfind.exeï¼ˆBaseDirã¨Fileã‚’è¡¨ç¤ºï¼‰
 			d:\aaa\
 			d:\aaa\ddd.txt
 
-		¦Dir‚ÆFile‚ğ•Êƒe[ƒuƒ‹‚ÅŠÇ—^join‚µ‚Äg—p‚·‚é‚½‚ßA‚±‚Ì‚æ‚¤‚Èd—l‚É‚È‚ç‚´‚é‚ğ“¾‚È‚¢B
+		â€»Dirã¨Fileã‚’åˆ¥ãƒ†ãƒ¼ãƒ–ãƒ«ã§ç®¡ç†ï¼joinã—ã¦ä½¿ç”¨ã™ã‚‹ãŸã‚ã€ã“ã®ã‚ˆã†ãªä»•æ§˜ã«ãªã‚‰ã–ã‚‹ã‚’å¾—ãªã„ã€‚
 */
 VOID
 ifind10(
@@ -922,9 +893,9 @@ ifind10(
 		*wp1 = L'*';
 		*(++wp1) = 0;
 	HANDLE hfind = FindFirstFileW(FI->fullnameW, &F);
-		// “Ç‚İ”ò‚Î‚· Depth
+		// èª­ã¿é£›ã°ã™ Depth
 		BOOL bMinDepthFlg = (depth >= $iDepthMin ? TRUE : FALSE);
-		// dirId‚ğ’€Ÿ¶¬
+		// dirIdã‚’é€æ¬¡ç”Ÿæˆ
 		INT dirId = (++$iDirId);
 		// Dir
 		if(bMinDepthFlg)
@@ -940,7 +911,7 @@ ifind10(
 				if((FI->uFtype) == 1)
 				{
 					wp1 = iws_clone(FI->fullnameW);
-						// ‰ºˆÊDir‚Ö
+						// ä¸‹ä½Dirã¸
 						ifind10(FI, wp1, FI->uEnd, depth + 1);
 					ifree(wp1);
 				}
@@ -955,27 +926,27 @@ ifind10(
 		}
 		while(FindNextFileW(hfind, &F));
 	FindClose(hfind);
-	// Œo‰ß•\¦
+	// çµŒéè¡¨ç¤º
 	ifind10_CallCnt(++$iCall_ifind10);
 }
 
 VOID
 ifind10_CallCnt(
-	INT iCnt // 0=ƒNƒŠƒA
+	INT iCnt // 0=ã‚¯ãƒªã‚¢
 )
 {
 	if(! iCnt)
 	{
-		// sÁ‹^ƒJ[ƒ\ƒ‹–ß‚·
-		fputs("\r\033[0K\033[?25h", stderr);
+		// è¡Œæ¶ˆå»ï¼ã‚«ãƒ¼ã‚½ãƒ«æˆ»ã™
+		fputs("\r\x1b[0K\x1b[?25h", stderr);
 		return;
 	}
 
 	if(iCnt >= BUF_MAXCNT)
 	{
 		PRGB21();
-		// sÁ‹^ƒJ[ƒ\ƒ‹Á‚·^ƒJƒEƒ“ƒg•`‰æ
-		fprintf(stderr, "\r\033[0K\033[?25l> %lld", $lAllCnt);
+		// è¡Œæ¶ˆå»ï¼ã‚«ãƒ¼ã‚½ãƒ«æ¶ˆã™ï¼ã‚«ã‚¦ãƒ³ãƒˆæç”»
+		fprintf(stderr, "\r\x1b[0K\x1b[?25l> %lld", $lAllCnt);
 		$iCall_ifind10 = 0;
 	}
 }
@@ -1018,26 +989,24 @@ ifind22(
 VOID
 sql_exec(
 	sqlite3 *db,
-	CONST MBS *sql,
+	CONST U8N *sql,
 	sqlite3_callback cb
 )
 {
-	MBS *p_err = 0; // SQLite‚ªg—p
+	U8N *p_err = 0; // SQLiteãŒä½¿ç”¨
 	$lRowCnt = 0;
 
 	if(sqlite3_exec(db, sql, cb, 0, &p_err))
 	{
-		P("[Err] \\•¶ƒGƒ‰[\n    %s\n    %s\n", p_err, sql);
-		sqlite3_free(p_err); // p_err‚ğ‰ğ•ú
+		P("[Err] æ§‹æ–‡ã‚¨ãƒ©ãƒ¼\n    %s\n    %s\n", p_err, sql);
+		sqlite3_free(p_err); // p_errã‚’è§£æ”¾
 		imain_end();
 	}
 
-	// sql_result_std() ‘Î‰
-	if($pBufE > $pBuf)
+	// sql_result_std() å¯¾å¿œ
+	if($upBufE > $upBuf)
 	{
-		$p1 = U2M($pBuf);
-			QP($p1);
-		ifree($p1);
+		QP($upBuf);
 	}
 }
 
@@ -1045,22 +1014,20 @@ INT
 sql_columnName(
 	VOID *option,
 	INT iColumnCount,
-	MBS **sColumnValues,
-	MBS **sColumnNames
+	U8N **sColumnValues,
+	U8N **sColumnNames
 )
 {
 	PRGB21();
 	$i1 = 0;
 	while(TRUE)
 	{
-		$p1 = U2M(sColumnNames[$i1]);
-			P0("[");
-			P0($p1);
-			P0("]");
-		ifree($p1);
+		P0("[");
+		P0(sColumnNames[$i1]);
+		P0("]");
 		if(++$i1 < iColumnCount)
 		{
-			P0($sSeparate);
+			P0($upSeparate);
 		}
 		else
 		{
@@ -1076,50 +1043,44 @@ INT
 sql_result_std(
 	VOID *option,
 	INT iColumnCount,
-	MBS **sColumnValues,
-	MBS **sColumnNames
+	U8N **sColumnValues,
+	U8N **sColumnNames
 )
 {
-	INT iColumnCount2 = iColumnCount - 1;
-
 	++$lRowCnt;
-
-	for($i1 = 0; $i1 < iColumnCount; $i1++)
+	$i1 = 0;
+	while($i1 < iColumnCount)
 	{
 		// [LN]
 		if($i1 == $iSelectPosNumber)
 		{
-			$pBufE += sprintf(
-				$pBufE,
-				"%s%lld%s%s",
-				$sQuote,
+			$upBufE += sprintf(
+				$upBufE,
+				"%s%lld%s",
+				$upQuote,
 				$lRowCnt,
-				$sQuote,
-				($i1 == iColumnCount2 ? "\n" : $sSeparate)
+				$upQuote
 			);
 		}
 		else
 		{
-			$pBufE += sprintf(
-				$pBufE,
-				"%s%s%s%s",
-				$sQuote,
+			$upBufE += sprintf(
+				$upBufE,
+				"%s%s%s",
+				$upQuote,
 				sColumnValues[$i1],
-				$sQuote,
-				($i1 == iColumnCount2 ? "\n" : $sSeparate)
+				$upQuote
 			);
 		}
+		++$i1;
+		$upBufE += imn_cpy($upBufE, ($i1 == iColumnCount ? "\n" : $upSeparate));
 	}
-
-	// Buf ‚ğ Print
-	if($pBufE > $pBufMax)
+	// Buf ã‚’ Print
+	if($upBufE > $upBufMax)
 	{
-		$p1 = U2M($pBuf);
-			QP($p1);
-		ifree($p1);
-		$pBufE = $pBuf;
+		QP($upBuf);
+		$upBufE = $upBuf;
 	}
-
 	return SQLITE_OK;
 }
 
@@ -1127,8 +1088,8 @@ INT
 sql_result_countOnly(
 	VOID *option,
 	INT iColumnCount,
-	MBS **sColumnValues,
-	MBS **sColumnNames
+	U8N **sColumnValues,
+	U8N **sColumnNames
 )
 {
 	++$lRowCnt;
@@ -1139,12 +1100,12 @@ INT
 sql_result_exec(
 	VOID *option,
 	INT iColumnCount,
-	MBS **sColumnValues,
-	MBS **sColumnNames
+	U8N **sColumnValues,
+	U8N **sColumnNames
 )
 {
 	INT i1 = 0;
-	MBS *p1e = 0;
+	WCS *wp1e = 0;
 
 	switch($iExec)
 	{
@@ -1152,58 +1113,60 @@ sql_result_exec(
 		case(I_CP):    // --copy
 		case(I_MV):    // --move
 		case(I_MV2):   // --move2
-			// $sMdOp\ˆÈ‰º‚É‚ÍA$aDirList\ˆÈ‰º‚ÌDir‚ğì¬
+			// $wpMdOp\ä»¥ä¸‹ã«ã¯ã€$waDirList\ä»¥ä¸‹ã®Dirã‚’ä½œæˆ
 			i1  = atoi(sColumnValues[0]); // step_cnt
-			$p1 = U2M(sColumnValues[1]);  // dir + "\"
-			p1e = ijp_forwardN($p1, i1);  // $p1‚ÌEOD
-			$p2 = U2M(sColumnValues[2]);  // name
-			$p3 = U2M(sColumnValues[3]);  // path
+			$wp1 = U2W(sColumnValues[1]); // dir + "\"
+			wp1e = $wp1 + i1;             // $wp1ã®EOD
+			$wp2 = U2W(sColumnValues[2]); // name
+			$wp3 = U2W(sColumnValues[3]); // path
 			// mkdir
-			sprintf($pBuf, "%s\\%s", $sMdOp, p1e);
-				if(imk_dir($pBuf))
+			$wp4 = iws_sprintf(L"%S\\%S", $wpMdOp, wp1e);
+				if(imk_dirW($wp4))
 				{
 					P0("md\t=> ");
-					P2( $pBuf);
+					$up1 = W2U($wp4);
+						P2($up1);
+					ifree($up1);
 					++$lRowCnt;
 				}
-			// æ
-			$p4 = ims_clone(p1e);
-				sprintf($pBuf, "%s\\%s%s", $sMdOp, $p4, $p2);
-			$p5 = ims_clone($pBuf);
+			// å„ªå…ˆå‡¦ç†
+			$wp5 = iws_clone(wp1e);
+				swprintf($wp4, IMAX_PATH, L"%S\\%S%S", $wpMdOp, $wp5, $wp2);
+			$wp6 = iws_clone($wp4);
 				if($iExec == I_CP)
 				{
-					if(CopyFile($p3, $p5, FALSE))
+					if(CopyFileW($wp3, $wp6, FALSE))
 					{
 						P0("cp\t<= ");
-						P2($p3);
+						P2(sColumnValues[3]);
 						++$lRowCnt;
 					}
 				}
 				else if($iExec >= I_MV)
 				{
-					// ReadOnly‘®«(1)‚ğ‰ğœ
-					if((1 & GetFileAttributes($p5)))
+					// ReadOnlyå±æ€§(1)ã‚’è§£é™¤
+					if((1 & GetFileAttributesW($wp6)))
 					{
-						SetFileAttributes($p5, FALSE);
+						SetFileAttributesW($wp6, FALSE);
 					}
-					// Šù‘¶Fileíœ
-					if(iFchk_typePathA($p5))
+					// æ—¢å­˜Fileå‰Šé™¤
+					if(iFchk_typePathW($wp6))
 					{
-						DeleteFile($p5);
+						DeleteFileW($wp6);
 					}
-					if(MoveFile($p3, $p5))
+					if(MoveFileW($wp3, $wp6))
 					{
 						P0("mv\t<= ");
-						P2($p3);
+						P2(sColumnValues[3]);
 						++$lRowCnt;
 					}
 					// rmdir
 					if($iExec == I_MV2)
 					{
-						if(RemoveDirectory($p1))
+						if(RemoveDirectoryW($wp1))
 						{
 							P0("rd\t=> ");
-							P2($p1);
+							P2(sColumnValues[1]);
 							++$lRowCnt;
 						}
 					}
@@ -1211,135 +1174,143 @@ sql_result_exec(
 				else
 				{
 				}
-			ifree($p5);
-			ifree($p4);
-			ifree($p3);
-			ifree($p2);
-			ifree($p1);
+			ifree($wp6);
+			ifree($wp5);
+			ifree($wp4);
+			ifree($wp3);
+			ifree($wp2);
+			ifree($wp1);
 		break;
 
 		case(I_EXT1): // --extract1
 		case(I_EXT2): // --extract2
-			$p1 = U2M(sColumnValues[0]); // path
-			$p2 = U2M(sColumnValues[1]); // name
+			$wp1 = U2W(sColumnValues[0]); // path
+			$wp2 = U2W(sColumnValues[1]); // name
 				// mkdir
-				if(imk_dir($sMdOp))
+				if(imk_dirW($wpMdOp))
 				{
 					P0("md\t=> ");
-					P2($sMdOp);
+					$up1 = W2U($wpMdOp);
+						P2($up1);
+					ifree($up1);
 					++$lRowCnt;
 				}
-				// æ
-				sprintf($pBuf, "%s\\%s", $sMdOp, $p2);
-				// I_EXT1, I_EXT2‹¤A“¯–¼File‚Íã‘‚«
+				// å…ˆ
+				$wp3 = iws_sprintf(L"%S\\%S", $wpMdOp, $wp2);
+				// I_EXT1, I_EXT2å…±ã€åŒåFileã¯ä¸Šæ›¸ã
 				if($iExec == I_EXT1)
 				{
-					if(CopyFile($p1, $pBuf, FALSE))
+					if(CopyFileW($wp1, $wp3, FALSE))
 					{
 						P0("cp\t<= ");
-						P2($pBuf);
+						$up1 = W2U($wp3);
+							P2($up1);
+						ifree($up1);
 						++$lRowCnt;
 					}
 				}
 				else if($iExec == I_EXT2)
 				{
-					// ReadOnly‘®«(1)‚ğ‰ğœ
-					if((1 & GetFileAttributes($pBuf)))
+					// ReadOnlyå±æ€§(1)ã‚’è§£é™¤
+					if((1 & GetFileAttributesW($wp3)))
 					{
-						SetFileAttributes($pBuf, FALSE);
+						SetFileAttributesW($wp3, FALSE);
 					}
-					// Dir‘¶İ‚µ‚Ä‚¢‚ê‚Îíœ‚µ‚Ä‚¨‚­
-					if(iFchk_typePathA($pBuf))
+					// Dirå­˜åœ¨ã—ã¦ã„ã‚Œã°å‰Šé™¤ã—ã¦ãŠã
+					if(iFchk_typePathW($wp3))
 					{
-						DeleteFile($pBuf);
+						DeleteFileW($wp3);
 					}
-					if(MoveFile($p1, $pBuf))
+					if(MoveFileW($wp1, $wp3))
 					{
 						P0("mv\t<= ");
-						P2($pBuf);
+						$up1 = W2U($wp3);
+							P2($up1);
+						ifree($up1);
 						++$lRowCnt;
 					}
 				}
 				else
 				{
 				}
-			ifree($p2);
-			ifree($p1);
+			ifree($wp3);
+			ifree($wp2);
+			ifree($wp1);
 		break;
 
 		case(I_DEL):  // --delete
 		case(I_DEL2): // --delete2
-			$p1 = U2M(sColumnValues[0]); // path
-				// ReadOnly‘®«(1)‚ğ‰ğœ
+			$wp1 = U2W(sColumnValues[0]); // path
+				// ReadOnlyå±æ€§(1)ã‚’è§£é™¤
 				if((1 & atoi(sColumnValues[2])))
 				{
-					SetFileAttributes($p1, FALSE);
+					SetFileAttributesW($wp1, FALSE);
 				}
-				// File‚ğƒSƒ~” ‚ÖˆÚ“®
-				if(imv_trash($p1, FALSE))
+				// Fileã‚’ã‚´ãƒŸç®±ã¸ç§»å‹•
+				if($iExec == I_DEL)
 				{
-					P0("del\t=> ");
-					P2($p1);
-					++$lRowCnt;
+					if(imv_trashW($wp1, TRUE))
+					{
+						P0("delFile\t=> ");
+						P2(sColumnValues[0]);
+						++$lRowCnt;
+					}
 				}
-				// ‹óDir‚ğƒSƒ~” ‚ÖˆÚ“®
-				if($iExec == I_DEL2)
+				// ã™ã¹ã¦ã‚´ãƒŸç®±ã¸ç§»å‹•
+				else if($iExec == I_DEL2)
 				{
-					$p2 = U2M(sColumnValues[1]); // dir
-						// ‹óDir‚Å‚ ‚é
-						if(imv_trash($p2, TRUE))
-						{
-							P0("del\t=> ");
-							P2($p2);
-							++$lRowCnt;
-						}
-					ifree($p2);
+					if(imv_trashW($wp1, FALSE))
+					{
+						P0("delDir\t=> ");
+						P2(sColumnValues[0]);
+						++$lRowCnt;
+					}
 				}
-			ifree($p1);
+			ifree($wp1);
 		break;
 
 		case(I_REP): // --replace
-			$p1 = U2M(sColumnValues[0]); // type
-			$p2 = U2M(sColumnValues[1]); // path
-				if(*$p1 == 'f' && CopyFile($sRepOp, $p2, FALSE))
+			$wp1 = U2W(sColumnValues[0]); // type
+			$wp2 = U2W(sColumnValues[1]); // path
+				if(*$wp1 == 'f' && CopyFileW($wpRepOp, $wp2, FALSE))
 				{
 					P0("rep\t=> ");
-					P2($p2);
+					P2(sColumnValues[1]);
 					++$lRowCnt;
 				}
-			ifree($p2);
-			ifree($p1);
+			ifree($wp2);
+			ifree($wp1);
 		break;
 
 		case(I_RM):  // --remove
 		case(I_RM2): // --remove2
-			$p1 = U2M(sColumnValues[0]); // path
-				// ReadOnly‘®«(1)‚ğ‰ğœ
+			$wp1 = U2W(sColumnValues[0]); // path
+				// ReadOnlyå±æ€§(1)ã‚’è§£é™¤
 				if((1 & atoi(sColumnValues[2])))
 				{
-					SetFileAttributes($p1, FALSE);
+					SetFileAttributesW($wp1, FALSE);
 				}
-				// Fileíœ
-				if(DeleteFile($p1))
+				// Fileå‰Šé™¤
+				if(DeleteFileW($wp1))
 				{
 					P0("rm\t=> ");
-					P2($p1);
+					P2(sColumnValues[0]);
 					++$lRowCnt;
 				}
-				// ‹óDiríœ
+				// ç©ºDirå‰Šé™¤
 				if($iExec == I_RM2)
 				{
-					$p2 = U2M(sColumnValues[1]); // dir
-						// ‹óDir‚Å‚ ‚é
-						if(RemoveDirectory($p2))
+					$wp2 = U2W(sColumnValues[1]); // dir
+						// ç©ºDirã§ã‚ã‚‹
+						if(RemoveDirectoryW($wp2))
 						{
 							P0("rd\t=> ");
-							P2($p2);
+							P2(sColumnValues[1]);
 							++$lRowCnt;
 						}
-					ifree($p2);
+					ifree($wp2);
 				}
-			ifree($p1);
+			ifree($wp1);
 		break;
 	}
 	return SQLITE_OK;
@@ -1348,8 +1319,8 @@ sql_result_exec(
 BOOL
 sql_saveOrLoadMemdb(
 	sqlite3 *mem_db, // ":memory:"
-	MBS *ofn,        // Filename
-	BOOL save_load   // TRUE=save^FALSE=load
+	WCS *ofn,        // Filename
+	BOOL save_load   // TRUE=saveï¼FALSE=load
 )
 {
 	INT err = 0;
@@ -1358,10 +1329,7 @@ sql_saveOrLoadMemdb(
 	sqlite3 *pTo;
 	sqlite3 *pFrom;
 
-	// UTF-8‚Åˆ—
-	U8N *up1 = M2U(ofn);
-
-	if(! (err = sqlite3_open(up1, &pFile)))
+	if(! (err = sqlite3_open16(ofn, &pFile)))
 	{
 		if(save_load)
 		{
@@ -1383,8 +1351,6 @@ sql_saveOrLoadMemdb(
 	}
 	sqlite3_close(pFile);
 
-	ifree(up1);
-
 	return (! err ? TRUE : FALSE);
 }
 
@@ -1396,38 +1362,38 @@ print_footer()
 		P(
 			"-- %lld row%s in set ( %.3f sec)\n",
 			$lRowCnt,
-			($lRowCnt > 1 ? "s" : ""), // •¡”Œ`
+			($lRowCnt > 1 ? "s" : ""), // è¤‡æ•°å½¢
 			iExecSec_next()
 		);
 	PRGB22();
 		P2("--");
-		for(INT _i1 = 0; _i1 < $aDirListSize; _i1++)
+		for(INT _i1 = 0; _i1 < $waDirListSize; _i1++)
 		{
-			P("--  '%s'\n", $aDirList[_i1]);
+			$up1 = W2U($waDirList[_i1]);
+				P("--  '%s'\n", $up1);
+			ifree($up1);
 		}
-		$p1 = U2M($sqlU);
-			P("--  '%s'\n", $p1);
-		ifree($p1);
+		P("--  '%s'\n", $sqlU);
 		P("--  -depth     '%d,%d'\n", $iDepthMin, $iDepthMax);
-		if(*$sIn)
+		if(*$upIn)
 		{
-			P("--  -in        '%s'\n", $sIn);
+			P("--  -in        '%s'\n", $upIn);
 		}
-		if(*$sOutDbn)
+		if(*$upOutDbn)
 		{
-			P("--  -out       '%s'\n", $sOutDbn);
+			P("--  -out       '%s'\n", $upOutDbn);
 		}
 		if($bNoFooter)
 		{
 			P2("--  -nofooter");
 		}
-		if(*$sQuote)
+		if(*$upQuote)
 		{
-			P("--  -quote     '%s'\n", $sQuote);
+			P("--  -quote     '%s'\n", $upQuote);
 		}
-		if(*$sSeparate)
+		if(*$upSeparate)
 		{
-			P("--  -separate  '%s'\n", $sSeparate);
+			P("--  -separate  '%s'\n", $upSeparate);
 		}
 		P2("--");
 	PRGB00();
@@ -1447,80 +1413,81 @@ print_version()
 VOID
 print_help()
 {
+	U8N *_cmd = W2U($CMD);
+	U8N *_select0 = W2U(OP_SELECT_0);
+
 	print_version();
 	PRGB01();
-	P2("\033[48;2;50;50;200m ƒtƒ@ƒCƒ‹ŒŸõ \033[0m");
+	P2("\x1b[48;2;50;50;200m ãƒ•ã‚¡ã‚¤ãƒ«æ¤œç´¢ \x1b[0m");
 	NL();
 	PRGB02();
-	P ("\033[48;2;200;50;50m %s [Dir] [Option] \033[0m\n\n", $CMD);
+	P ("\x1b[48;2;200;50;50m %s [Dir] [Option] \x1b[0m\n\n", _cmd);
 	PRGB11();
-	P0(" (—á‚P) ");
+	P0(" (ä¾‹ï¼‘) ");
 	PRGB91();
-	P2("ŒŸõ");
-	P ("   %s \033[38;2;255;150;150mDir \033[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", $CMD);
+	P2("æ¤œç´¢");
+	P ("   %s \x1b[38;2;255;150;150mDir \x1b[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", _cmd);
 	PRGB11();
-	P0(" (—á‚Q) ");
+	P0(" (ä¾‹ï¼’) ");
 	PRGB91();
-	P2("ŒŸõŒ‹‰Ê‚ğƒtƒ@ƒCƒ‹‚Ö•Û‘¶");
-	P ("   %s \033[38;2;255;150;150mDir1 Dir2 \033[38;2;150;150;255m-r -o=File\n\n", $CMD);
+	P2("æ¤œç´¢çµæœã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã¸ä¿å­˜");
+	P ("   %s \x1b[38;2;255;150;150mDir1 Dir2 \x1b[38;2;150;150;255m-r -o=File\n\n", _cmd);
 	PRGB11();
-	P0(" (—á‚R) ");
+	P0(" (ä¾‹ï¼“) ");
 	PRGB91();
-	P2("ŒŸõ‘ÎÛ‚ğƒtƒ@ƒCƒ‹‚©‚ç“Ç");
-	P ("   %s \033[38;2;150;150;255m-i=File\n\n", $CMD);
+	P2("æ¤œç´¢å¯¾è±¡ã‚’ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰èª­è¾¼");
+	P ("   %s \x1b[38;2;150;150;255m-i=File\n\n", _cmd);
 	PRGB02();
-	P2("\033[48;2;200;50;50m [Dir] \033[0m");
+	P2("\x1b[48;2;200;50;50m [Dir] \x1b[0m");
 	PRGB91();
-	P2("   ŒŸõ‘ÎÛDir");
+	P2("   æ¤œç´¢å¯¾è±¡Dir");
 	PRGB11();
-	P0("   (—á) ");
+	P0("   (ä¾‹) ");
 	PRGB91();
-	P2("\"c:\\\" \"c:\\windows\\\" => \"c:\\\"");
-	PRGB12();
-	P2("        •¡”w’è‚Ìê‡AãˆÊDir‚ÉW–ñ‚·‚é");
+	P2("\"c:\\\" \".\" (è¤‡æ•°æŒ‡å®šå¯)");
 	NL();
 	PRGB02();
-	P2("\033[48;2;200;50;50m [Option] \033[0m");
+	P2("\x1b[48;2;200;50;50m [Option] \x1b[0m");
 	PRGB21();
 	P2("   -out=File | -o=File");
 	PRGB91();
-	P2("       o—Íƒtƒ@ƒCƒ‹");
+	P2("       å‡ºåŠ›ãƒ•ã‚¡ã‚¤ãƒ«");
 	NL();
 	PRGB21();
 	P2("   -in=File | -i=File");
 	PRGB91();
-	P2("       “ü—Íƒtƒ@ƒCƒ‹");
+	P2("       å…¥åŠ›ãƒ•ã‚¡ã‚¤ãƒ«");
 	PRGB12();
-	P2("       ŒŸõ‘ÎÛDir‚Æ•¹—p‚Å‚«‚È‚¢");
+	P2("       æ¤œç´¢å¯¾è±¡Dirã¨ä½µç”¨ã§ããªã„");
 	NL();
 	PRGB21();
 	P2("   -select=Column1,Column2,... | -s=Column1,Column2,...");
 	PRGB91();
-	P2("       LN        (Num) ˜A”Ô^1‰ñ‚Ì‚İw’è‰Â");
+	P2("       LN        (Num) é€£ç•ªï¼1å›ã®ã¿æŒ‡å®šå¯");
 	P2("       path      (Str) dir\\name");
-	P2("       dir       (Str) ƒfƒBƒŒƒNƒgƒŠ–¼");
-	P2("       name      (Str) ƒtƒ@ƒCƒ‹–¼");
-	P2("       ext       (Str) Šg’£q");
-	P2("       depth     (Num) ƒfƒBƒŒƒNƒgƒŠŠK‘w = 0..");
-	P2("       type      (Str) ƒfƒBƒŒƒNƒgƒŠ = d^ƒtƒ@ƒCƒ‹ = f");
-	P2("       attr_num  (Num) ‘®«");
-	P2("       attr      (Str) ‘®« \"[d|f][r|-][h|-][s|-][a|-]\"");
+	P2("       dir       (Str) ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªå");
+	P2("       name      (Str) ãƒ•ã‚¡ã‚¤ãƒ«å");
+	P2("       ext       (Str) æ‹¡å¼µå­");
+	P2("       depth     (Num) ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒªéšå±¤ = 0..");
+	P2("       type      (Str) ãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª = dï¼ãƒ•ã‚¡ã‚¤ãƒ« = f");
+	P2("       attr_num  (Num) å±æ€§");
+	P2("       attr      (Str) å±æ€§ \"[d|f][r|-][h|-][s|-][a|-]\"");
 	P2("                       [dir|file][read-only][hidden][system][archive]");
-	P2("       size      (Num) ƒtƒ@ƒCƒ‹ƒTƒCƒY = byte");
-	P2("       ctime_cjd (Num) ì¬“ú     -4712/01/01 00:00:00n“_‚Ì’ÊZ“ú^CJD=JD-0.5");
-	P2("       ctime     (Str) ì¬“ú     \"yyyy-mm-dd hh:nn:ss\"");
-	P2("       mtime_cjd (Num) XV“ú     ctime_cjdQÆ");
-	P2("       mtime     (Str) XV“ú     ctimeQÆ");
-	P2("       atime_cjd (Num) ƒAƒNƒZƒX“ú ctime_cjdQÆ");
-	P2("       atime     (Str) ƒAƒNƒZƒX“ú ctimeQÆ");
-	P2("       *         ‘S€–Ú•\\¦");
+	P2("       size      (Num) ãƒ•ã‚¡ã‚¤ãƒ«ã‚µã‚¤ã‚º = byte");
+	P2("       ctime_cjd (Num) ä½œæˆæ—¥æ™‚     -4712/01/01 00:00:00å§‹ç‚¹ã®é€šç®—æ—¥ï¼CJD=JD-0.5");
+	P2("       ctime     (Str) ä½œæˆæ—¥æ™‚     \"yyyy-mm-dd hh:nn:ss\"");
+	P2("       mtime_cjd (Num) æ›´æ–°æ—¥æ™‚     ctime_cjdå‚ç…§");
+	P2("       mtime     (Str) æ›´æ–°æ—¥æ™‚     ctimeå‚ç…§");
+	P2("       atime_cjd (Num) ã‚¢ã‚¯ã‚»ã‚¹æ—¥æ™‚ ctime_cjdå‚ç…§");
+	P2("       atime     (Str) ã‚¢ã‚¯ã‚»ã‚¹æ—¥æ™‚ ctimeå‚ç…§");
+	P2("       *         å…¨é …ç›®è¡¨ç¤º");
 	NL();
 	PRGB22();
-	P2("       ¦‚P Columnw’è‚È‚µ‚Ìê‡");
+	P2("       â€»ï¼‘ ColumnæŒ‡å®šãªã—ã®å ´åˆ");
 	PRGB91();
-	P ("            %s ‚ğ•\\¦\n", OP_SELECT_0);
+	P ("            %s ã‚’è¡¨ç¤º\n", _select0);
 	PRGB22();
-	P2("       ¦‚Q SQLite‰‰Zq^ŠÖ”‚ğ—˜—p‰Â”\\");
+	P2("       â€»ï¼’ SQLiteæ¼”ç®—å­ï¼é–¢æ•°ã‚’åˆ©ç”¨å¯èƒ½");
 	PRGB91();
 	P2("            abs(X)  changes()  char(X1, X2, ..., XN)  coalesce(X, Y, ...)");
 	P2("            glob(X, Y)  ifnull(X, Y)  instr(X, Y)  hex(X)");
@@ -1537,167 +1504,170 @@ print_help()
 	P2("            total_changes()  trim(X) trim(X, Y)  typeof(X)  unlikely(X)");
 	P2("            unicode(X)  upper(X)  zeroblob(N)");
 	PRGB12();
-	P2("           ƒ}ƒ‹ƒ`ƒoƒCƒg‚ğ‚P•¶š‚Æ‚µ‚Äˆ—");
+	P2("           ãƒãƒ«ãƒãƒã‚¤ãƒˆã‚’ï¼‘æ–‡å­—ã¨ã—ã¦å‡¦ç†");
 	PRGB13();
-	P2("           (Ql) http://www.sqlite.org/lang_corefunc.html");
+	P2("           (å‚è€ƒ) http://www.sqlite.org/lang_corefunc.html");
 	NL();
 	PRGB21();
 	P2("   -where=Str | -w=Str");
 	PRGB11();
-	P0("       (—á‚P) ");
+	P0("       (ä¾‹ï¼‘) ");
 	PRGB91();
 	P2("\"size<=100 or size>1000000\"");
 	PRGB11();
-	P0("       (—á‚Q) ");
+	P0("       (ä¾‹ï¼’) ");
 	PRGB91();
 	P2("\"type like 'f' and name like 'abc??.*'\"");
-	P2("              '?' '_' ‚Í”CˆÓ‚Ì1•¶š");
-	P2("              '*' '%' ‚Í”CˆÓ‚Ì0•¶šˆÈã");
+	P2("              '?' '_' ã¯ä»»æ„ã®1æ–‡å­—");
+	P2("              '*' '%' ã¯ä»»æ„ã®0æ–‡å­—ä»¥ä¸Š");
 	PRGB11();
-	P0("       (—á‚R) ");
+	P0("       (ä¾‹ï¼“) ");
 	PRGB91();
-	P2("Šî€“ú \"2010-12-10 12:00:00\"‚Ì‚Æ‚«");
+	P2("åŸºæº–æ—¥ \"2010-12-10 12:00:00\"ã®ã¨ã");
 	P2("              \"ctime>=[-10D]\"  => \"ctime>='2010-11-30 00:00:00'\"");
 	P2("              \"ctime>=[-10d]\"  => \"ctime>='2010-11-30 12:00:00'\"");
 	P2("              \"ctime>=[-10d*]\" => \"ctime>='2010-11-30 %'\"");
 	P2("              \"ctime>=[-10d%]\" => \"ctime>='2010-11-30 %'\"");
-	P2("              (”N) Y, y (Œ) M, m (“ú) D, d () H, h (•ª) N, n (•b) S, s");
+	P2("              (å¹´) Y, y (æœˆ) M, m (æ—¥) D, d (æ™‚) H, h (åˆ†) N, n (ç§’) S, s");
 	NL();
 	PRGB21();
 	P2("   -group=Str | -g=Str");
 	PRGB11();
-	P0("       (—á) ");
+	P0("       (ä¾‹) ");
 	PRGB91();
 	P2("-g=\"Str1, Str2\"");
-	P2("            Str1‚ÆStr2‚ğƒOƒ‹[ƒv–ˆ‚É‚Ü‚Æ‚ß‚é");
+	P2("            Str1ã¨Str2ã‚’ã‚°ãƒ«ãƒ¼ãƒ—æ¯ã«ã¾ã¨ã‚ã‚‹");
 	NL();
 	PRGB21();
 	P2("   -sort=\"Str [ASC|DESC]\" | -st=\"Str [ASC|DESC]\"");
 	PRGB11();
-	P0("       (—á) ");
+	P0("       (ä¾‹) ");
 	PRGB91();
 	P2("-st=\"Str1 ASC, Str2 DESC\"");
-	P2("            Str1‚ğ‡ƒ\\[ƒg, Str2‚ğ‹t‡ƒ\\[ƒg");
+	P2("            Str1ã‚’é †ã‚½ãƒ¼ãƒˆ, Str2ã‚’é€†é †ã‚½ãƒ¼ãƒˆ");
 	NL();
 	PRGB21();
 	P2("   -recursive | -r");
 	PRGB91();
-	P2("       ‘SŠK‘w‚ğŒŸõ");
+	P2("       å…¨éšå±¤ã‚’æ¤œç´¢");
 	NL();
 	PRGB21();
 	P2("   -depth=Num1,Num2 | -d=Num1,Num2");
 	PRGB91();
-	P2("       ŒŸõ‚·‚éŠK‘w‚ğw’è");
+	P2("       æ¤œç´¢ã™ã‚‹éšå±¤ã‚’æŒ‡å®š");
 	PRGB11();
-	P0("       (—á‚P) ");
+	P0("       (ä¾‹ï¼‘) ");
 	PRGB91();
 	P2("-d=\"1\"");
-	P2("              1ŠK‘w‚Ì‚İŒŸõ");
+	P2("              1éšå±¤ã®ã¿æ¤œç´¢");
 	PRGB11();
-	P0("       (—á‚Q) ");
+	P0("       (ä¾‹ï¼’) ");
 	PRGB91();
 	P2("-d=\"3\",\"5\"");
-	P2("              3`5ŠK‘w‚ğŒŸõ");
+	P2("              3ï½5éšå±¤ã‚’æ¤œç´¢");
 	NL();
 	PRGB22();
-	P2("       ¦‚P CurrentDir ‚Í \"0\"");
-	P2("       ¦‚Q -depth ‚Æ -where ‚É‚¨‚¯‚é depth ‚Ì‹““®‚Ìˆá‚¢");
+	P2("       â€»ï¼‘ CurrentDir ã¯ \"0\"");
+	P2("       â€»ï¼’ -depth ã¨ -where ã«ãŠã‘ã‚‹ depth ã®æŒ™å‹•ã®é•ã„");
 	PRGB91();
-	P2("            \033[38;2;255;150;150m‘¬‚¢\033[39m -depth ‚Íw’è‚³‚ê‚½ŠK‘w‚Ì‚İŒŸõ‚ğs‚¤");
-	P2("            \033[38;2;150;150;255m’x‚¢\033[39m -where“à‚Å‚Ìdepth‚É‚æ‚éŒŸõ‚Í‘SŠK‘w‚ÌDir^File‚É‘Î‚µ‚Äs‚¤");
+	P2("            \x1b[38;2;255;150;150mâ—‡é€Ÿã„\x1b[39m -depth ã¯æŒ‡å®šã•ã‚ŒãŸéšå±¤ã®ã¿æ¤œç´¢ã‚’è¡Œã†");
+	P2("            \x1b[38;2;150;150;255mâ—‡é…ã„\x1b[39m -whereå†…ã§ã®depthã«ã‚ˆã‚‹æ¤œç´¢ã¯å…¨éšå±¤ã®Dirï¼Fileã«å¯¾ã—ã¦è¡Œã†");
 	NL();
 	PRGB21();
 	P2("   -noheader | -nh");
 	PRGB91();
-	P2("       ƒwƒbƒ_î•ñ‚ğ•\\¦‚µ‚È‚¢");
+	P2("       ãƒ˜ãƒƒãƒ€æƒ…å ±ã‚’è¡¨ç¤ºã—ãªã„");
 	NL();
 	PRGB21();
 	P2("   -nofooter | -nf");
 	PRGB91();
-	P2("       ƒtƒbƒ^î•ñ‚ğ•\\¦‚µ‚È‚¢");
+	P2("       ãƒ•ãƒƒã‚¿æƒ…å ±ã‚’è¡¨ç¤ºã—ãªã„");
 	NL();
 	PRGB21();
 	P2("   -quote=Str | -qt=Str");
 	PRGB91();
-	P2("       ˆÍ‚İ•¶š");
+	P2("       å›²ã¿æ–‡å­—");
 	PRGB11();
-	P0("       (—á) ");
+	P0("       (ä¾‹) ");
 	PRGB91();
 	P2("-qt=\"'\"");
 	NL();
 	PRGB21();
 	P2("   -separate=Str | -sp=Str");
 	PRGB91();
-	P2("       ‹æØ‚è•¶š");
+	P2("       åŒºåˆ‡ã‚Šæ–‡å­—");
 	PRGB11();
-	P0("       (—á) ");
+	P0("       (ä¾‹) ");
 	PRGB91();
 	P2("-sp=\"\\t\"");
 	NL();
 	PRGB21();
 	P2("   --mkdir=Dir | --md=Dir");
 	PRGB91();
-	P2("       ŒŸõŒ‹‰Ê‚ÌDir‚ğƒRƒs[ì¬‚·‚é (-recursive ‚Ì‚Æ‚« ŠK‘wˆÛ)");
+	P2("       æ¤œç´¢çµæœã®Dirã‚’ã‚³ãƒ”ãƒ¼ä½œæˆã™ã‚‹ (-recursive ã®ã¨ã éšå±¤ç¶­æŒ)");
 	NL();
 	PRGB21();
 	P2("   --copy=Dir | --cp=Dir");
 	PRGB91();
-	P2("       --mkdir + ŒŸõŒ‹‰Ê‚ğDir‚ÉƒRƒs[‚·‚é (-recursive ‚Ì‚Æ‚« ŠK‘wˆÛ)");
+	P2("       --mkdir + æ¤œç´¢çµæœã‚’Dirã«ã‚³ãƒ”ãƒ¼ã™ã‚‹ (-recursive ã®ã¨ã éšå±¤ç¶­æŒ)");
 	NL();
 	PRGB21();
 	P2("   --move=Dir | --mv=Dir");
 	PRGB91();
-	P2("       --mkdir + ŒŸõŒ‹‰Ê‚ğDir‚ÉˆÚ“®‚·‚é (-recursive ‚Ì‚Æ‚« ŠK‘wˆÛ)");
+	P2("       --mkdir + æ¤œç´¢çµæœã‚’Dirã«ç§»å‹•ã™ã‚‹ (-recursive ã®ã¨ã éšå±¤ç¶­æŒ)");
 	NL();
 	PRGB21();
 	P2("   --move2=Dir | --mv2=Dir");
 	PRGB91();
-	P2("       --mkdir + --move + ˆÚ“®Œ³‚Ì‹óDir‚ğíœ‚·‚é (-recursive ‚Ì‚Æ‚« ŠK‘wˆÛ)");
+	P2("       --mkdir + --move + ç§»å‹•å…ƒã®ç©ºDirã‚’å‰Šé™¤ã™ã‚‹ (-recursive ã®ã¨ã éšå±¤ç¶­æŒ)");
 	NL();
 	PRGB21();
 	P2("   --extract1=Dir | --ext1=Dir");
 	PRGB91();
-	P2("       --mkdir + ŒŸõŒ‹‰Êƒtƒ@ƒCƒ‹‚Ì‚İ’Šo‚µDir‚ÉƒRƒs[‚·‚é");
+	P2("       --mkdir + æ¤œç´¢çµæœãƒ•ã‚¡ã‚¤ãƒ«ã®ã¿æŠ½å‡ºã—Dirã«ã‚³ãƒ”ãƒ¼ã™ã‚‹");
 	PRGB12();
-	P2("       ŠK‘w‚ğˆÛ‚µ‚È‚¢^“¯–¼ƒtƒ@ƒCƒ‹‚Íã‘‚«");
+	P2("       éšå±¤ã‚’ç¶­æŒã—ãªã„ï¼åŒåãƒ•ã‚¡ã‚¤ãƒ«ã¯ä¸Šæ›¸ã");
 	NL();
 	PRGB21();
 	P2("   --extract2=Dir | --ext2=Dir");
 	PRGB91();
-	P2("       --mkdir + ŒŸõŒ‹‰Êƒtƒ@ƒCƒ‹‚Ì‚İ’Šo‚µDir‚ÉˆÚ“®‚·‚é");
+	P2("       --mkdir + æ¤œç´¢çµæœãƒ•ã‚¡ã‚¤ãƒ«ã®ã¿æŠ½å‡ºã—Dirã«ç§»å‹•ã™ã‚‹");
 	PRGB12();
-	P2("       ŠK‘w‚ğˆÛ‚µ‚È‚¢^“¯–¼ƒtƒ@ƒCƒ‹‚Íã‘‚«");
+	P2("       éšå±¤ã‚’ç¶­æŒã—ãªã„ï¼åŒåãƒ•ã‚¡ã‚¤ãƒ«ã¯ä¸Šæ›¸ã");
 	NL();
 	PRGB21();
 	P2("   --remove | --rm");
 	PRGB91();
-	P2("       ŒŸõŒ‹‰Ê‚ÌFile‚Ì‚İíœ‚·‚éiDir‚Ííœ‚µ‚È‚¢j");
+	P2("       æ¤œç´¢çµæœã®Fileã®ã¿å‰Šé™¤ã™ã‚‹ï¼ˆDirã¯å‰Šé™¤ã—ãªã„ï¼‰");
 	NL();
 	PRGB21();
 	P2("   --remove2 | --rm2");
 	PRGB91();
-	P2("       --remove + ‹óDir‚ğíœ‚·‚é");
+	P2("       --remove + ç©ºDirã‚’å‰Šé™¤ã™ã‚‹");
 	NL();
 	PRGB21();
 	P2("   --delete | --del");
 	PRGB91();
-	P2("       ŒŸõŒ‹‰Ê‚ÌFile‚Ì‚İƒSƒ~” ‚ÖˆÚ“®‚·‚éiDir‚ÍˆÚ“®‚µ‚È‚¢j");
+	P2("       æ¤œç´¢çµæœã®Fileã®ã¿ã‚´ãƒŸç®±ã¸ç§»å‹•ã™ã‚‹ï¼ˆDirã¯ç§»å‹•ã—ãªã„ï¼‰");
 	NL();
 	PRGB21();
 	P2("   --delete2 | --del2");
 	PRGB91();
-	P2("       --delete + ‹óDir‚ğƒSƒ~” ‚ÖˆÚ“®‚·‚é");
+	P2("       --delete + Dirã‚’ã‚´ãƒŸç®±ã¸ç§»å‹•ã™ã‚‹");
 	NL();
 	PRGB21();
 	P2("   --replace=File | --rep=File");
 	PRGB91();
-	P2("       ŒŸõŒ‹‰Ê(•¡”) ‚ğFile‚Ì“à—e‚Å’uŠ·(ã‘‚«)‚·‚é^ƒtƒ@ƒCƒ‹–¼‚Í•ÏX‚µ‚È‚¢");
+	P2("       æ¤œç´¢çµæœ(è¤‡æ•°) ã‚’Fileã®å†…å®¹ã§ç½®æ›(ä¸Šæ›¸ã)ã™ã‚‹ï¼ãƒ•ã‚¡ã‚¤ãƒ«åã¯å¤‰æ›´ã—ãªã„");
 	PRGB11();
-	P0("       (—á) ");
+	P0("       (ä¾‹) ");
 	PRGB91();
 	P2("-w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"");
 	NL();
 	PRGB92();
 	LN();
 	PRGB00();
+
+	ifree(_select0);
+	ifree(_cmd);
 }
