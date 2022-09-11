@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind5_20220903"
+#define  IWM_VERSION         "iwmfind5_20220910"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -47,20 +47,20 @@ sqlite3  *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 
 // リセット
-#define  PRGB00()            P0("\x1b[0m")
+#define  PRGB00()            P0("\033[0m")
 // ラベル
-#define  PRGB01()            P0("\x1b[38;2;255;255;0m")    // 黄
-#define  PRGB02()            P0("\x1b[38;2;255;255;255m")  // 白
+#define  PRGB01()            P0("\033[38;2;255;255;0m")    // 黄
+#define  PRGB02()            P0("\033[38;2;255;255;255m")  // 白
 // 入力例／注
-#define  PRGB11()            P0("\x1b[38;2;255;255;100m")  // 黄
-#define  PRGB12()            P0("\x1b[38;2;255;220;150m")  // 橙
-#define  PRGB13()            P0("\x1b[38;2;100;100;255m")  // 青
+#define  PRGB11()            P0("\033[38;2;255;255;100m")  // 黄
+#define  PRGB12()            P0("\033[38;2;255;220;150m")  // 橙
+#define  PRGB13()            P0("\033[38;2;100;100;255m")  // 青
 // オプション
-#define  PRGB21()            P0("\x1b[38;2;80;255;255m")   // 水
-#define  PRGB22()            P0("\x1b[38;2;255;100;255m")  // 紅紫
+#define  PRGB21()            P0("\033[38;2;80;255;255m")   // 水
+#define  PRGB22()            P0("\033[38;2;255;100;255m")  // 紅紫
 // 本文
-#define  PRGB91()            P0("\x1b[38;2;255;255;255m")  // 白
-#define  PRGB92()            P0("\x1b[38;2;200;200;200m")  // 銀
+#define  PRGB91()            P0("\033[38;2;255;255;255m")  // 白
+#define  PRGB92()            P0("\033[38;2;200;200;200m")  // 銀
 
 #define  MEMDB               L":memory:"
 #define  OLDDB               (L"iwmfind.db."IWM_VERSION)
@@ -938,7 +938,7 @@ ifind10_CallCnt(
 	if(! iCnt)
 	{
 		// 行消去／カーソル戻す
-		fputs("\r\x1b[0K\x1b[?25h", stderr);
+		fputs("\r\033[0K\033[?25h", stderr);
 		return;
 	}
 
@@ -946,7 +946,7 @@ ifind10_CallCnt(
 	{
 		PRGB21();
 		// 行消去／カーソル消す／カウント描画
-		fprintf(stderr, "\r\x1b[0K\x1b[?25l> %lld", $lAllCnt);
+		fprintf(stderr, "\r\033[0K\033[?25l> %lld", $lAllCnt);
 		$iCall_ifind10 = 0;
 	}
 }
@@ -1006,7 +1006,7 @@ sql_exec(
 	// sql_result_std() 対応
 	if($upBufE > $upBuf)
 	{
-		QP($upBuf);
+		QP2($upBuf, ($upBufE - $upBuf));
 	}
 }
 
@@ -1078,7 +1078,7 @@ sql_result_std(
 	// Buf を Print
 	if($upBufE > $upBufMax)
 	{
-		QP($upBuf);
+		QP2($upBuf, ($upBufE - $upBuf));
 		$upBufE = $upBuf;
 	}
 	return SQLITE_OK;
@@ -1418,27 +1418,27 @@ print_help()
 
 	print_version();
 	PRGB01();
-	P2("\x1b[48;2;50;50;200m ファイル検索 \x1b[0m");
+	P2("\033[48;2;50;50;200m ファイル検索 \033[0m");
 	NL();
 	PRGB02();
-	P ("\x1b[48;2;200;50;50m %s [Dir] [Option] \x1b[0m\n\n", _cmd);
+	P ("\033[48;2;200;50;50m %s [Dir] [Option] \033[0m\n\n", _cmd);
 	PRGB11();
 	P0(" (例１) ");
 	PRGB91();
 	P2("検索");
-	P ("   %s \x1b[38;2;255;150;150mDir \x1b[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", _cmd);
+	P ("   %s \033[38;2;255;150;150mDir \033[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"ext like 'exe'\"\n\n", _cmd);
 	PRGB11();
 	P0(" (例２) ");
 	PRGB91();
 	P2("検索結果をファイルへ保存");
-	P ("   %s \x1b[38;2;255;150;150mDir1 Dir2 \x1b[38;2;150;150;255m-r -o=File\n\n", _cmd);
+	P ("   %s \033[38;2;255;150;150mDir1 Dir2 \033[38;2;150;150;255m-r -o=File\n\n", _cmd);
 	PRGB11();
 	P0(" (例３) ");
 	PRGB91();
 	P2("検索対象をファイルから読込");
-	P ("   %s \x1b[38;2;150;150;255m-i=File\n\n", _cmd);
+	P ("   %s \033[38;2;150;150;255m-i=File\n\n", _cmd);
 	PRGB02();
-	P2("\x1b[48;2;200;50;50m [Dir] \x1b[0m");
+	P2("\033[48;2;200;50;50m [Dir] \033[0m");
 	PRGB91();
 	P2("   検索対象Dir");
 	PRGB11();
@@ -1447,7 +1447,36 @@ print_help()
 	P2("\"c:\\\" \".\" (複数指定可)");
 	NL();
 	PRGB02();
-	P2("\x1b[48;2;200;50;50m [Option] \x1b[0m");
+	P2("\033[48;2;200;50;50m [Option] \033[0m");
+	PRGB13();
+	P2(" [基本操作]");
+	PRGB21();
+	P2("   -recursive | -r");
+	PRGB91();
+	P2("       全階層を検索");
+	NL();
+	PRGB21();
+	P2("   -depth=Num1,Num2 | -d=Num1,Num2");
+	PRGB91();
+	P2("       検索する階層を指定");
+	PRGB11();
+	P0("       (例１) ");
+	PRGB91();
+	P2("-d=\"1\"");
+	P2("              1階層のみ検索");
+	PRGB11();
+	P0("       (例２) ");
+	PRGB91();
+	P2("-d=\"3\",\"5\"");
+	P2("              3～5階層を検索");
+	NL();
+	PRGB22();
+	P2("       ※１ CurrentDir は \"0\"");
+	P2("       ※２ -depth と -where における depth の挙動の違い");
+	PRGB91();
+	P2("            \033[38;2;255;150;150m◇速い\033[39m -depth は指定された階層のみ検索を行う");
+	P2("            \033[38;2;150;150;255m◇遅い\033[39m -where内でのdepthによる検索は全階層のDir／Fileに対して行う");
+	NL();
 	PRGB21();
 	P2("   -out=File | -o=File");
 	PRGB91();
@@ -1460,6 +1489,8 @@ print_help()
 	PRGB12();
 	P2("       検索対象Dirと併用できない");
 	NL();
+	PRGB13();
+	P2(" [SQL関連]");
 	PRGB21();
 	P2("   -select=Column1,Column2,... | -s=Column1,Column2,...");
 	PRGB91();
@@ -1546,33 +1577,8 @@ print_help()
 	P2("-st=\"Str1 ASC, Str2 DESC\"");
 	P2("            Str1を順ソート, Str2を逆順ソート");
 	NL();
-	PRGB21();
-	P2("   -recursive | -r");
-	PRGB91();
-	P2("       全階層を検索");
-	NL();
-	PRGB21();
-	P2("   -depth=Num1,Num2 | -d=Num1,Num2");
-	PRGB91();
-	P2("       検索する階層を指定");
-	PRGB11();
-	P0("       (例１) ");
-	PRGB91();
-	P2("-d=\"1\"");
-	P2("              1階層のみ検索");
-	PRGB11();
-	P0("       (例２) ");
-	PRGB91();
-	P2("-d=\"3\",\"5\"");
-	P2("              3～5階層を検索");
-	NL();
-	PRGB22();
-	P2("       ※１ CurrentDir は \"0\"");
-	P2("       ※２ -depth と -where における depth の挙動の違い");
-	PRGB91();
-	P2("            \x1b[38;2;255;150;150m◇速い\x1b[39m -depth は指定された階層のみ検索を行う");
-	P2("            \x1b[38;2;150;150;255m◇遅い\x1b[39m -where内でのdepthによる検索は全階層のDir／Fileに対して行う");
-	NL();
+	PRGB13();
+	P2(" [出力フォーマット]");
 	PRGB21();
 	P2("   -noheader | -nh");
 	PRGB91();
@@ -1601,6 +1607,8 @@ print_help()
 	PRGB91();
 	P2("-sp=\"\\t\"");
 	NL();
+	PRGB13();
+	P2(" [出力結果を操作]");
 	PRGB21();
 	P2("   --mkdir=Dir | --md=Dir");
 	PRGB91();
