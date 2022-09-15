@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define  IWM_VERSION         "iwmfind5_20220910"
+#define  IWM_VERSION         "iwmfind5_20220912"
 #define  IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -27,16 +27,13 @@ VOID     print_help();
 INT      $i1 = 0, $i2 = 0;
 U8N      *$up1 = 0, *$up2 = 0;
 WCS      *$wp1 = 0, *$wp2 = 0, *$wp3 = 0, *$wp4 = 0, *$wp5 = 0, *$wp6 = 0;
-
 WCS      **$wa1 = { 0 }, **$wa2 = { 0 };
 #define  BUF_MAXCNT          5000
 #define  BUF_SIZE_MAX        (IMAX_PATH * BUF_MAXCNT)
 #define  BUF_SIZE_DMZ        (IMAX_PATH * 2)
-
 U8N      *$upBuf = 0;        // Tmp文字列
 U8N      *$upBufE = 0;       // Tmp文字列末尾
 U8N      *$upBufMax = 0;     // Tmp文字列Max点
-
 INT      $iDirId = 0;        // Dir数
 INT64    $lAllCnt = 0;       // 検索数
 INT      $iCall_ifind10 = 0; // ifind10()が呼ばれた回数
@@ -137,7 +134,7 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define  UPDATE_EXEC99_2 \
 			"UPDATE T_FILE SET flg=NULL;"
 #define  SELECT_VIEW \
-			L"SELECT %S FROM V_INDEX %S %S ORDER BY %S;"
+			"SELECT %S FROM V_INDEX %S %S ORDER BY %S;"
 #define  OP_SELECT_0 \
 			L"LN,path"
 #define  OP_SELECT_MKDIR \
@@ -296,8 +293,8 @@ INT
 main()
 {
 	// lib_iwmutil 初期化
-	iExecSec_init();            //=> $ExecSecBgn
-	iCLI_getCommandLine(65001); //=> $CMD, $ARGC, $ARGV, $ARGS
+	iExecSec_init();       //=> $ExecSecBgn
+	iCLI_getCommandLine(); //=> $CMD, $ARGC, $ARGV, $ARGS
 	iConsole_EscOn();
 
 	// -h | -help
@@ -698,8 +695,10 @@ main()
 	}
 
 	// SQL作成 UTF-8（Sqlite3対応）
-	$wp1 = iws_sprintf(SELECT_VIEW, $wpSelect, $wpWhere2, $wpGroup, $wpSort);
-		$sqlU = W2U($wp1);
+	$wp1 = U2W(SELECT_VIEW);
+	$wp2 = iws_sprintf($wp1, $wpSelect, $wpWhere2, $wpGroup, $wpSort);
+		$sqlU = W2U($wp2);
+	ifree($wp2);
 	ifree($wp1);
 
 	// -in DBを指定
