@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20220921"
+#define   IWM_VERSION         "iwmfind5_20220922"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -330,8 +330,8 @@ main()
 				i2 = iwa_size(wa1);
 				if(i2 > 1)
 				{
-					$iDepthMin = inum_wtoi(wa1[0]);
-					$iDepthMax = inum_wtoi(wa1[1]);
+					$iDepthMin = _wtoi(wa1[0]);
+					$iDepthMax = _wtoi(wa1[1]);
 					if($iDepthMax > IMAX_PATH)
 					{
 						$iDepthMax = IMAX_PATH;
@@ -345,7 +345,7 @@ main()
 				}
 				else if(i2 == 1)
 				{
-					$iDepthMin = $iDepthMax = inum_wtoi(wa1[0]);
+					$iDepthMin = $iDepthMax = _wtoi(wa1[0]);
 				}
 				else
 				{
