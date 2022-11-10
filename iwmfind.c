@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20221110"
+#define   IWM_VERSION         "iwmfind5_20220926"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -361,16 +361,13 @@ main()
 	for(i1 = 0; i1 < $ARGC; i1++)
 	{
 		if(*$ARGV[i1] == '-')
-//x		if(*$ARGS[i1] == '-')
 		{
 			break;
 		}
 		// Dir不在
 		if(iFchk_typePathW($ARGV[i1]) != 1)
-//x		if(iFchk_typePathW($ARGS[i1]) != 1)
 		{
 			MBS *mp1 = W2U($ARGV[i1]);
-//x			MBS *mp1 = W2U($ARGS[i1]);
 				P("[Err] Dir(%d) '%s' は存在しない!\n", (i1 + 1), mp1);
 			ifree(mp1);
 		}
@@ -382,7 +379,6 @@ main()
 	{
 		// 条件別Dir取得
 		$waDirList = ($iDepthMax == IMAX_PATH ? iwa_higherDir($ARGV) : iwa_getDir($ARGV));
-//x		$waDirList = ($iDepthMax == IMAX_PATH ? iwa_higherDir($ARGS) : iwa_getDir($ARGS));
 		$waDirListSize = iwa_size($waDirList);
 	}
 
