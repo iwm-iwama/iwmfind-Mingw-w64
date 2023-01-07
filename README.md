@@ -10,6 +10,6 @@
 	指定した [DIR] からSqlite3データベースファイルを作成した後、処理を開始します。
 	クライアント用コマンドとして使用する場合、ファイル数による処理時間を考慮してください。
 
-【SQLite Download Page】
+【SQLite ダウンロードページ】
 
 	https://www.sqlite.org/download.html
