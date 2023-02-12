@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20220926"
-#define   IWM_COPYRIGHT       "Copyright (C)2009-2022 iwm-iwama"
+#define   IWM_VERSION         "iwmfind5_20230212"
+#define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -843,25 +843,6 @@ WCS
 	return wp1;
 }
 
-/* 2016-08-19
-	【留意】Dirの表示について
-		d:\aaa\ 以下の、
-			d:\aaa\bbb\
-			d:\aaa\ccc\
-			d:\aaa\ddd.txt
-		を表示したときの違いは次のとおり。
-
-		①iwmls.exe（ls、dir互換）
-			d:\aaa\bbb\
-			d:\aaa\ccc\
-			d:\aaa\ddd.txt
-
-		②iwmfind.exe（BaseDirとFileを表示）
-			d:\aaa\
-			d:\aaa\ddd.txt
-
-		※DirとFileを別テーブルで管理／joinして使用するため、このような仕様にならざるを得ない。
-*/
 VOID
 ifind10(
 	$struct_iFinfoW *FI,
@@ -1637,7 +1618,7 @@ print_help()
 	PRGB11();
 	P1("       (例) ");
 	PRGB91();
-	P2("-w=\"name like 'foo.txt'\" --rep=\".\\foo.txt\"");
+	P2("-w=\"name like 'before.txt'\" --rep=\".\\after.txt\"");
 	NL();
 	PRGB92();
 	LN();
