@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20230212"
+#define   IWM_VERSION         "iwmfind5_20230311"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -36,21 +36,16 @@ MBS       *$sqlU = 0;
 sqlite3   *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 
-// リセット
-#define   PRGB00()            P1("\033[0m")
-// ラベル
-#define   PRGB01()            P1("\033[38;2;255;255;0m")    // 黄
-#define   PRGB02()            P1("\033[38;2;255;255;255m")  // 白
-// 入力例／注
-#define   PRGB11()            P1("\033[38;2;255;255;100m")  // 黄
-#define   PRGB12()            P1("\033[38;2;255;220;150m")  // 橙
-#define   PRGB13()            P1("\033[38;2;100;100;255m")  // 青
-// オプション
-#define   PRGB21()            P1("\033[38;2;80;255;255m")   // 水
-#define   PRGB22()            P1("\033[38;2;255;100;255m")  // 紅紫
-// 本文
-#define   PRGB91()            P1("\033[38;2;255;255;255m")  // 白
-#define   PRGB92()            P1("\033[38;2;200;200;200m")  // 銀
+#define   CLR_RESET           "\033[0m"
+#define   CLR_TITLE1          "\033[38;2;250;250;250m\033[104m" // 白／青
+#define   CLR_OPT1            "\033[38;2;250;150;150m"          // 赤
+#define   CLR_OPT2            "\033[38;2;150;150;250m"          // 青
+#define   CLR_OPT21           "\033[38;2;80;250;250m"           // 水
+#define   CLR_OPT22           "\033[38;2;250;100;250m"          // 紅紫
+#define   CLR_LBL1            "\033[38;2;250;250;100m"          // 黄
+#define   CLR_LBL2            "\033[38;2;100;100;250m"          // 青
+#define   CLR_STR1            "\033[38;2;225;225;225m"          // 白
+#define   CLR_STR2            "\033[38;2;175;175;175m"          // 銀
 
 #define   MEMDB               L":memory:"
 #define   OLDDB               (L"iwmfind.db."IWM_VERSION)
@@ -917,7 +912,7 @@ ifind10_CallCnt(
 
 	if(iCnt >= BUF_MAXCNT)
 	{
-		PRGB21();
+		P(CLR_OPT21);
 		// 行消去／カーソル消す／カウント描画
 		fprintf(stderr, "\r\033[0K\033[?25l> %lld", $lAllCnt);
 		$iCall_ifind10 = 0;
@@ -990,7 +985,7 @@ sql_columnName(
 	MBS **sColumnNames
 )
 {
-	PRGB21();
+	P(CLR_OPT21);
 	INT i1 = 0;
 	while(TRUE)
 	{
@@ -1006,7 +1001,7 @@ sql_columnName(
 			break;
 		}
 	}
-	PRGB00();
+	P(CLR_RESET);
 	NL();
 	return SQLITE_OK;
 }
@@ -1312,57 +1307,57 @@ sql_saveOrLoadMemdb(
 VOID
 print_footer()
 {
-	PRGB21();
-		LN();
-		P(
-			"-- %lld row%s in set ( %.3f sec)\n",
-			$lRowCnt,
-			($lRowCnt > 1 ? "s" : ""), // 複数形
-			iExecSec_next()
-		);
-	PRGB22();
-		P2("--");
-		for(INT _i1 = 0; _i1 < $waDirListSize; _i1++)
-		{
-			MBS *mp1 = W2U($waDirList[_i1]);
-				P("--  '%s'\n", mp1);
-			ifree(mp1);
-		}
-		P("--  '%s'\n", $sqlU);
-		P("--  -depth     '%d,%d'\n", $iDepthMin, $iDepthMax);
-		if(*$mpIn)
-		{
-			P("--  -in        '%s'\n", $mpIn);
-		}
-		if(*$mpOutDbn)
-		{
-			P("--  -out       '%s'\n", $mpOutDbn);
-		}
-		if($bNoFooter)
-		{
-			P2("--  -nofooter");
-		}
-		if(*$mpQuote)
-		{
-			P("--  -quote     '%s'\n", $mpQuote);
-		}
-		if(*$mpSeparate)
-		{
-			P("--  -separate  '%s'\n", $mpSeparate);
-		}
-		P2("--");
-	PRGB00();
+	P(CLR_OPT21);
+	LN();
+	P(
+		"-- %lld row%s in set ( %.3f sec)\n",
+		$lRowCnt,
+		($lRowCnt > 1 ? "s" : ""), // 複数形
+		iExecSec_next()
+	);
+	P(CLR_OPT22);
+	P2("--");
+	for(INT _i1 = 0; _i1 < $waDirListSize; _i1++)
+	{
+		MBS *mp1 = W2U($waDirList[_i1]);
+			P("--  '%s'\n", mp1);
+		ifree(mp1);
+	}
+	P("--  '%s'\n", $sqlU);
+	P("--  -depth     '%d,%d'\n", $iDepthMin, $iDepthMax);
+	if(*$mpIn)
+	{
+		P("--  -in        '%s'\n", $mpIn);
+	}
+	if(*$mpOutDbn)
+	{
+		P("--  -out       '%s'\n", $mpOutDbn);
+	}
+	if($bNoFooter)
+	{
+		P2("--  -nofooter");
+	}
+	if(*$mpQuote)
+	{
+		P("--  -quote     '%s'\n", $mpQuote);
+	}
+	if(*$mpSeparate)
+	{
+		P("--  -separate  '%s'\n", $mpSeparate);
+	}
+	P2("--");
+	P(CLR_RESET);
 }
 
 VOID
 print_version()
 {
-	PRGB92();
+	P(CLR_STR2);
 	LN();
-	P (" %s\n", IWM_COPYRIGHT);
-	P ("   Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
+	P(" %s\n", IWM_COPYRIGHT);
+	P("    Ver.%s+%s+SQLite%s\n", IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION);
 	LN();
-	PRGB00();
+	P(CLR_RESET);
 }
 
 VOID
@@ -1372,257 +1367,159 @@ print_help()
 	MBS *_select0 = W2U(OP_SELECT_0);
 
 	print_version();
-	PRGB01();
-	P2("\033[48;2;50;50;200m ファイル検索 \033[0m");
-	NL();
-	PRGB02();
-	P ("\033[48;2;200;50;50m %s [Dir] [Option] \033[0m\n\n", _cmd);
-	PRGB11();
-	P1(" (例１) ");
-	PRGB91();
-	P2("検索");
-	P ("   %s \033[38;2;255;150;150mDir \033[38;2;150;150;255m-r -s=\"LN,path,size\" -w=\"name like '*.exe'\"\n\n", _cmd);
-	PRGB11();
-	P1(" (例２) ");
-	PRGB91();
-	P2("検索結果をファイルへ保存");
-	P ("   %s \033[38;2;255;150;150mDir1 Dir2 \033[38;2;150;150;255m-r -o=File\n\n", _cmd);
-	PRGB11();
-	P1(" (例３) ");
-	PRGB91();
-	P2("検索対象をファイルから読込");
-	P ("   %s \033[38;2;150;150;255m-i=File\n\n", _cmd);
-	PRGB02();
-	P2("\033[48;2;200;50;50m [Dir] \033[0m");
-	PRGB91();
-	P2("   検索対象Dir");
-	PRGB11();
-	P1("   (例) ");
-	PRGB91();
-	P2("\"c:\\\" \".\" (複数指定可)");
-	NL();
-	PRGB02();
-	P2("\033[48;2;200;50;50m [Option] \033[0m");
-	PRGB13();
-	P2(" [基本操作]");
-	PRGB21();
-	P2("   -recursive | -r");
-	PRGB91();
-	P2("       全階層を検索");
-	NL();
-	PRGB21();
-	P2("   -depth=Num1,Num2 | -d=Num1,Num2");
-	PRGB91();
-	P2("       検索する階層を指定");
-	PRGB11();
-	P1("       (例１) ");
-	PRGB91();
-	P2("-d=\"1\"");
-	P2("              1階層のみ検索");
-	PRGB11();
-	P1("       (例２) ");
-	PRGB91();
-	P2("-d=\"3\",\"5\"");
-	P2("              3～5階層を検索");
-	NL();
-	PRGB22();
-	P2("       ※１ CurrentDir は \"0\"");
-	P2("       ※２ -depth と -where における depth の挙動の違い");
-	PRGB91();
-	P2("            \033[38;2;255;150;150m◇速い\033[39m -depth は指定された階層のみ検索を行う");
-	P2("            \033[38;2;150;150;255m◇遅い\033[39m -where内でのdepthによる検索は全階層のDir／Fileに対して行う");
-	NL();
-	PRGB21();
-	P2("   -out=File | -o=File");
-	PRGB91();
-	P2("       出力ファイル");
-	NL();
-	PRGB21();
-	P2("   -in=File | -i=File");
-	PRGB91();
-	P2("       入力ファイル");
-	PRGB12();
-	P2("       検索対象Dirと併用できない");
-	NL();
-	PRGB13();
-	P2(" [SQL関連]");
-	PRGB21();
-	P2("   -select=Column1,Column2,... | -s=Column1,Column2,...");
-	PRGB91();
-	P2("       LN        (Num) 連番／1回のみ指定可");
-	P2("       path      (Str) dir\\name");
-	P2("       dir       (Str) ディレクトリ名");
-	P2("       name      (Str) ファイル名");
-	P2("       depth     (Num) ディレクトリ階層 = 0..");
-	P2("       type      (Str) ディレクトリ = d／ファイル = f");
-	P2("       attr_num  (Num) 属性");
-	P2("       attr      (Str) 属性 \"[d|f][r|-][h|-][s|-][a|-]\"");
-	P2("                       [dir|file][read-only][hidden][system][archive]");
-	P2("       size      (Num) ファイルサイズ = byte");
-	P2("       ctime_cjd (Num) 作成日時     -4712/01/01 00:00:00始点の通算日／CJD=JD-0.5");
-	P2("       ctime     (Str) 作成日時     \"yyyy-mm-dd hh:nn:ss\"");
-	P2("       mtime_cjd (Num) 更新日時     ctime_cjd参照");
-	P2("       mtime     (Str) 更新日時     ctime参照");
-	P2("       atime_cjd (Num) アクセス日時 ctime_cjd参照");
-	P2("       atime     (Str) アクセス日時 ctime参照");
-	P2("       *         全項目表示");
-	NL();
-	PRGB22();
-	P2("       ※１ Column指定なしの場合");
-	PRGB91();
-	P ("            %s を表示\n", _select0);
-	PRGB22();
-	P2("       ※２ SQLite演算子／関数を利用可能");
-	PRGB91();
-	P2("            abs(X)  changes()  char(X1,X2,...,XN)  coalesce(X,Y,...)  format(FORMAT,...)");
-	P2("            glob(X,Y)  hex(X)  ifnull(X,Y)  iif(X,Y,Z)  instr(X,Y)  last_insert_rowid()  length(X)");
-	P2("            like(X,Y)  like(X,Y,Z)  likelihood(X,Y)  likely(X)  load_extension(X)  load_extension(X,Y)");
-	P2("            lower(X)  ltrim(X)  ltrim(X,Y)  max(X,Y,...)  min(X,Y,...)  nullif(X,Y)  printf(FORMAT,...)");
-	P2("            quote(X)  random()  randomblob(N)  replace(X,Y,Z)  round(X)  round(X,Y)");
-	P2("            rtrim(X)  rtrim(X,Y)  sign(X)  soundex(X)");
-	P2("            sqlite_compileoption_get(N)  sqlite_compileoption_used(X)");
-	P2("            sqlite_offset(X)  sqlite_source_id()  sqlite_version()");
-	P2("            substr(X,Y)  substr(X,Y,Z)  substring(X,Y)  substring(X,Y,Z)");
-	P2("            total_changes()  trim(X)  trim(X,Y)  typeof(X)  unicode(X)  unlikely(X)  upper(X)  zeroblob(N)");
-	PRGB13();
-	P2("           (参考) http://www.sqlite.org/lang_corefunc.html");
-	NL();
-	PRGB21();
-	P2("   -where=Str | -w=Str");
-	PRGB11();
-	P1("       (例１) ");
-	PRGB91();
-	P2("\"size <= 100 or size > 1000000\"");
-	PRGB11();
-	P1("       (例２) ");
-	PRGB91();
-	P2("\"type = 'f' and name like 'abc??.*'\"");
-	P2("              '?' '_' は任意の1文字");
-	P2("              '*' '%' は任意の0文字以上");
-	PRGB11();
-	P1("       (例３) ");
-	PRGB91();
-	P2("基準日 \"2010-12-10 12:30:00\" のとき");
-	P2("              \"ctime >= [-10d]\"  : ctime >= '2010-11-30 12:30:00'");
-	P2("              \"ctime >= [-10D]\"  : ctime >= '2010-11-30 00:00:00'");
-	P2("              \"ctime >= [-10d%]\" : ctime >= '2010-11-30 %'");
-	P2("              \"ctime like [%]\"   : ctime like '2010-12-10 %'");
-	P2("              (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s");
-	NL();
-	PRGB21();
-	P2("   -group=Str | -g=Str");
-	PRGB11();
-	P1("       (例) ");
-	PRGB91();
-	P2("-g=\"Str1, Str2\"");
-	P2("            Str1とStr2をグループ毎にまとめる");
-	NL();
-	PRGB21();
-	P2("   -sort=\"Str [ASC|DESC]\" | -st=\"Str [ASC|DESC]\"");
-	PRGB11();
-	P1("       (例) ");
-	PRGB91();
-	P2("-st=\"Str1 ASC, Str2 DESC\"");
-	P2("            Str1を順ソート, Str2を逆順ソート");
-	NL();
-	PRGB13();
-	P2(" [出力フォーマット]");
-	PRGB21();
-	P2("   -noheader | -nh");
-	PRGB91();
-	P2("       ヘッダ情報を表示しない");
-	NL();
-	PRGB21();
-	P2("   -nofooter | -nf");
-	PRGB91();
-	P2("       フッタ情報を表示しない");
-	NL();
-	PRGB21();
-	P2("   -quote=Str | -qt=Str");
-	PRGB91();
-	P2("       囲み文字");
-	PRGB11();
-	P1("       (例) ");
-	PRGB91();
-	P2("-qt=\"'\"");
-	NL();
-	PRGB21();
-	P2("   -separate=Str | -sp=Str");
-	PRGB91();
-	P2("       区切り文字");
-	PRGB11();
-	P1("       (例) ");
-	PRGB91();
-	P2("-sp=\"\\t\"");
-	NL();
-	PRGB13();
-	P2(" [出力結果を操作]");
-	PRGB21();
-	P2("   --mkdir=Dir | --md=Dir");
-	PRGB91();
-	P2("       検索結果のDirをコピー作成する (-recursive のとき 階層維持)");
-	NL();
-	PRGB21();
-	P2("   --copy=Dir | --cp=Dir");
-	PRGB91();
-	P2("       --mkdir + 検索結果をDirにコピーする (-recursive のとき 階層維持)");
-	NL();
-	PRGB21();
-	P2("   --move=Dir | --mv=Dir");
-	PRGB91();
-	P2("       --mkdir + 検索結果をDirに移動する (-recursive のとき 階層維持)");
-	NL();
-	PRGB21();
-	P2("   --move2=Dir | --mv2=Dir");
-	PRGB91();
-	P2("       --mkdir + --move + 移動元の空Dirを削除する (-recursive のとき 階層維持)");
-	NL();
-	PRGB21();
-	P2("   --extract=Dir | --ext=Dir");
-	PRGB91();
-	P2("       --mkdir + 検索結果ファイルのみ抽出しDirにコピーする");
-	PRGB12();
-	P2("       階層を維持しない／同名ファイルは上書き");
-	NL();
-	PRGB21();
-	P2("   --extract2=Dir | --ext2=Dir");
-	PRGB91();
-	P2("       --mkdir + 検索結果ファイルのみ抽出しDirに移動する");
-	PRGB12();
-	P2("       階層を維持しない／同名ファイルは上書き");
-	NL();
-	PRGB21();
-	P2("   --remove | --rm");
-	PRGB91();
-	P2("       検索結果のFileのみ削除する（Dirは削除しない）");
-	NL();
-	PRGB21();
-	P2("   --remove2 | --rm2");
-	PRGB91();
-	P2("       --remove + 空Dirを削除する");
-	NL();
-	PRGB21();
-	P2("   --delete | --del");
-	PRGB91();
-	P2("       検索結果のFileのみゴミ箱へ移動する（Dirは移動しない）");
-	NL();
-	PRGB21();
-	P2("   --delete2 | --del2");
-	PRGB91();
-	P2("       --delete + Dirをゴミ箱へ移動する");
-	NL();
-	PRGB21();
-	P2("   --replace=File | --rep=File");
-	PRGB91();
-	P2("       検索結果(複数) をFileの内容で置換(上書き)する／ファイル名は変更しない");
-	PRGB11();
-	P1("       (例) ");
-	PRGB91();
-	P2("-w=\"name like 'before.txt'\" --rep=\".\\after.txt\"");
-	NL();
-	PRGB92();
+	P("%s ファイル検索 %s\n", CLR_TITLE1, CLR_RESET);
+	P("%s    %s %s[Dir] %s[Option]\n", CLR_STR1, _cmd, CLR_OPT1, CLR_OPT2);
+	P("\n");
+	P("%s (例１) %s検索\n", CLR_LBL1, CLR_STR1);
+	P("%s    %s %sDir %s-r -s=\"LN,path,size\" -w=\"name like '*.exe'\"\n", CLR_STR1, _cmd, CLR_OPT1, CLR_OPT2);
+	P("\n");
+	P("%s (例２) %s検索結果をファイルへ保存\n", CLR_LBL1, CLR_STR1);
+	P("%s    %s %sDir1 Dir2 %s-r -o=File\n", CLR_STR1, _cmd, CLR_OPT1, CLR_OPT2);
+	P("\n");
+	P("%s (例３) %s検索対象をファイルから読込\n", CLR_LBL1, CLR_STR1);
+	P("%s    %s %s-i=File\n", CLR_STR1, _cmd, CLR_OPT2);
+	P("\n");
+	P("%s [Dir]\n", CLR_OPT1);
+	P("%s    検索対象Dir\n", CLR_STR1);
+	P("%s    (例) %s\"c:\\\" \".\" (複数指定可)\n", CLR_LBL1, CLR_STR1);
+	P("\n");
+	P("%s [Option]\n", CLR_OPT2);
+	P("%s  [基本操作]\n", CLR_LBL2);
+	P("%s    -recursive | -r\n", CLR_OPT21);
+	P("%s        全階層を検索\n", CLR_STR1);
+	P("\n");
+	P("%s    -depth=Num1,Num2 | -d=Num1,Num2\n", CLR_OPT21);
+	P("%s        検索する階層を指定\n", CLR_STR1);
+	P("%s        (例１) %s-d=\"1\"\n", CLR_LBL1, CLR_STR1);
+	P("%s               1階層のみ検索\n", CLR_STR1);
+	P("\n");
+	P("%s        (例２) %s-d=\"3\",\"5\"\n", CLR_LBL1, CLR_STR1);
+	P("%s               3～5階層を検索\n", CLR_STR1);
+	P("\n");
+	P("%s        ※１ CurrentDir は \"0\"\n", CLR_OPT22);
+	P("%s        ※２ -depth と -where における depth の挙動の違い\n", CLR_OPT22);
+	P("%s            ◇速い %s-depth は指定された階層のみ検索を行う\n", CLR_OPT1, CLR_STR1);
+	P("%s            ◇遅い %s-where内でのdepthによる検索は全階層のDir／Fileに対して行う\n", CLR_OPT2, CLR_STR1);
+	P("\n");
+	P("%s    -out=File | -o=File\n", CLR_OPT21);
+	P("%s        出力ファイル\n", CLR_STR1);
+	P("\n");
+	P("%s    -in=File | -i=File\n", CLR_OPT21);
+	P("%s        入力ファイル\n", CLR_STR1);
+	P("%s        検索対象Dirと併用できない\n", CLR_OPT22);
+	P("\n");
+	P("%s  [SQL関連]\n", CLR_LBL2);
+	P("%s    -select=Column1,Column2,... | -s=Column1,Column2,...\n", CLR_OPT21);
+	P("%s        LN        (Num) 連番／1回のみ指定可\n", CLR_STR1);
+	P("%s        path      (Str) dir\\name\n", CLR_STR1);
+	P("%s        dir       (Str) ディレクトリ名\n", CLR_STR1);
+	P("%s        name      (Str) ファイル名\n", CLR_STR1);
+	P("%s        depth     (Num) ディレクトリ階層 = 0..\n", CLR_STR1);
+	P("%s        type      (Str) ディレクトリ = d／ファイル = f\n", CLR_STR1);
+	P("%s        attr_num  (Num) 属性\n", CLR_STR1);
+	P("%s        attr      (Str) 属性 \"[d|f][r|-][h|-][s|-][a|-]\"\n", CLR_STR1);
+	P("%s                        [dir|file][read-only][hidden][system][archive]\n", CLR_STR1);
+	P("%s        size      (Num) ファイルサイズ = byte\n", CLR_STR1);
+	P("%s        ctime_cjd (Num) 作成日時     -4712/01/01 00:00:00始点の通算日／CJD=JD-0.5\n", CLR_STR1);
+	P("%s        ctime     (Str) 作成日時     \"yyyy-mm-dd hh:nn:ss\"\n", CLR_STR1);
+	P("%s        mtime_cjd (Num) 更新日時     ctime_cjd参照\n", CLR_STR1);
+	P("%s        mtime     (Str) 更新日時     ctime参照\n", CLR_STR1);
+	P("%s        atime_cjd (Num) アクセス日時 ctime_cjd参照\n", CLR_STR1);
+	P("%s        atime     (Str) アクセス日時 ctime参照\n", CLR_STR1);
+	P("%s        *         全項目表示\n", CLR_STR1);
+	P("\n");
+	P("%s        ※１ Column指定なしの場合\n", CLR_OPT22);
+	P("%s             %s を表示\n", CLR_STR1, _select0);
+	P("%s        ※２ SQLite演算子／関数を利用可能\n", CLR_OPT22);
+	P("%s             abs(X)  changes()  char(X1,X2,...,XN)  coalesce(X,Y,...)  format(FORMAT,...)\n", CLR_STR1);
+	P("%s             glob(X,Y)  hex(X)  ifnull(X,Y)  iif(X,Y,Z)  instr(X,Y)  last_insert_rowid()  length(X)\n", CLR_STR1);
+	P("%s             like(X,Y)  like(X,Y,Z)  likelihood(X,Y)  likely(X)  load_extension(X)  load_extension(X,Y)\n", CLR_STR1);
+	P("%s             lower(X)  ltrim(X)  ltrim(X,Y)  max(X,Y,...)  min(X,Y,...)  nullif(X,Y)  P(FORMAT,...)\n", CLR_STR1);
+	P("%s             quote(X)  random()  randomblob(N)  replace(X,Y,Z)  round(X)  round(X,Y)\n", CLR_STR1);
+	P("%s             rtrim(X)  rtrim(X,Y)  sign(X)  soundex(X)\n", CLR_STR1);
+	P("%s             sqlite_compileoption_get(N)  sqlite_compileoption_used(X)\n", CLR_STR1);
+	P("%s             sqlite_offset(X)  sqlite_source_id()  sqlite_version()\n", CLR_STR1);
+	P("%s             substr(X,Y)  substr(X,Y,Z)  substring(X,Y)  substring(X,Y,Z)\n", CLR_STR1);
+	P("%s             total_changes()  trim(X)  trim(X,Y)  typeof(X)  unicode(X)  unlikely(X)  upper(X)  zeroblob(N)\n", CLR_STR1);
+	P("%s             (参考) http://www.sqlite.org/lang_corefunc.html\n", CLR_LBL2);
+	P("\n");
+	P("%s    -where=Str | -w=Str\n", CLR_OPT21);
+	P("%s        (例１) %s\"size <= 100 or size > 1000000\"\n", CLR_LBL1, CLR_STR1);
+	P("\n");
+	P("%s        (例２) %s\"type = 'f' and name like 'abc??.*'\"\n", CLR_LBL1, CLR_STR1);
+	P("%s               '?' '_' は任意の1文字\n", CLR_STR1);
+	P("%s               '*' '%%' は任意の0文字以上\n", CLR_STR1);
+	P("\n");
+	P("%s        (例３) %s基準日 \"2010-12-10 12:30:00\" のとき\n", CLR_LBL1, CLR_STR1);
+	P("%s               \"ctime >= [-10d]\"  : ctime >= '2010-11-30 12:30:00'\n", CLR_STR1);
+	P("%s               \"ctime >= [-10D]\"  : ctime >= '2010-11-30 00:00:00'\n", CLR_STR1);
+	P("%s               \"ctime >= [-10d%%]\" : ctime >= '2010-11-30 %%'\n", CLR_STR1);
+	P("%s               \"ctime like [%%]\"   : ctime like '2010-12-10 %%'\n", CLR_STR1);
+	P("%s               (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n", CLR_STR1);
+	P("\n");
+	P("%s    -group=Str | -g=Str\n", CLR_OPT21);
+	P("%s        (例) %s-g=\"Str1, Str2\"\n", CLR_LBL1, CLR_STR1);
+	P("%s             Str1とStr2をグループ毎にまとめる\n", CLR_STR1);
+	P("\n");
+	P("%s    -sort=\"Str [ASC|DESC]\" | -st=\"Str [ASC|DESC]\"\n", CLR_OPT21);
+	P("%s        (例) %s-st=\"Str1 ASC, Str2 DESC\"\n", CLR_LBL1, CLR_STR1);
+	P("%s             Str1を順ソート, Str2を逆順ソート\n", CLR_STR1);
+	P("\n");
+	P("%s  [出力フォーマット]\n", CLR_LBL2);
+	P("%s    -noheader | -nh\n", CLR_OPT21);
+	P("%s        ヘッダ情報を表示しない\n", CLR_STR1);
+	P("\n");
+	P("%s    -nofooter | -nf\n", CLR_OPT21);
+	P("%s        フッタ情報を表示しない\n", CLR_STR1);
+	P("\n");
+	P("%s    -quote=Str | -qt=Str\n", CLR_OPT21);
+	P("%s        囲み文字\n", CLR_STR1);
+	P("%s        (例) %s-qt=\"'\"\n", CLR_LBL1, CLR_STR1);
+	P("\n");
+	P("%s    -separate=Str | -sp=Str\n", CLR_OPT21);
+	P("%s        区切り文字\n", CLR_STR1);
+	P("%s        (例) %s-sp=\"\\t\"\n", CLR_LBL1, CLR_STR1);
+	P("\n");
+	P("%s  [出力結果を操作]\n", CLR_LBL2);
+	P("%s    --mkdir=Dir | --md=Dir\n", CLR_OPT21);
+	P("%s        検索結果のDirをコピー作成する (-recursive のとき 階層維持)\n", CLR_STR1);
+	P("\n");
+	P("%s    --copy=Dir | --cp=Dir\n", CLR_OPT21);
+	P("%s        --mkdir + 検索結果をDirにコピーする (-recursive のとき 階層維持)\n", CLR_STR1);
+	P("\n");
+	P("%s    --move=Dir | --mv=Dir\n", CLR_OPT21);
+	P("%s        --mkdir + 検索結果をDirに移動する (-recursive のとき 階層維持)\n", CLR_STR1);
+	P("\n");
+	P("%s    --move2=Dir | --mv2=Dir\n", CLR_OPT21);
+	P("%s        --mkdir + --move + 移動元の空Dirを削除する (-recursive のとき 階層維持)\n", CLR_STR1);
+	P("\n");
+	P("%s    --extract=Dir | --ext=Dir\n", CLR_OPT21);
+	P("%s        --mkdir + 検索結果ファイルのみ抽出しDirにコピーする\n", CLR_STR1);
+	P("%s        階層を維持しない／同名ファイルは上書き\n", CLR_STR1);
+	P("\n");
+	P("%s    --extract2=Dir | --ext2=Dir\n", CLR_OPT21);
+	P("%s        --mkdir + 検索結果ファイルのみ抽出しDirに移動する\n", CLR_STR1);
+	P("%s        階層を維持しない／同名ファイルは上書き\n", CLR_STR1);
+	P("\n");
+	P("%s    --remove | --rm\n", CLR_OPT21);
+	P("%s        検索結果のFileのみ削除する（Dirは削除しない）\n", CLR_STR1);
+	P("\n");
+	P("%s    --remove2 | --rm2\n", CLR_OPT21);
+	P("%s        --remove + 空Dirを削除する\n", CLR_STR1);
+	P("\n");
+	P("%s    --delete | --del\n", CLR_OPT21);
+	P("%s        検索結果のFileのみゴミ箱へ移動する（Dirは移動しない）\n", CLR_STR1);
+	P("\n");
+	P("%s    --delete2 | --del2\n", CLR_OPT21);
+	P("%s        --delete + Dirをゴミ箱へ移動する\n", CLR_STR1);
+	P("\n");
+	P("%s    --replace=File | --rep=File\n", CLR_OPT21);
+	P("%s        検索結果(複数) をFileの内容で置換(上書き)する／ファイル名は変更しない\n", CLR_STR1);
+	P("%s        (例) %s-w=\"name like 'before.txt'\" --rep=\".\\after.txt\"\n", CLR_LBL1, CLR_STR1);
+	P("\n");
+	P(CLR_STR2);
 	LN();
-	PRGB00();
+	P(CLR_RESET);
 
 	ifree(_select0);
 	ifree(_cmd);
