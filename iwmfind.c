@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20230311"
+#define   IWM_VERSION         "iwmfind5_20230412"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -46,6 +46,7 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   CLR_LBL2            "\033[38;2;100;100;250m"          // 青
 #define   CLR_STR1            "\033[38;2;225;225;225m"          // 白
 #define   CLR_STR2            "\033[38;2;175;175;175m"          // 銀
+#define   CLR_ERR1            "\033[38;2;200;0;0m"              // 紅
 
 #define   MEMDB               L":memory:"
 #define   OLDDB               (L"iwmfind.db."IWM_VERSION)
@@ -302,7 +303,6 @@ main()
 	INT i1 = 0, i2 = 0;
 	WCS *wp1 = 0, *wp2 = 0;
 
-	// [0..]
 	/*
 		$waDirList取得で $iDepthMax を使うため先に、
 			-recursive
@@ -350,35 +350,23 @@ main()
 		}
 	}
 
-	INT iArgsPos = 0;
-
-	// [0..n]
+	// Dir存在チェック
 	for(i1 = 0; i1 < $ARGC; i1++)
 	{
-		if(*$ARGV[i1] == '-')
-		{
-			break;
-		}
-		// Dir不在
-		if(iFchk_typePathW($ARGV[i1]) != 1)
+		if(*$ARGV[i1] != '-' && iFchk_typePathW($ARGV[i1]) != 1)
 		{
 			MBS *mp1 = W2U($ARGV[i1]);
-				P("[Err] Dir(%d) '%s' は存在しない!\n", (i1 + 1), mp1);
+				P("%s[Err] Dir '%s' は存在しない!%s\n", CLR_ERR1, mp1, CLR_RESET);
 			ifree(mp1);
 		}
 	}
-	iArgsPos = i1;
 
 	// $waDirList を作成
-	if(iArgsPos)
-	{
-		// 条件別Dir取得
-		$waDirList = ($iDepthMax == IMAX_PATH ? iwa_higherDir($ARGV) : iwa_getDir($ARGV));
-		$waDirListSize = iwa_size($waDirList);
-	}
+	$waDirList = ($iDepthMax == IMAX_PATH ? iwa_higherDir($ARGV) : iwa_getDir($ARGV));
+	$waDirListSize = iwa_size($waDirList);
 
-	// [n..]
-	for(i1 = iArgsPos; i1 < $ARGC; i1++)
+	// Main Loop
+	for(i1 = 0; i1 < $ARGC; i1++)
 	{
 		// -i | -in
 		if((wp1 = iCLI_getOptValue(i1, L"-i=", L"-in=")))
@@ -386,13 +374,13 @@ main()
 			if(iFchk_typePathW(wp1) != 2)
 			{
 				MBS *mp1 = W2U(wp1);
-					P("[Err] -in '%s' は存在しない!\n", mp1);
+					P("%s[Err] -in '%s' は存在しない!%s\n", CLR_ERR1, mp1, CLR_RESET);
 				ifree(mp1);
 				imain_end();
 			}
 			else if($waDirListSize)
 			{
-				P2("[Err] Dir と -in は併用できない!");
+				P("%s[Err] Dir と -in は併用できない!%s\n", CLR_ERR1, CLR_RESET);
 				imain_end();
 			}
 			else
@@ -561,13 +549,6 @@ main()
 		}
 	}
 
-	// Err
-	if(! $waDirListSize && ! *$wpIn)
-	{
-		P2("[Err] Dir もしくは -in を指定してください!");
-		imain_end();
-	}
-
 	// --[exec] 関係を一括変換
 	if(*$wpMd || *$wpCp || *$wpMv || *$wpMv2 || *$wpExt || *$wpExt2 || $iDel || *$wpRep || $iRm)
 	{
@@ -612,7 +593,7 @@ main()
 			if(iFchk_typePathW($wpRep) != 2)
 			{
 				MBS *mp1 = W2U($wpRep);
-					P("[Err] --replace '%s' は存在しない!\n", mp1);
+					P("%s[Err] --replace '%s' は存在しない!%s\n", CLR_ERR1, mp1, CLR_RESET);
 				ifree(mp1);
 				imain_end();
 			}
@@ -685,7 +666,7 @@ main()
 	// -in DBを指定
 	if(sqlite3_open16($wpInDbn, &$iDbs))
 	{
-		P("[Err] -in '%s' を開けない!\n", $mpInDbn);
+		P("%s[Err] -in '%s' を開けない!%s\n", CLR_ERR1, $mpInDbn, CLR_RESET);
 		sqlite3_close($iDbs); // ErrでもDB解放
 		imain_end();
 	}
@@ -965,7 +946,7 @@ sql_exec(
 
 	if(sqlite3_exec(db, sql, cb, 0, &p_err))
 	{
-		P("[Err] 構文エラー\n    %s\n    %s\n", p_err, sql);
+		P("%s[Err] 構文エラー%s\n      %s\n      %s\n", CLR_ERR1, CLR_RESET, p_err, sql);
 		sqlite3_free(p_err); // p_errを解放
 		imain_end();
 	}
@@ -1369,6 +1350,8 @@ print_help()
 	print_version();
 	P("%s ファイル検索 %s\n", CLR_TITLE1, CLR_RESET);
 	P("%s    %s %s[Dir] %s[Option]\n", CLR_STR1, _cmd, CLR_OPT1, CLR_OPT2);
+	P("%s        or\n", CLR_LBL1);
+	P("%s    %s %s[Option] %s[Dir]\n", CLR_STR1, _cmd, CLR_OPT2, CLR_OPT1);
 	P("\n");
 	P("%s (例１) %s検索\n", CLR_LBL1, CLR_STR1);
 	P("%s    %s %sDir %s-r -s=\"LN,path,size\" -w=\"name like '*.exe'\"\n", CLR_STR1, _cmd, CLR_OPT1, CLR_OPT2);
