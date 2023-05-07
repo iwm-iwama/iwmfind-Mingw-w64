@@ -899,7 +899,7 @@ iwn_len(
 		PL3(iwn_cpy(to, L"abcde")); //=> 5
 	ifree(to);
 */
-// v2022-09-19
+// v2023-05-07
 UINT
 imn_cpy(
 	MBS *to,
@@ -910,10 +910,11 @@ imn_cpy(
 	{
 		return 0;
 	}
-	strcpy(to, from);
-	return strlen(from);
+	UINT rtn = strlen(from);
+	memcpy(to, from, ((rtn * sizeof(MBS)) + 1));
+	return rtn;
 }
-// v2022-09-19
+// v2023-05-07
 UINT
 iwn_cpy(
 	WCS *to,
@@ -924,8 +925,9 @@ iwn_cpy(
 	{
 		return 0;
 	}
-	wcscpy(to, from);
-	return wcslen(from);
+	UINT rtn = wcslen(from);
+	memcpy(to, from, ((rtn * sizeof(WCS)) + 1));
+	return rtn;
 }
 /* (例)
 	WCS *from = L"abcde12345";
@@ -972,23 +974,25 @@ iwn_pcpy(
 /* (例)
 	PL2W(iws_clone(L"あいうえお")); //=> "あいうえお"
 */
-// v2022-09-13
+// v2023-05-07
 MBS
 *ims_clone(
 	MBS *from
 )
 {
-	MBS *to = icalloc_MBS(imn_len(from));
-	return strcpy(to, from);
+	UINT len = imn_len(from);
+	MBS *to = icalloc_MBS(len);
+	return memcpy(to, from, ((len * sizeof(MBS)) + 1));
 }
-// v2022-09-13
+// v2023-05-07
 WCS
 *iws_clone(
 	WCS *from
 )
 {
-	WCS *to = icalloc_WCS(iwn_len(from));
-	return wcscpy(to, from);
+	UINT len = iwn_len(from);
+	WCS *to = icalloc_WCS(len);
+	return memcpy(to, from, ((len * sizeof(WCS)) + 1));
 }
 /* (例)
 	WCS *from = L"あいうえお";
