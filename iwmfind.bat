@@ -8,16 +8,16 @@
 	set fn_exe=%fn%.exe
 	set cc=gcc.exe
 	set op_link=-O3 -Wall -lgdi32 -luser32 -lshlwapi
-	set lib=lib_iwmutil2.a sqlite3.a
+	set lib=lib_iwmutil2.a sqlite3_mini.a
 
 :: Make ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-	echo --- Compile -S ------------------------------------
-	for %%s in (%src%) do (
-		%cc% %%s -S %op_link%
-		echo %%~ns.s
-	)
-	echo.
+::	echo --- Compile -S ------------------------------------
+::	for %%s in (%src%) do (
+::		%cc% %%s -S %op_link%
+::		echo %%~ns.s
+::	)
+::	echo.
 
 	echo --- Make ------------------------------------------
 	for %%s in (%src%) do (

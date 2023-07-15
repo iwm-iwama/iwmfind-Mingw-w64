@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20230412"
+#define   IWM_VERSION         "iwmfind5_20230713"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -298,7 +298,7 @@ main()
 	}
 
 	// 現在時間
-	$aiNow = (INT*)idate_cjd_to_iAryYmdhns(idate_nowToCjd(TRUE));
+	$aiNow = (INT*)idate_cjdToiAryYmdhns(idate_nowToCjd(TRUE));
 
 	INT i1 = 0, i2 = 0;
 	WCS *wp1 = 0, *wp2 = 0;
@@ -355,7 +355,7 @@ main()
 	{
 		if(*$ARGV[i1] != '-' && iFchk_typePathW($ARGV[i1]) != 1)
 		{
-			MBS *mp1 = W2U($ARGV[i1]);
+			MBS *mp1 = W2M($ARGV[i1]);
 				P("%s[Err] Dir '%s' は存在しない!%s\n", CLR_ERR1, mp1, CLR_RESET);
 			ifree(mp1);
 		}
@@ -373,7 +373,7 @@ main()
 		{
 			if(iFchk_typePathW(wp1) != 2)
 			{
-				MBS *mp1 = W2U(wp1);
+				MBS *mp1 = W2M(wp1);
 					P("%s[Err] -in '%s' は存在しない!%s\n", CLR_ERR1, mp1, CLR_RESET);
 				ifree(mp1);
 				imain_end();
@@ -386,7 +386,7 @@ main()
 			else
 			{
 				$wpIn = $wpInDbn = wp1;
-				$mpIn = $mpInDbn = W2U(wp1);
+				$mpIn = $mpInDbn = W2M(wp1);
 
 				// -in のときは -recursive 自動付与
 				$iDepthMin = 0;
@@ -398,7 +398,7 @@ main()
 		if((wp1 = iCLI_getOptValue(i1, L"-o=", L"-out=")))
 		{
 			$wpOut = $wpOutDbn = wp1;
-			$mpOutDbn = W2U(wp1);
+			$mpOutDbn = W2M(wp1);
 		}
 
 		// --md | --mkdir
@@ -536,7 +536,7 @@ main()
 		if((wp1 = iCLI_getOptValue(i1, L"-qt=", L"-quote=")))
 		{
 			wp2 = iws_conv_escape(wp1);
-				$mpQuote = W2U(wp2);
+				$mpQuote = W2M(wp2);
 			ifree(wp2);
 		}
 
@@ -544,7 +544,7 @@ main()
 		if((wp1 = iCLI_getOptValue(i1, L"-sp=", L"-separate=")))
 		{
 			wp2 = iws_conv_escape(wp1);
-				$mpSeparate = W2U(wp2);
+				$mpSeparate = W2M(wp2);
 			ifree(wp2);
 		}
 	}
@@ -592,7 +592,7 @@ main()
 		{
 			if(iFchk_typePathW($wpRep) != 2)
 			{
-				MBS *mp1 = W2U($wpRep);
+				MBS *mp1 = W2M($wpRep);
 					P("%s[Err] --replace '%s' は存在しない!%s\n", CLR_ERR1, mp1, CLR_RESET);
 				ifree(mp1);
 				imain_end();
@@ -657,9 +657,9 @@ main()
 	}
 
 	// SQL作成 UTF-8（Sqlite3対応）
-	wp1 = U2W(SELECT_VIEW);
+	wp1 = M2W(SELECT_VIEW);
 	wp2 = iws_sprintf(wp1, $wpSelect, $wpWhere2, $wpGroup, $wpSort);
-		$sqlU = W2U(wp2);
+		$sqlU = W2M(wp2);
 	ifree(wp2);
 	ifree(wp1);
 
@@ -730,7 +730,7 @@ main()
 			if(*$wpWhere1)
 			{
 				sql_exec($iDbs, "BEGIN", 0);         // トランザクション開始
-				MBS *mp1 = W2U($wpWhere1);
+				MBS *mp1 = W2M($wpWhere1);
 				MBS *mp2 = ims_cats(2, "WHERE ", mp1);
 					sprintf($mpBuf, UPDATE_EXEC99_1, mp2);
 				ifree(mp2);
@@ -757,7 +757,7 @@ main()
 				// カラム名表示
 				if(! $bNoHeader)
 				{
-					MBS *mp1 = W2U($wpSelect);
+					MBS *mp1 = W2M($wpSelect);
 					MBS *mp2 = ims_cats(3, "SELECT ", mp1, " FROM V_INDEX WHERE id=1;");
 						sql_exec($iDbs, mp2, sql_columnName);
 					ifree(mp2);
@@ -1062,9 +1062,9 @@ sql_result_exec(
 		case(I_MV2):   // --move2
 			// $wpMdOp\以下には、$waDirList\以下のDirを作成
 			i1  = atoi(sColumnValues[0]); // step_cnt
-			wp1 = U2W(sColumnValues[1]);  // dir + "\"
-			wp2 = U2W(sColumnValues[2]);  // name
-			wp3 = U2W(sColumnValues[3]);  // path
+			wp1 = M2W(sColumnValues[1]);  // dir + "\"
+			wp2 = M2W(sColumnValues[2]);  // name
+			wp3 = M2W(sColumnValues[3]);  // path
 			wp4 = iws_cats(3, $wpMdOp, L"\\", (wp1 + i1));
 			wp5 = iws_cats(2, wp4, wp2);
 				// mkdir
@@ -1125,8 +1125,8 @@ sql_result_exec(
 
 		case(I_EXT):  // --extract
 		case(I_EXT2): // --extract2
-			wp1 = U2W(sColumnValues[0]); // path
-			wp2 = U2W(sColumnValues[1]); // name
+			wp1 = M2W(sColumnValues[0]); // path
+			wp2 = M2W(sColumnValues[1]); // name
 				// mkdir
 				if(imk_dirW($wpMdOp))
 				{
@@ -1175,7 +1175,7 @@ sql_result_exec(
 
 		case(I_DEL):  // --delete
 		case(I_DEL2): // --delete2
-			wp1 = U2W(sColumnValues[0]); // path
+			wp1 = M2W(sColumnValues[0]); // path
 			i1 = atoi(sColumnValues[2]);
 				// ReadOnly属性(1)を解除
 				if((i1 & FILE_ATTRIBUTE_READONLY))
@@ -1200,8 +1200,8 @@ sql_result_exec(
 		break;
 
 		case(I_REP): // --replace
-			wp1 = U2W(sColumnValues[0]); // type
-			wp2 = U2W(sColumnValues[1]); // path
+			wp1 = M2W(sColumnValues[0]); // type
+			wp2 = M2W(sColumnValues[1]); // path
 				if(*wp1 == 'f' && CopyFileW($wpRepOp, wp2, FALSE))
 				{
 					P1("rep\t=> ");
@@ -1214,7 +1214,7 @@ sql_result_exec(
 
 		case(I_RM):  // --remove
 		case(I_RM2): // --remove2
-			wp1 = U2W(sColumnValues[0]); // path
+			wp1 = M2W(sColumnValues[0]); // path
 				// ReadOnly属性(1)を解除
 				if((atoi(sColumnValues[2]) & FILE_ATTRIBUTE_READONLY))
 				{
@@ -1230,7 +1230,7 @@ sql_result_exec(
 				// 空Dir削除
 				if($iExec == I_RM2)
 				{
-					wp2 = U2W(sColumnValues[1]); // dir
+					wp2 = M2W(sColumnValues[1]); // dir
 						// 空Dirである
 						if(RemoveDirectoryW(wp2))
 						{
@@ -1300,7 +1300,7 @@ print_footer()
 	P2("--");
 	for(INT _i1 = 0; _i1 < $waDirListSize; _i1++)
 	{
-		MBS *mp1 = W2U($waDirList[_i1]);
+		MBS *mp1 = W2M($waDirList[_i1]);
 			P("--  '%s'\n", mp1);
 		ifree(mp1);
 	}
@@ -1344,8 +1344,8 @@ print_version()
 VOID
 print_help()
 {
-	MBS *_cmd = W2U($CMD);
-	MBS *_select0 = W2U(OP_SELECT_0);
+	MBS *_cmd = W2M($CMD);
+	MBS *_select0 = W2M(OP_SELECT_0);
 
 	print_version();
 	P("%s ファイル検索 %s\n", CLR_TITLE1, CLR_RESET);
