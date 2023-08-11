@@ -8,14 +8,6 @@
 	マクロで複雑な関数を書くな。デバッグが難しくなる。
 	「コードの短さ」より「コードの生産性」を優先する。
 
-[2014-01-03] + [2022-09-03]
-	今更ながら・・・、
-	自作関数の返り値は以下のルールに拠る。
-		NULL   => NULL
-		エラー => 新規ポインタ（空データ）
-		成功   => 新規ポインタ
-	元の引数ポインタを引用して返すのはエラーの元凶。
-
 [2014-01-03] + [2023-07-10]
 	動的メモリの確保／初期化／解放をこまめに行えば、
 	十分な『安全』と『速度』を今時のハードウェアは提供する。
@@ -45,12 +37,25 @@
 	大域変数
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
+/* (例)
+	// lib_iwmutil2 初期化
+	imain_begin();
+	// Debug
+	iCLI_VarList();
+	// 処理時間
+	P("-- %.3fsec\n\n", iExecSec_next());
+	// Debug
+	icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
+	// 最終処理
+	imain_end();
+*/
 WS     *$CMD         = L"";   // コマンド名を格納
 UINT   $ARGC         = 0;     // 引数配列数
 WS     **$ARGV       = 0;     // 引数配列／ダブルクォーテーションを消去したもの
-UINT   $CP           = 65001; // 出力コードページ 65001=UTF-8
+UINT   $CP_STDIN     = 0;     // 入力コードページ／不定
+UINT   $CP_STDOUT    = 65001; // 出力コードページ
 HANDLE $StdoutHandle = 0;     // 画面制御用ハンドル
-UINT   $ExecSecBgn   = 0;     // 実行開始時間
+UINT64 $ExecSecBgn   = 0;     // 実行開始時間
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
 	Command Line
@@ -59,17 +64,26 @@ UINT   $ExecSecBgn   = 0;     // 実行開始時間
 //-------------------------
 // コマンド名／引数を取得
 //-------------------------
-/* (例)
-	iCLI_getCommandLine();
-	PL2W($CMD);
-	PL3($ARGC);
-	iwav_print($ARGV);
-*/
-// v2023-07-24
+// v2023-08-08
+VOID
+iCLI_signal()
+{
+	P2("\033[0m");
+	ifree_all();
+	exit(EXIT_FAILURE);
+}
+// v2023-08-08
 VOID
 iCLI_getCommandLine()
 {
-	SetConsoleOutputCP($CP);
+	// [Ctrl]+[C]
+	signal(SIGINT, iCLI_signal);
+
+	// STDIN CP65001 | CP932
+	$CP_STDIN = GetConsoleOutputCP();
+
+	// STDOUT CP65001
+	SetConsoleOutputCP($CP_STDOUT);
 
 	WS *str = GetCommandLineW();
 	$ARGV = icalloc_WS_ary(1);
@@ -252,7 +266,7 @@ UINT $icallocMapFreeCnt = 0;         // *$icallocMap 中の空白領域
 UINT $icallocMapId = 0;              // *$icallocMap の順番
 CONST UINT $sizeof_icallocMap = sizeof($struct_icallocMap);
 // *$icallocMap の基本区画サイズ
-#define   IcallocDiv          (1<<4)
+#define   IcallocDiv          64
 // 8個余分
 #define   MemX(n, size)       (UINT64)((n+8)*size)
 
@@ -715,35 +729,37 @@ WS
 	UTF-16／UTF-8変換
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-// v2023-07-11
+// v2023-08-07
 MS
 *icnv_W2M(
 	WS *str
 )
 {
-	if(! str)
+	if(! str || ! *str)
 	{
-		return 0;
+		return icalloc_MS(0);
 	}
-	UINT uU = WideCharToMultiByte(CP_UTF8, 0, str, -1, NULL, 0, NULL, NULL);
-	MS *p1 = icalloc_MS(uU);
-	WideCharToMultiByte(CP_UTF8, 0, str, -1, p1, uU, NULL, NULL);
-	return p1;
+	// SetConsoleOutputCP($CP_STDOUT) でコンソール出力設定
+	UINT64 u1 = WideCharToMultiByte($CP_STDOUT, 0, str, -1, NULL, 0, NULL, NULL);
+	MS *rtn = icalloc_MS(u1);
+	WideCharToMultiByte($CP_STDOUT, 0, str, -1, rtn, u1, NULL, NULL);
+	return rtn;
 }
-// v2023-07-11
+// v2023-08-07
 WS
 *icnv_M2W(
 	MS *str
 )
 {
-	if(! str)
+	if(! str || ! *str)
 	{
-		return 0;
+		return icalloc_WS(0);
 	}
-	UINT uW = MultiByteToWideChar(CP_UTF8, 0, str, -1, NULL, 0);
-	WS *p1 = icalloc_WS(uW);
-	MultiByteToWideChar(CP_UTF8, 0, str, -1, p1, uW);
-	return p1;
+	// $CP_STDIN = GetConsoleOutputCP() で取得
+	UINT64 u1 = MultiByteToWideChar($CP_STDIN, 0, str, -1, NULL, 0);
+	WS *rtn = icalloc_WS(u1);
+	MultiByteToWideChar($CP_STDIN, 0, str, -1, rtn, u1);
+	return rtn;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -798,9 +814,9 @@ iun_len(
 	INT c = 0;
 	while(*str)
 	{
+		// 多バイト文字
 		if(*str & 0x80)
 		{
-			// 多バイト文字
 			// [0]
 			c = (*str & 0xfc);
 			c <<= 1;
@@ -831,9 +847,9 @@ iun_len(
 				}
 			*/
 		}
+		// 1バイト文字
 		else
 		{
-			// 1バイト文字
 			++str;
 		}
 		++rtn;
@@ -2054,7 +2070,7 @@ iFinfo_freeW(
 // ファイル情報を変換
 //---------------------
 /*
-	// 1: READONLY 
+	// 1: READONLY
 	FILE_ATTRIBUTE_READONLY
 
 	// 2: HIDDEN
@@ -2573,6 +2589,44 @@ iConsole_EscOn()
 	GetConsoleMode($StdoutHandle, &consoleMode);
 	consoleMode = (consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 	SetConsoleMode($StdoutHandle, consoleMode);
+}
+//---------------------
+// STDIN から直接読込
+//---------------------
+/* (例)
+	if(! $ARGC)
+	{
+		// [Ctrl]+[Z] ↵ で入力終了
+		WS *wp1 = iCLI_GetStdin();
+		NL();
+		P1("\033[96m");
+		P2W(wp1);
+		P1("\033[0m");
+		ifree(wp1);
+	}
+*/
+// v2023-08-08
+WS
+*iCLI_GetStdin()
+{
+	UINT64 mp1Size = 100;
+	UINT64 mp1End = 0;
+	MS *mp1 = icalloc_MS(mp1Size);
+	INT c = 0;
+	while((c = getc(stdin)) != EOF)
+	{
+		// [Ctrl]+[Z] ↵ で入力終了
+		mp1[mp1End] = (MS)c;
+		++mp1End;
+		if(mp1End >= mp1Size)
+		{
+			mp1Size *= 2;
+			mp1 = irealloc_MS(mp1, mp1Size);
+		}
+	}
+	WS *rtn = icnv_M2W(mp1);
+	ifree(mp1);
+	return rtn;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------

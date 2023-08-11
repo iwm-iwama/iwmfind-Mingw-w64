@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////////////
-#define   LIB_IWMUTIL_VERSION                     "lib_iwmutil2_20230731"
+#define   LIB_IWMUTIL_VERSION                     "lib_iwmutil2_20230809"
 #define   LIB_IWMUTIL_COPYLIGHT                   "Copyright (C)2008-2023 iwm-iwama"
 //////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
@@ -9,6 +9,7 @@
 #include <locale.h>
 #include <math.h>
 #include <shlwapi.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -19,8 +20,8 @@
 	共通定数
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-typedef   CHAR      MS ; // imx_xxx() = Muliti Byte String／iux_xxx() = UTF-8N
-typedef   WCHAR     WS ; // iwx_xxx()／UTF-16／Wide Char String
+typedef   CHAR      MS; // imx_xxx() = Muliti Byte String／iux_xxx() = UTF-8N
+typedef   WCHAR     WS; // iwx_xxx()／UTF-16／Wide Char String
 
 #define   IMAX_PATH                               ((MAX_PATH>>3)<<4) // windef.h参照
 #define   ISO_FORMAT_DATETIME                     L"%.4d-%02d-%02d %02d:%02d:%02d"
@@ -31,12 +32,16 @@ typedef   WCHAR     WS ; // iwx_xxx()／UTF-16／Wide Char String
 	大域変数
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
+#define   imain_begin()                           iExecSec(0);iCLI_getCommandLine();iConsole_EscOn();
+#define   imain_end()                             ifree_all();exit(EXIT_SUCCESS)
+
 extern    WS        *$CMD;         // コマンド名を格納
 extern    UINT      $ARGC;         // 引数配列数
 extern    WS        **$ARGV;       // 引数配列／ダブルクォーテーションを消去したもの
-extern    UINT      $CP;           // 出力コードページ
+extern    UINT      $CP_STDIN;     // 入力コードページ／不定
+extern    UINT      $CP_STDOUT;    // 出力コードページ
 extern    HANDLE    $StdoutHandle; // 画面制御用ハンドル
-extern    UINT      $ExecSecBgn;   // 実行開始時間
+extern    UINT64    $ExecSecBgn;   // 実行開始時間
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -95,7 +100,6 @@ VOID      icalloc_mapSweep();
 
 #define   ifree(ptr)                              (VOID)icalloc_free(ptr);(VOID)icalloc_mapSweep();
 #define   ifree_all()                             (VOID)icalloc_freeAll()
-#define   imain_end()                             ifree_all();exit(EXIT_SUCCESS)
 
 VOID      icalloc_mapPrint1();
 #define   icalloc_mapPrint()                      PL();NL();icalloc_mapPrint1()
@@ -286,9 +290,23 @@ BOOL      imv_trashW(WS *path);
 	Console
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
+#define   ICLR_RESET                              "\033[0m"
+#define   ICLR_TITLE1                             "\033[38;2;250;250;250m\033[104m" // 白／青
+#define   ICLR_OPT1                               "\033[38;2;250;150;150m"          // 赤
+#define   ICLR_OPT2                               "\033[38;2;150;150;250m"          // 青
+#define   ICLR_OPT21                              "\033[38;2;80;250;250m"           // 水
+#define   ICLR_OPT22                              "\033[38;2;250;100;250m"          // 紅紫
+#define   ICLR_LBL1                               "\033[38;2;250;250;100m"          // 黄
+#define   ICLR_LBL2                               "\033[38;2;100;100;250m"          // 青
+#define   ICLR_STR1                               "\033[38;2;225;225;225m"          // 白
+#define   ICLR_STR2                               "\033[38;2;175;175;175m"          // 銀
+#define   ICLR_ERR1                               "\033[38;2;200;0;0m"              // 紅
+
 #define   iConsole_setTitleW(str)                 (VOID)SetConsoleTitleW(str)
 
 VOID      iConsole_EscOn();
+
+WS        *iCLI_GetStdin();
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
