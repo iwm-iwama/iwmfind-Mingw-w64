@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20230809"
+#define   IWM_VERSION         "iwmfind5_20230815"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -21,14 +21,16 @@ VOID      print_footer();
 VOID      print_version();
 VOID      print_help();
 
-MS        *$mpBuf = 0;         // Tmp文字列
-MS        *$mpBufEnd = 0;      // Tmp文字列末尾
-UINT      $uBufSize = 1000000; // Tmp初期サイズ
-INT       $iDirId = 0;         // Dir数
-INT64     $lAllCnt = 0;        // 検索数
-INT       $iCall_ifind10 = 0;  // ifind10()が呼ばれた回数
-INT       $iStepCnt = 0;       // CurrentDir位置
-INT64     $lRowCnt = 0;        // 処理行数 <= NTFSの最大ファイル数(2^32 - 1 = 4,294,967,295)
+UINT      $BufSize = 500000;  // Tmp初期サイズ
+CONST UINT $BufSizeDMZ = 100;
+MS        *$Buf = 0;          // Tmp文字列
+MS        *$BufEnd = 0;       // Tmp文字列 \0
+MS        *$BufEOD = 0;       // Tmp文字列 EOD
+UINT      $iDirId = 0;        // Dir数
+UINT      $lAllCnt = 0;       // 検索数
+UINT      $iCall_ifind10 = 0; // ifind10()が呼ばれた回数
+UINT      $iStepCnt = 0;      // CurrentDir位置
+UINT      $lRowCnt = 0;       // 処理行数 <= NTFSの最大ファイル数(2^32 - 1 = 4,294,967,295)
 MS        *$sqlU = 0;
 sqlite3   *$iDbs = 0;
 sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
@@ -506,6 +508,11 @@ main()
 		if((wp1 = iCLI_getOptValue(i1, L"-qt=", L"-quote=")))
 		{
 			wp2 = iws_conv_escape(wp1);
+				// 文字数制限
+				if(wcslen(wp2) > 4)
+				{
+					wp2[4] = 0;
+				}
 				$mpQuote = W2M(wp2);
 			ifree(wp2);
 		}
@@ -514,6 +521,11 @@ main()
 		if((wp1 = iCLI_getOptValue(i1, L"-sp=", L"-separate=")))
 		{
 			wp2 = iws_conv_escape(wp1);
+				// 文字数制限
+				if(wcslen(wp2) > 4)
+				{
+					wp2[4] = 0;
+				}
 				$mpSeparate = W2M(wp2);
 			ifree(wp2);
 		}
@@ -637,8 +649,9 @@ main()
 	else
 	{
 		// UTF-8 出力領域
-		$mpBuf = icalloc_MS($uBufSize);
-		$mpBufEnd = $mpBuf;
+		$Buf = icalloc_MS($BufSize + $BufSizeDMZ);
+		$BufEnd = $Buf;
+		$BufEOD = $Buf + $BufSize;
 
 		// DB構築
 		if(! *$wpInTmp)
@@ -695,10 +708,10 @@ main()
 				sql_exec($iDbs, "BEGIN", 0);         // トランザクション開始
 				MS *mp1 = W2M($wpWhere1);
 				MS *mp2 = ims_cats(2, "WHERE ", mp1);
-					sprintf($mpBuf, UPDATE_EXEC99_1, mp2);
+					sprintf($Buf, UPDATE_EXEC99_1, mp2);
 				ifree(mp2);
 				ifree(mp1);
-				sql_exec($iDbs, $mpBuf, 0);          // フラグを立てる
+				sql_exec($iDbs, $Buf, 0);            // フラグを立てる
 				sql_exec($iDbs, DELETE_EXEC99_1, 0); // 不要データ削除
 				sql_exec($iDbs, UPDATE_EXEC99_2, 0); // フラグ初期化
 				sql_exec($iDbs, "COMMIT", 0);        // トランザクション終了
@@ -728,7 +741,7 @@ main()
 				}
 				// 結果出力
 				sql_exec($iDbs, $sqlU, sql_result_std);
-				ifree($mpBuf);
+				ifree($Buf);
 			}
 		}
 		// DB解放
@@ -862,7 +875,7 @@ ifind10_CallCnt(
 	{
 		P(ICLR_OPT21);
 		// 行消去／カーソル消す／カウント描画
-		fprintf(stderr, "\r\033[0K\033[?25l> %lld", $lAllCnt);
+		fprintf(stderr, "\r\033[0K\033[?25l> %u", $lAllCnt);
 		$iCall_ifind10 = 0;
 	}
 }
@@ -919,7 +932,7 @@ sql_exec(
 	}
 
 	// sql_result_std() 対応
-	QP($mpBuf, ($mpBufEnd - $mpBuf));
+	QP($Buf, ($BufEnd - $Buf));
 }
 
 INT
@@ -960,39 +973,44 @@ sql_result_std(
 )
 {
 	++$lRowCnt;
+	// UINTだと遅い?
 	INT i1 = 0;
 	while(i1 < iColumnCount)
 	{
 		// [LN]
 		if(i1 == $iSelectPosNumber)
 		{
-			$mpBufEnd += imn_cpy($mpBufEnd, $mpQuote);
-			$mpBufEnd += sprintf($mpBufEnd, "%lld", $lRowCnt);
-			$mpBufEnd += imn_cpy($mpBufEnd, $mpQuote);
+			// sprintf() は遅いので多用しない
+			$BufEnd += imn_cpy($BufEnd, $mpQuote);
+			$BufEnd += sprintf($BufEnd, "%u", $lRowCnt);
+			$BufEnd += imn_cpy($BufEnd, $mpQuote);
 		}
 		else
 		{
-			$mpBufEnd += imn_cpy($mpBufEnd, $mpQuote);
-			UINT64 _u1 = $mpBufEnd - $mpBuf + strlen(sColumnValues[i1]);
-			if(_u1 > $uBufSize)
+			if($BufEOD <= ($BufEnd + (UINT)strlen(sColumnValues[i1])))
 			{
-				UINT64 _u2 = $mpBufEnd - $mpBuf;
-				// Realloc
-				if(_u1 < 5000000)
-				{
-					$uBufSize += _u1;
-					$mpBuf = irealloc_MS($mpBuf, $uBufSize);
-				}
 				// Buf を Print
-				QP($mpBuf, _u2);
-				*$mpBuf = 0;
-				$mpBufEnd = $mpBuf;
+				QP($Buf, ($BufEnd - $Buf));
+				// Realloc
+				/*
+					Realloc版は出力量を可変とすることで、数万件から数十万件まで安定して高速になる。
+					NoRealloc版は出力量が固定のため、特化領域でのみ高速になる。
+				*/
+				if($BufSize < 10000000)
+				{
+					$BufSize *= 2;
+					$Buf = irealloc_MS($Buf, $BufSize + $BufSizeDMZ);
+					$BufEOD = $Buf + $BufSize;
+				}
+				$Buf[0] = 0;
+				$BufEnd = $Buf;
 			}
-			$mpBufEnd += imn_cpy($mpBufEnd, sColumnValues[i1]);
-			$mpBufEnd += imn_cpy($mpBufEnd, $mpQuote);
+			$BufEnd += imn_cpy($BufEnd, $mpQuote);
+			$BufEnd += imn_cpy($BufEnd, sColumnValues[i1]);
+			$BufEnd += imn_cpy($BufEnd, $mpQuote);
 		}
 		++i1;
-		$mpBufEnd += imn_cpy($mpBufEnd, (i1 == iColumnCount ? "\n" : $mpSeparate));
+		$BufEnd += imn_cpy($BufEnd, (i1 == iColumnCount ? "\n" : $mpSeparate));
 	}
 	return SQLITE_OK;
 }
