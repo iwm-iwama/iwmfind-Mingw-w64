@@ -7,14 +7,14 @@
 	set src=%fn%.c
 	set fn_exe=%fn%.exe
 	set cc=gcc.exe
-	set op_link=-O3 -Wall -lgdi32 -luser32 -lshlwapi
+	set cc_op=-Os -Wall -lgdi32 -luser32 -lshlwapi
 	set lib=lib_iwmutil2.a sqlite3_mini.a
 
 :: Make ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 ::	echo --- Compile -S ------------------------------------
 ::	for %%s in (%src%) do (
-::		%cc% %%s -S %op_link%
+::		%cc% %%s -S %cc_op%
 ::		echo %%~ns.s
 ::	)
 ::	echo.
@@ -22,9 +22,9 @@
 	echo --- Make ------------------------------------------
 	for %%s in (%src%) do (
 		echo %%s
-		%cc% %%s -c -Wall %op_link%
+		%cc% %%s -c -Wall %cc_op%
 	)
-	%cc% *.o %lib% -o %fn_exe% %op_link%
+	%cc% *.o %lib% -o %fn_exe% %cc_op%
 	echo.
 
 	:: 後処理
@@ -39,15 +39,9 @@
 	pause
 
 :: Test ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-	chcp 65001
 	cls
-	set t=%time%
-	echo [%t%]
 
 	%fn_exe% . -r
-
-	echo [%t%]
-	echo [%time%]
 
 :: Quit ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 :end
