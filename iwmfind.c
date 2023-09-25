@@ -1,5 +1,5 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20230907"
+#define   IWM_VERSION         "iwmfind5_20230918"
 #define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
@@ -113,8 +113,8 @@ sqlite3_stmt *$stmt1 = 0, *$stmt2 = 0;
 #define   I_MV2                4
 #define   I_EXT                5
 #define   I_EXT2               6
-#define   I_DEL               11
-#define   I_DEL2              12
+#define   I_TB                11
+#define   I_TB2               12
 #define   I_REP               20
 #define   I_RM                31
 #define   I_RM2               32
@@ -214,10 +214,11 @@ WS *$wpExt = L"";
 //
 WS *$wpExt2 = L"";
 //
-// --del  | --delete
-// --del2 | --delete2
+// TrashBox
+// --tb  | --trashbox
+// --tb2 | --trashbox2
 //
-INT $iDel = 0;
+INT $iTrashbox = 0;
 //
 // replace results with Str
 // --replace=Str | --rep=Str
@@ -225,6 +226,7 @@ INT $iDel = 0;
 WS *$wpRep = L"";
 WS *$wpRepOp = L"";
 //
+// Remove
 // --rm  | --remove
 // --rm2 | --remove2
 //
@@ -237,8 +239,8 @@ INT $iRm = 0;
 //  I_MV2  = --mv2
 //  I_EXT  = --ext
 //  I_EXT2 = --ext2
-//  I_DEL  = --del
-//  I_DEL2 = --del2
+//  I_TB   = --tb
+//  I_TB2  = --tb2
 //  I_REP  = --rep
 //  I_RM   = --rm
 //  I_RM2  = --rm2
@@ -322,7 +324,7 @@ main()
 	// Dir存在チェック
 	for(i1 = 0; i1 < $ARGC; i1++)
 	{
-		if(*$ARGV[i1] != '-' && iFchk_typePathW($ARGV[i1]) != 1)
+		if(*$ARGV[i1] != '-' && ! iFchk_existPathW($ARGV[i1]))
 		{
 			MS *mp1 = W2M($ARGV[i1]);
 				P("%s[Err] Dir '%s' は存在しない!%s\n", IESC_ERR1, mp1, IESC_RESET);
@@ -331,7 +333,7 @@ main()
 	}
 
 	// $waDirList を作成
-	$waDirList = ($iDepthMax == IMAX_PATH ? iwaa_higherDir($ARGV) : iwaa_getDir($ARGV));
+	$waDirList = ($iDepthMax == IMAX_PATH ? iwaa_higherDir($ARGV) : iwaa_getDirFile($ARGV, 1));
 	$waDirListSize = iwan_size($waDirList);
 
 	// Main Loop
@@ -340,7 +342,7 @@ main()
 		// -i | -in
 		if((wp1 = iCLI_getOptValue(i1, L"-i=", L"-in=")))
 		{
-			if(iFchk_typePathW(wp1) != 2)
+			if(! iFchk_existPathW(wp1))
 			{
 				MS *mp1 = W2M(wp1);
 					P("%s[Err] -in '%s' は存在しない!%s\n", IESC_ERR1, mp1, IESC_RESET);
@@ -403,16 +405,16 @@ main()
 			$wpExt2 = wp1;
 		}
 
-		// --del | --delete
-		if(iCLI_getOptMatch(i1, L"--del", L"--delete"))
+		// --tb | --trashbox
+		if(iCLI_getOptMatch(i1, L"--tb", L"--trashbox"))
 		{
-			$iDel = I_DEL;
+			$iTrashbox = I_TB;
 		}
 
-		// --del2 | --delete2
-		if(iCLI_getOptMatch(i1, L"--del2", L"--delete2"))
+		// --tb2 | --trashbox2
+		if(iCLI_getOptMatch(i1, L"--tb2", L"--trashbox2"))
 		{
-			$iDel = I_DEL2;
+			$iTrashbox = I_TB2;
 		}
 
 		// --rep | --replace
@@ -512,7 +514,7 @@ main()
 	}
 
 	// --[exec] 関係を一括変換
-	if(*$wpMd || *$wpCp || *$wpMv || *$wpMv2 || *$wpExt || *$wpExt2 || $iDel || *$wpRep || $iRm)
+	if(*$wpMd || *$wpCp || *$wpMv || *$wpMv2 || *$wpExt || *$wpExt2 || $iTrashbox || *$wpRep || $iRm)
 	{
 		$bPrintFooter = FALSE; // フッタ情報を非表示
 
@@ -546,13 +548,13 @@ main()
 			$iExec = I_EXT2;
 			$wpMdOp = iFget_ApathW($wpExt2);
 		}
-		else if($iDel)
+		else if($iTrashbox)
 		{
-			$iExec = $iDel;
+			$iExec = $iTrashbox;
 		}
 		else if(*$wpRep)
 		{
-			if(iFchk_typePathW($wpRep) != 2)
+			if(! iFchk_existPathW($wpRep))
 			{
 				MS *mp1 = W2M($wpRep);
 					P("%s[Err] --replace '%s' は存在しない!%s\n", IESC_ERR1, mp1, IESC_RESET);
@@ -1020,8 +1022,9 @@ sql_result_exec(
 				// mkdir
 				if(imk_dirW(wp4))
 				{
-					P1("md\t");
-					P2W(wp4);
+					P1("\033[96m+ ");
+					P1W(wp4);
+					P2("\033[0m");
 					++$LN;
 				}
 				// 優先処理
@@ -1029,8 +1032,9 @@ sql_result_exec(
 				{
 					if(CopyFileW(wp3, wp5, FALSE))
 					{
-						P1("cp\t");
-						P2(sColumnValues[3]);
+						P1("\033[96m+ ");
+						P1W(wp5);
+						P2("\033[0m");
 						++$LN;
 					}
 				}
@@ -1042,14 +1046,18 @@ sql_result_exec(
 						SetFileAttributesW(wp5, FALSE);
 					}
 					// 既存File削除
-					if(iFchk_typePathW(wp5))
+					if(iFchk_existPathW(wp5))
 					{
 						DeleteFileW(wp5);
 					}
 					if(MoveFileW(wp3, wp5))
 					{
-						P1("mv\t");
-						P2(sColumnValues[3]);
+						P1("\033[96m+ ");
+						P1W(wp5);
+						P2("\033[0m");
+						P1("\033[94m- ");
+						P1W(wp3);
+						P2("\033[0m");
 						++$LN;
 					}
 					// rmdir
@@ -1057,8 +1065,9 @@ sql_result_exec(
 					{
 						if(RemoveDirectoryW(wp1))
 						{
-							P1("rd\t");
-							P2(sColumnValues[1]);
+							P1("\033[94m- ");
+							P1(sColumnValues[1]);
+							P2("\033[0m");
 							++$LN;
 						}
 					}
@@ -1080,8 +1089,9 @@ sql_result_exec(
 				// mkdir
 				if(imk_dirW($wpMdOp))
 				{
-					P1("md\t");
-					P2W($wpMdOp);
+					P1("\033[96m+ ");
+					P1W($wpMdOp);
+					P2("\033[0m");
 					++$LN;
 				}
 				// 先
@@ -1091,8 +1101,9 @@ sql_result_exec(
 				{
 					if(CopyFileW(wp1, wp3, FALSE))
 					{
-						P1("cp\t");
-						P2W(wp3);
+						P1("\033[96m+ ");
+						P1W(wp3);
+						P2("\033[0m");
 						++$LN;
 					}
 				}
@@ -1104,14 +1115,18 @@ sql_result_exec(
 						SetFileAttributesW(wp3, FALSE);
 					}
 					// Dir存在していれば削除しておく
-					if(iFchk_typePathW(wp3))
+					if(iFchk_existPathW(wp3))
 					{
 						DeleteFileW(wp3);
 					}
 					if(MoveFileW(wp1, wp3))
 					{
-						P1("mv\t");
-						P2W(wp3);
+						P1("\033[96m+ ");
+						P1W(wp3);
+						P2("\033[0m");
+						P1("\033[94m- ");
+						P1W(wp1);
+						P2("\033[0m");
 						++$LN;
 					}
 				}
@@ -1123,8 +1138,8 @@ sql_result_exec(
 			ifree(wp1);
 		break;
 
-		case(I_DEL):  // --delete
-		case(I_DEL2): // --delete2
+		case(I_TB):  // --trashbox
+		case(I_TB2): // --trashbox2
 			wp1 = M2W(sColumnValues[0]); // path
 			i1 = atoi(sColumnValues[2]);
 				// ReadOnly属性(1)を解除
@@ -1135,15 +1150,17 @@ sql_result_exec(
 				// Fileをゴミ箱へ移動
 				if(! (i1 & FILE_ATTRIBUTE_DIRECTORY) && imv_trashW(wp1))
 				{
-					P1("delFile\t");
-					P2(sColumnValues[0]);
+					P1("\033[92m- ");
+					P1W(wp1);
+					P2("\033[0m");
 					++$LN;
 				}
 				// Dirをゴミ箱へ移動
-				if($iExec == I_DEL2 && (i1 & FILE_ATTRIBUTE_DIRECTORY) && imv_trashW(wp1))
+				if($iExec == I_TB2 && (i1 & FILE_ATTRIBUTE_DIRECTORY) && imv_trashW(wp1))
 				{
-					P1("delDir\t");
-					P2(sColumnValues[0]);
+					P1("\033[92m- ");
+					P1W(wp1);
+					P2("\033[0m");
 					++$LN;
 				}
 			ifree(wp1);
@@ -1154,8 +1171,9 @@ sql_result_exec(
 			wp2 = M2W(sColumnValues[1]); // path
 				if(*wp1 == 'f' && CopyFileW($wpRepOp, wp2, FALSE))
 				{
-					P1("rep\t");
-					P2(sColumnValues[1]);
+					P1("\033[96m+ ");
+					P1W(wp2);
+					P2("\033[0m");
 					++$LN;
 				}
 			ifree(wp2);
@@ -1173,8 +1191,9 @@ sql_result_exec(
 				// File削除
 				if(DeleteFileW(wp1))
 				{
-					P1("rm\t");
-					P2(sColumnValues[0]);
+					P1("\033[94m- ");
+					P1W(wp1);
+					P2("\033[0m");
 					++$LN;
 				}
 				// 空Dir削除
@@ -1184,8 +1203,9 @@ sql_result_exec(
 						// 空Dirである
 						if(RemoveDirectoryW(wp2))
 						{
-							P1("rd\t");
-							P2(sColumnValues[1]);
+							P1("\033[94m- ");
+							P1W(wp2);
+							P2("\033[0m");
 							++$LN;
 						}
 					ifree(wp2);
@@ -1450,10 +1470,10 @@ print_help()
 		IESC_STR1	"        検索結果のFileのみ削除する (Dirは削除しない) \n\n"
 		IESC_OPT21	"    --remove2 | --rm2\n"
 		IESC_STR1	"        --remove + 空Dirを削除する\n\n"
-		IESC_OPT21	"    --delete | --del\n"
+		IESC_OPT21	"    --trashbox | --tb\n"
 		IESC_STR1	"        検索結果のFileのみゴミ箱へ移動する (Dirは移動しない) \n\n"
-		IESC_OPT21	"    --delete2 | --del2\n"
-		IESC_STR1	"        --delete + Dirをゴミ箱へ移動する\n"
+		IESC_OPT21	"    --trashbox2 | --tb2\n"
+		IESC_STR1	"        --trashbox + Dirをゴミ箱へ移動する\n"
 		IESC_OPT22	"        (注) Dir以下すべてをゴミ箱へ移動する\n\n"
 		IESC_OPT21	"    --replace=File | --rep=File\n"
 		IESC_STR1	"        検索結果(複数) をFileの内容で置換(上書き)する／ファイル名は変更しない\n"
