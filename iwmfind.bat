@@ -2,7 +2,7 @@
 	@echo off
 	cls
 
-	:: ãƒ•ã‚¡ã‚¤ãƒ«åã¯ã‚½ãƒ¼ã‚¹ã¨åŒã˜
+	:: ƒtƒ@ƒCƒ‹–¼‚Íƒ\[ƒX‚Æ“¯‚¶
 	set fn=%~n0
 	set src=%fn%.c
 	set fn_exe=%fn%.exe
@@ -27,14 +27,14 @@
 	%cc% *.o %lib% -o %fn_exe% %cc_op%
 	echo.
 
-	:: å¾Œå‡¦ç†
+	:: Œãˆ—
 	strip %fn_exe%
 	rm *.o
 
-	:: å¤±æ•—
+	:: ¸”s
 	if not exist "%fn_exe%" goto end
 
-	:: æˆåŠŸ
+	:: ¬Œ÷
 	echo.
 	pause
 

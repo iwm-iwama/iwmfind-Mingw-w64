@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
-#define   IWM_VERSION         "iwmfind5_20231105"
-#define   IWM_COPYRIGHT       "Copyright (C)2009-2023 iwm-iwama"
+#define   IWM_COPYRIGHT       "(C)2009-2023 iwm-iwama"
+#define   IWM_VERSION         "iwmfind5_20231225"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -253,17 +253,14 @@ main()
 	// lib_iwmutil2 初期化
 	imain_begin();
 
-	// カーソル隠す
-	P1(IESC_CURSOR_OFF);
-
-	// -h | -help
+	// -h | --help
 	if(! $ARGC || iCLI_getOptMatch(0, L"-h", L"--help"))
 	{
 		print_help();
 		imain_end();
 	}
 
-	// -v | -version
+	// -v | --version
 	if(iCLI_getOptMatch(0, L"-v", L"--version"))
 	{
 		print_version();
@@ -327,7 +324,13 @@ main()
 		if(*$ARGV[i1] != '-' && ! iFchk_existPathW($ARGV[i1]))
 		{
 			MS *mp1 = W2M($ARGV[i1]);
-				P("%s[Err] Dir '%s' は存在しない!%s\n", IESC_ERR1, mp1, IESC_RESET);
+				P(
+					IESC_FALSE1
+					"[Err] Dir '%s' は存在しない!%s"
+					IESC_RESET
+					"\n"
+					, mp1
+				);
 			ifree(mp1);
 		}
 	}
@@ -345,13 +348,24 @@ main()
 			if(! iFchk_existPathW(wp1))
 			{
 				MS *mp1 = W2M(wp1);
-					P("%s[Err] -in '%s' は存在しない!%s\n", IESC_ERR1, mp1, IESC_RESET);
+					P(
+						IESC_FALSE1
+						"[Err] -in '%s' は存在しない!"
+						IESC_RESET
+						"\n"
+						, mp1
+					);
 				ifree(mp1);
 				imain_end();
 			}
 			else if($waDirListSize)
 			{
-				P("%s[Err] Dir と -in は併用できない!%s\n", IESC_ERR1, IESC_RESET);
+				P(
+					IESC_FALSE1
+					"[Err] Dir と -in は併用できない!"
+					IESC_RESET
+					"\n"
+				);
 				imain_end();
 			}
 			else
@@ -489,7 +503,7 @@ main()
 		// -qt | -quote
 		if((wp1 = iCLI_getOptValue(i1, L"-qt=", L"-quote=")))
 		{
-			wp2 = iws_conv_escape(wp1);
+			wp2 = iws_cnv_escape(wp1);
 				// 文字数制限
 				if(wcslen(wp2) > 4)
 				{
@@ -502,7 +516,7 @@ main()
 		// -sp | -separate
 		if((wp1 = iCLI_getOptValue(i1, L"-sp=", L"-separate=")))
 		{
-			wp2 = iws_conv_escape(wp1);
+			wp2 = iws_cnv_escape(wp1);
 				// 文字数制限
 				if(wcslen(wp2) > 4)
 				{
@@ -557,7 +571,13 @@ main()
 			if(! iFchk_existPathW($wpRep))
 			{
 				MS *mp1 = W2M($wpRep);
-					P("%s[Err] --replace '%s' は存在しない!%s\n", IESC_ERR1, mp1, IESC_RESET);
+					P(
+						IESC_FALSE1
+						"[Err] --replace '%s' は存在しない!"
+						IESC_RESET
+						"\n"
+						, mp1
+					);
 				ifree(mp1);
 				imain_end();
 			}
@@ -616,7 +636,13 @@ main()
 	if(sqlite3_open16($wpInDbn, &$iDbs))
 	{
 		mp1 = W2M($wpInDbn);
-			P("%s[Err] -in '%s' を開けない!%s\n", IESC_ERR1, mp1, IESC_RESET);
+			P(
+				IESC_FALSE1
+				"[Err] -in '%s' を開けない!"
+				IESC_RESET
+				"\n"
+				, mp1
+			);
 		ifree(mp1);
 		sqlite3_close($iDbs); // ErrでもDB解放
 		imain_end();
@@ -651,8 +677,6 @@ main()
 				sqlite3_prepare($iDbs, INSERT_T_FILE, imn_len(INSERT_T_FILE), &$stmt2, 0);
 				// トランザクション開始
 				sql_exec($iDbs, "BEGIN", 0);
-				// 経過表示
-				fprintf(stderr, IESC_OPT21);
 				// 検索データ DB書込
 				for(i2 = 0; (wp1 = $waDirList[i2]); i2++)
 				{
@@ -660,8 +684,6 @@ main()
 					// 本処理
 					ifind10(FI, F, wp1, 0);
 				}
-				// 経過表示をクリア
-				fprintf(stderr, "\r\033[0K" IESC_RESET);
 				// トランザクション終了
 				sql_exec($iDbs, "COMMIT", 0);
 				// 後処理
@@ -740,8 +762,7 @@ main()
 		print_footer();
 	}
 
-	// Debug
-	/// icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
+	///icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
 
 	imain_end();
 }
@@ -837,8 +858,7 @@ ifind10(
 	++$iCall_ifind10;
 	if($iCall_ifind10 >= 5000)
 	{
-		// 行消去
-		fprintf(stderr, "\r\033[0K> %u", $lAllCnt);
+		fprintf(stderr, "%s> %u%s\033[0K\r", IESC_OPT21, $lAllCnt, IESC_RESET);
 		$iCall_ifind10 = 0;
 	}
 }
@@ -888,7 +908,13 @@ sql_exec(
 	$LN = 0;
 	if(sqlite3_exec(db, sql, cb, 0, &p_err))
 	{
-		P("%s[Err] 構文エラー%s\n      %s\n      %s\n", IESC_ERR1, IESC_RESET, p_err, sql);
+		P(
+			IESC_FALSE1
+			"[Err] 構文エラー"
+			IESC_RESET
+			"\n    %s\n    %s"
+			, p_err, sql
+		);
 		sqlite3_free(p_err); // p_errを解放
 		imain_end();
 	}
@@ -1259,14 +1285,14 @@ VOID
 print_footer()
 {
 	MS *mp1 = 0;
-	P(IESC_OPT21);
+	P1(IESC_OPT21);
 	P(
 		"-- %lld row%s in set ( %.3f sec)\n",
 		$LN,
 		($LN > 1 ? "s" : ""), // 複数形
 		iExecSec_next()
 	);
-	P(IESC_OPT22);
+	P1(IESC_OPT22);
 	P2("--");
 	for(INT _i1 = 0; _i1 < $waDirListSize; _i1++)
 	{
@@ -1303,7 +1329,7 @@ print_footer()
 		P("--  -separate  '%s'\n", $mpSeparate);
 	}
 	P2("--");
-	P(IESC_RESET);
+	P1(IESC_RESET);
 }
 
 VOID
@@ -1313,7 +1339,7 @@ print_version()
 	LN(80);
 	P(
 		" %s\n"
-		"    Ver.%s+%s+SQLite%s\n"
+		"    %s+%s+SQLite%s\n"
 		, IWM_COPYRIGHT, IWM_VERSION, LIB_IWMUTIL_VERSION, SQLITE_VERSION
 	);
 	LN(80);
@@ -1363,13 +1389,13 @@ print_help()
 		IESC_STR1	"        全階層を検索\n\n"
 		IESC_OPT21	"    -depth=Num1,Num2 | -d=Num1,Num2\n"
 		IESC_STR1	"        検索する階層を指定\n"
+		IESC_OPT22	"        CurrentDir は階層=0\n\n"
 		IESC_LBL1	"        (例１)"
 		IESC_STR1	" -d=0\n"
 					"               0階層のみ検索\n\n"
 		IESC_LBL1	"        (例２)"
 		IESC_STR1	" -d=0,2\n"
 					"               0～2階層を検索\n\n"
-		IESC_OPT22	"        CurrentDir は階層=0\n\n"
 		IESC_OPT21	"    -out=File | -o=File\n"
 		IESC_STR1	"        出力ファイル\n\n"
 		IESC_OPT21	"    -in=File | -i=File\n"
