@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
-#define   IWM_VERSION         "iwmfind5_20240118"
+#define   IWM_VERSION         "iwmfind5_20240122"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -803,20 +803,21 @@ WS
 	wp2 = iws_replace(wp1, L"?", L"_", FALSE); // "?" => "_"
 	ifree(wp1);
 	// 現在時間
-	INT *aiNow = (INT*)idate_cjdToiAryYmdhns(idate_nowToCjd(TRUE));
-	// [] を日付に変換
-	wp1 = idate_replace_format_ymdhns(
+	$struct_iDV *IDV = iDV_alloc();
+		iDV_set2(IDV, idate_nowToCjd(TRUE));
+		// [] を日付に変換
+		wp1 = idate_replace_format_ymdhns(
 			wp2,
 			L"[", L"]",
 			L"'",
-			aiNow[0],
-			aiNow[1],
-			aiNow[2],
-			aiNow[3],
-			aiNow[4],
-			aiNow[5]
-	);
-	ifree(aiNow);
+			IDV->y,
+			IDV->m,
+			IDV->d,
+			IDV->h,
+			IDV->n,
+			IDV->s
+		);
+	iDV_free(IDV);
 	ifree(wp2);
 	return wp1;
 }
