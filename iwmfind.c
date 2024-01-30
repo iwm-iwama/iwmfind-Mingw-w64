@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
-#define   IWM_VERSION         "iwmfind5_20240122"
+#define   IWM_VERSION         "iwmfind5_20240126"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -105,16 +105,16 @@ sqlite3_stmt        *Stmt1 = 0, *Stmt2 = 0;
 			L"type,path"
 #define   OP_SELECT_RM \
 			L"path,dir,attr_num"
-#define   I_MKDIR              1
-#define   I_CP                 2
-#define   I_MV                 3
-#define   I_MV2                4
-#define   I_EXT                5
-#define   I_EXT2               6
-#define   I_TB                11
-#define   I_REP               20
-#define   I_RM                31
-#define   I_RM2               32
+#define   I_MKDIR    1
+#define   I_CP       2
+#define   I_MV       3
+#define   I_MV2      4
+#define   I_EXT      5
+#define   I_EXT2     6
+#define   I_TB      11
+#define   I_REP     20
+#define   I_RM      31
+#define   I_RM2     32
 /*
 	以下の "_" で始まる変数はオプションに応じて動的に作成される。
 	これらの解放は imain_end() で一括処理している。
@@ -172,11 +172,13 @@ BOOL _Footer = TRUE;
 // -quote=Str | -qt=Str
 //
 MS *_Quote = "";
+UINT _QuoteLen = 0;
 //
 // 出力をStrで区切る
 // -separate=Str | -sp=Str
 //
 MS *_Separate = " | ";
+UINT _SeparateLen = 3; // strlen(" | ")
 //
 // 検索Dir位置
 // -depth=NUM1,NUM2 | -d=NUM1,NUM2
@@ -506,6 +508,7 @@ main()
 					wp2[4] = 0;
 				}
 				_Quote = W2M(wp2);
+				_QuoteLen = strlen(_Quote);
 			ifree(wp2);
 		}
 
@@ -519,6 +522,7 @@ main()
 					wp2[4] = 0;
 				}
 				_Separate = W2M(wp2);
+				_SeparateLen = strlen(_Separate);
 			ifree(wp2);
 		}
 	}
@@ -992,32 +996,37 @@ sql_result_std(
 )
 {
 	++RowCnt;
-	MS tmpMS[16] = "\0";
 	INT i1 = 0;
 	while(i1 < iColumnCount)
 	{
+		iVBM_add2(IVBM, _Quote, _QuoteLen);
 		// [LN]
 		if(i1 == _SelectPosLN)
 		{
-			// sprintf() は遅いので多用しない
-			iVBM_add(IVBM, _Quote);
-			sprintf(tmpMS, "%u", RowCnt);
-			iVBM_add(IVBM, tmpMS);
-			iVBM_add(IVBM, _Quote);
+			MS mpTmp[16];
+			// sprintf()系は遅いので多用しない
+			UINT uLen = sprintf(mpTmp, "%u", RowCnt);
+			iVBM_add2(IVBM, mpTmp, uLen);
 		}
 		else
 		{
-			iVBM_add(IVBM, _Quote);
 			iVBM_add(IVBM, sColumnValues[i1]);
-			iVBM_add(IVBM, _Quote);
+		}
+		iVBM_add2(IVBM, _Quote, _QuoteLen);
+		++i1;
+		if(i1 == iColumnCount)
+		{
+			iVBM_add2(IVBM, "\n", 1);
 			if(iVBM_getLength(IVBM) >= BufSizeMax)
 			{
 				QP(iVBM_getStr(IVBM), iVBM_getLength(IVBM));
 				iVBM_clear(IVBM);
 			}
 		}
-		++i1;
-		iVBM_add(IVBM, (i1 == iColumnCount ? "\n" : _Separate));
+		else
+		{
+			iVBM_add2(IVBM, _Separate, _SeparateLen);
+		}
 	}
 	return SQLITE_OK;
 }

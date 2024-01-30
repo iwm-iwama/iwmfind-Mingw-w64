@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define   LIB_IWMUTIL_COPYLIGHT         "(C)2008-2024 iwm-iwama"
-#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240122"
+#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240126"
 //////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
 #include <ctype.h>
@@ -113,7 +113,7 @@ VOID      icalloc_mapPrint1();
 //////////////////////////////////////////////////////////////////////////////////////////
 VOID      P(MS *format,...);
 
-VOID      QP(MS *str, UINT size);
+VOID      QP(MS *str,UINT size);
 #define   QP1(str)            QP(str,strlen(str))
 #define   QP2(str)            QP1(str);NL()
 
@@ -133,12 +133,12 @@ VOID      P1W(WS *str);
 #define   P2W(str)            P1W(str);putchar('\n')
 #define   PL2W(str)           PL();P2W(str)
 
-VOID      PR1(MS *str, UINT iRepeat);
+VOID      PR1(MS *str,UINT iRepeat);
 #define   LN(iRepeat)         PR1("-",iRepeat);NL();
 
 WS        *iws_cnv_escape(WS *str);
 
-VOID      imv_system(WS *wCmd, BOOL bOutput);
+VOID      imv_system(WS *wCmd,BOOL bOutput);
 WS        *iws_popen(WS *cmd);
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -193,7 +193,7 @@ UINT64    iwn_searchCnt(WS *str,WS *search,BOOL icase);
 #define   iwn_search(str,search)        (UINT)iwn_searchCnt(str,search,FALSE)
 #define   iwn_searchi(str,search)       (UINT)iwn_searchCnt(str,search,TRUE)
 
-WS        **iwaa_split(WS *str,WS *tokens, BOOL bRmEmpty);
+WS        **iwaa_split(WS *str,WS *tokens,BOOL bRmEmpty);
 
 WS        *iws_replace(WS *from,WS *before,WS *after,BOOL icase);
 
@@ -250,13 +250,15 @@ $struct_iVBM,
 $struct_iVBW;
 
 $struct_iVBStr      *iVBStr_alloc(UINT64 startSize,INT sizeOfChar);
-VOID      *iVBStr_add($struct_iVBStr *IBS,VOID *str,UINT64 strLen,INT sizeOfChar);
+VOID      iVBStr_add($struct_iVBStr *IBS,VOID *str,UINT64 strLen,INT sizeOfChar);
+VOID      iVBM_sprintf($struct_iVBM *IVBM,MS *format,...);
+VOID      iVBW_sprintf($struct_iVBW *IVBW,WS *format,...);
 
 // MS
 #define   iVBM_alloc()                  iVBStr_alloc(256,sizeof(MS))
 #define   iVBM_alloc2(startSize)        iVBStr_alloc(startSize,sizeof(MS))
-#define   iVBM_add(IVBM,str)            (MS*)iVBStr_add(IVBM,str,strlen(str),sizeof(MS))
-#define   iVBM_add2(IVBM,str,strLen)    (MS*)iVBStr_add(IVBM,str,strLen,sizeof(MS))
+#define   iVBM_add(IVBM,str)            iVBStr_add(IVBM,str,strlen(str),sizeof(MS))
+#define   iVBM_add2(IVBM,str,strLen)    iVBStr_add(IVBM,str,strLen,sizeof(MS))
 #define   iVBM_clear(IVBM)              memset(IVBM->str,0,sizeof(MS));IVBM->length=0
 #define   iVBM_getStr(IVBM)             (MS*)(IVBM->str)
 #define   iVBM_getLength(IVBM)          (UINT64)(IVBM->length)
@@ -266,8 +268,8 @@ VOID      *iVBStr_add($struct_iVBStr *IBS,VOID *str,UINT64 strLen,INT sizeOfChar
 // WS
 #define   iVBW_alloc()                  iVBStr_alloc(256,sizeof(WS))
 #define   iVBW_alloc2(startSize)        iVBStr_alloc(startSize,sizeof(WS))
-#define   iVBW_add(IVBW,str)            (WS*)iVBStr_add(IVBW,str,wcslen(str),sizeof(WS))
-#define   iVBW_add2(IVBW,str,strLen)    (WS*)iVBStr_add(IVBW,str,strLen,sizeof(WS))
+#define   iVBW_add(IVBW,str)            iVBStr_add(IVBW,str,wcslen(str),sizeof(WS))
+#define   iVBW_add2(IVBW,str,strLen)    iVBStr_add(IVBW,str,strLen,sizeof(WS))
 #define   iVBW_clear(IVBW)              memset(IVBW->str,0,sizeof(WS));IVBW->length=0
 #define   iVBW_getStr(IVBW)             (WS*)(IVBW->str)
 #define   iVBW_getLength(IVBW)          (UINT64)(IVBW->length)
@@ -412,11 +414,11 @@ typedef struct
 $struct_idate_value,
 $struct_iDV;
 
-#define   iDV_alloc()                   icalloc(1,sizeof($struct_iDV),FALSE)
-#define   iDV_set(IDV,i_y,i_m,i_d,i_h,i_n,i_s)  idate_cjdToYmdhns(IDV,idate_ymdhnsToCjd(i_y,i_m,i_d,i_h,i_n,i_s))
+#define   iDV_alloc()                   icalloc(1,sizeof($struct_iDV),FALSE);IDV->sign=TRUE
+#define   iDV_set(IDV,i_y,i_m,i_d,i_h,i_n,i_s)    idate_cjdToYmdhns(IDV,idate_ymdhnsToCjd(i_y,i_m,i_d,i_h,i_n,i_s))
 #define   iDV_set2(IDV,cjd)             idate_cjdToYmdhns(IDV,cjd)
 #define   iDV_getCJD(IDV)               (INT64)idate_ymdhnsToCjd(IDV->y,IDV->m,IDV->d,IDV->h,IDV->n,IDV->s)
-#define   iDV_add(IDV,i_y,i_m,i_d,i_h,i_n,i_s)  iDV_set(IDV,(IDV->y+i_y),(IDV->m+i_m),(IDV->d+i_d),(IDV->h+i_h),(IDV->n+i_n),(IDV->s+i_s))
+#define   iDV_add(IDV,i_y,i_m,i_d,i_h,i_n,i_s)    iDV_set(IDV,(IDV->y+i_y),(IDV->m+i_m),(IDV->d+i_d),(IDV->h+i_h),(IDV->n+i_n),(IDV->s+i_s))
 #define   iDV_add2(IDV,cjd)             idate_cjdToYmdhns(IDV,cjd+iDV_getCJD(IDV))
 #define   iDV_clear(IDV)                IDV->sign=TRUE;IDV->y=0;IDV->m=0;IDV->d=0;IDV->h=0;IDV->n=0;IDV->s=0;IDV->days=0.0
 #define   iDV_free(IDV)                 ifree(IDV)
@@ -439,7 +441,7 @@ INT       *idate_WsToiAryYmdhns(WS *str);
 INT       idate_ymdToINT(INT i_y,INT i_m,INT i_d);
 DOUBLE    idate_ymdhnsToCjd(INT i_y,INT i_m,INT i_d,INT i_h,INT i_n,INT i_s);
 
-VOID      idate_cjdToYmdhns($struct_iDV *IDV, CONST DOUBLE cjd);
+VOID      idate_cjdToYmdhns($struct_iDV *IDV,CONST DOUBLE cjd);
 
 INT       idate_cjd_iWday(DOUBLE cjd);
 WS        *idate_cjd_Wday(DOUBLE cjd);
