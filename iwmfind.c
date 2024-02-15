@@ -273,12 +273,10 @@ main()
 	WS *wp1 = 0, *wp2 = 0;
 	MS *mp1 = 0, *mp2 = 0, *mp3 = 0;
 
-	/*
-		AryInDir取得で _DepthMax を使うため先に、
-			-recursive
-			-depth
-		をチェック
-	*/
+	// AryInDir取得で _DepthMax を使うため
+	//   -recursive
+	//   -depth
+	// をチェック
 	for(i1 = 0; i1 < $ARGC; i1++)
 	{
 		// -r | -recursive
@@ -448,11 +446,9 @@ main()
 		}
 
 		// -s | -select
-		/*
-			(none)     : OP_SELECT_0
-			-select="" : Err
-			-select="Column1,Column2,..."
-		*/
+		//   (none)     : OP_SELECT_0
+		//   -select="" : Err
+		//   -select="Column1,Column2,..."
 		if((wp1 = iCLI_getOptValue(i1, L"-s=", L"-select=")))
 		{
 			// "AS" 対応のため " " (空白)は不可
@@ -667,12 +663,6 @@ main()
 				WIN32_FIND_DATAW F;
 				// PRAGMA設定
 				sql_exec(InDbs, "PRAGMA encoding = 'UTF-8';", 0);
-				/*
-					[入力]    UTF-8
-					[内部]    UTF-16
-					[Sqlite3] UTF-8
-					[出力]    UTF-8
-				*/
 				// TABLE作成
 				sql_exec(InDbs, CREATE_T_DIR, 0);
 				sql_exec(InDbs, CREATE_T_FILE, 0);

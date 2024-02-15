@@ -830,22 +830,23 @@ imv_system(
 		P1W(wp1); //=> コマンドの実行結果
 	ifree(wp1);
 */
-// v2023-12-23
+// v2024-02-12
 WS
 *iws_popen(
 	WS *cmd
 )
 {
 	WS *rtn = 0;
-	MS *mCmd = W2M(cmd);
-		FILE *fp = popen(mCmd, "rt");
-			UINT uSize = 16;
+	// STDERR 排除
+	WS *wp1 = iws_cats(2, cmd, L" 2> NUL");
+		FILE *fp = _wpopen(wp1, L"rb");
+			UINT uSize = 256;
 			MS *mp1 = icalloc_MS(uSize);
 				UINT uPos = 0;
 				INT c = 0;
 				while((c = fgetc(fp)) != EOF)
 				{
-					mp1[uPos] = (MS)c;
+					mp1[uPos] = c;
 					++uPos;
 					if(uPos >= uSize)
 					{
@@ -854,13 +855,12 @@ WS
 					}
 				}
 				mp1[uPos] = 0;
+				// コンソール文字コードを無視して出力するアプリケーションに対応
 				///PL3(imn_Codepage(mp1));
 				rtn = icnv_M2W(mp1, imn_Codepage(mp1));
 			ifree(mp1);
 		pclose(fp);
-	ifree(mCmd);
-	// CodePage
-	SetConsoleOutputCP(65001);
+	ifree(wp1);
 	return rtn;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -1036,33 +1036,47 @@ imn_Codepage(
 		PL2W(to); //=> "abcde"
 	ifree(to);
 */
-// v2023-07-29
+// v2024-02-10
 UINT64
-imn_cpy(
-	MS *to,
-	MS *from
+ivn_cpy(
+	VOID *to,
+	VOID *from,
+	INT sizeOfChar // sizeof(MS), sizeof(WS)
 )
 {
-	if(! from || ! *from)
+	if(! from)
 	{
 		return 0;
 	}
-	strcpy(to, from);
-	return strlen(from);
-}
-// v2023-07-29
-UINT64
-iwn_cpy(
-	WS *to,
-	WS *from
-)
-{
-	if(! from || ! *from)
+	UINT64 rtn = 0;
+	MS *toM = to, *fromM = from;
+	UINT64 u1 = 0;
+	// 利点は
+	//   コピー：strcpy/wcscpy
+	//   文字長：strlen/wcslen
+	// を１ループに収束できること
+	if(sizeOfChar == 2)
 	{
-		return 0;
+		for(u1 = 0; fromM[u1]; u1++)
+		{
+			++rtn;
+			toM[u1] = fromM[u1];
+			++u1;
+			toM[u1] = fromM[u1];
+		}
+		toM[u1] = '\0';
+		++u1;
 	}
-	wcscpy(to, from);
-	return wcslen(from);
+	else
+	{
+		for(u1 = 0; fromM[u1]; u1++)
+		{
+			++rtn;
+			toM[u1] = fromM[u1];
+		}
+	}
+	toM[u1] = '\0';
+	return rtn;
 }
 /* (例)
 	WS *p1 = iws_clone(L"123456789");
@@ -1070,35 +1084,23 @@ iwn_cpy(
 	PL3(iwn_pcpy(p1, p2, (p2 + 5))); //=> 2
 	PL2W(p1);                        //=> "AB"
 */
-// v2023-09-01
+// v2024-02-10
 UINT64
-imn_pcpy(
-	MS *to,
-	MS *from1,
-	MS *from2
+ivn_pcpy(
+	VOID *to,
+	VOID *from1,
+	VOID *from2,
+	INT sizeOfChar // sizeof(MS), sizeof(WS)
 )
 {
 	if(! from1 || ! from2 || from1 >= from2)
 	{
 		return 0;
 	}
-	strncpy(to, from1, (from2 - from1));
-	return strlen(to);
-}
-// v2023-09-01
-UINT64
-iwn_pcpy(
-	WS *to,
-	WS *from1,
-	WS *from2
-)
-{
-	if(! from1 || ! from2 || from1 >= from2)
-	{
-		return 0;
-	}
-	wcsncpy(to, from1, (from2 - from1));
-	return wcslen(to);
+	UINT64 rtn = from2 - from1;
+	memcpy(to, from1, rtn);
+	memset((to + rtn), 0, sizeOfChar);
+	return (rtn / sizeOfChar);
 }
 //-----------------------
 // 新規部分文字列を生成
@@ -1106,31 +1108,23 @@ iwn_pcpy(
 /* (例)
 	PL2W(iws_clone(L"あいうえお")); //=> "あいうえお"
 */
-// v2023-09-01
-MS
-*ims_clone(
-	MS *from
+// v2024-02-10
+VOID
+*ivs_clone(
+	VOID *from,
+	INT sizeOfChar // sizeof(MS), sizeof(WS)
 )
 {
-	if(! from || ! *from)
+	if(! from)
 	{
-		return icalloc_MS(0);
+		return icalloc(0, 0, FALSE);
 	}
-	MS *rtn = icalloc_MS(strlen(from));
-	return strcpy(rtn, from);
-}
-// v2023-09-01
-WS
-*iws_clone(
-	WS *from
-)
-{
-	if(! from || ! *from)
-	{
-		return icalloc_WS(0);
-	}
-	WS *rtn = icalloc_WS(wcslen(from));
-	return wcscpy(rtn, from);
+	UINT64 len = 0;
+	for(MS *_p1 = from; *_p1; (_p1 += sizeOfChar), ++len);
+	len *= sizeOfChar;
+	VOID *rtn = icalloc(len, 1, FALSE);
+	memcpy(rtn, from, (len + sizeOfChar)); // '\0' 含む
+	return rtn;
 }
 /* (例)
 	WS *from = L"あいうえお";
@@ -1138,20 +1132,23 @@ WS
 		PL2W(p1); //=> "あいう"
 	ifree(p1);
 */
-// v2023-09-01
-WS
-*iws_pclone(
-	WS *from1,
-	WS *from2
+// v2024-02-10
+VOID
+*ivs_pclone(
+	VOID *from1,
+	VOID *from2,
+	INT sizeOfChar // sizeof(MS), sizeof(WS)
 )
 {
 	if(! from1 || ! from2 || from1 >= from2)
 	{
-		return icalloc_WS(0);
+		return icalloc(0, 0, FALSE);
 	}
 	UINT64 len = from2 - from1;
-	WS *rtn = icalloc_WS(len);
-	return wcsncpy(rtn, from1, len);
+	VOID *rtn = icalloc(len, 1, FALSE);
+	memcpy(rtn, from1, len);
+	memset((rtn + len), 0, sizeOfChar);
+	return rtn;
 }
 /* (例)
 	MS *mp1 = ims_cats(5, "123", NULL, "abcde", "", "あいうえお");
@@ -1390,7 +1387,7 @@ WS
 	BOOL bRmEmpty // TRUE=配列から空白を除く
 )
 {
-	WS **rtn = {};
+	WS **rtn = { 0 };
 	if(! str || ! *str)
 	{
 		rtn = icalloc_WS_ary(1);
@@ -3982,7 +3979,7 @@ INT
 	{
 		GetSystemTime(&st);
 	}
-	/* [Pending] 2021-11-15
+	/* [2021-11-15] Pending
 		下記コードでビープ音を発生することがある。
 			INT *rtn = icalloc_INT(n) ※INT系全般／DOUBLE系は問題なし
 			rtn[n] = 1793..2047

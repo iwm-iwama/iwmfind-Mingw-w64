@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define   LIB_IWMUTIL_COPYLIGHT         "(C)2008-2024 iwm-iwama"
-#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240126"
+#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240212"
 //////////////////////////////////////////////////////////////////////////////////////////
 #include <conio.h>
 #include <ctype.h>
@@ -163,16 +163,21 @@ UINT64    iun_len(MS *str);
 
 UINT      imn_Codepage(MS *str);
 
-UINT64    imn_cpy(MS *to,MS *from);
-UINT64    iwn_cpy(WS *to,WS *from);
+UINT64    ivn_cpy(VOID *to,VOID *from,INT sizeOfChar);
+#define   imn_cpy(to,from)              (UINT64)ivn_cpy(to,from,sizeof(MS))
+#define   iwn_cpy(to,from)              (UINT64)ivn_cpy(to,from,sizeof(WS))
 
-UINT64    imn_pcpy(MS *to,MS *from1,MS *from2);
-UINT64    iwn_pcpy(WS *to,WS *from1,WS *from2);
+UINT64    ivn_pcpy(VOID *to,VOID *from1,VOID *from2,INT sizeOfChar);
+#define   imn_pcpy(to,from1,from2)      (UINT64)ivn_pcpy(to,from1,from2,sizeof(MS))
+#define   iwn_pcpy(to,from1,from2)      (UINT64)ivn_pcpy(to,from1,from2,sizeof(WS))
 
-MS        *ims_clone(MS *from);
-WS        *iws_clone(WS *from);
+VOID      *ivs_clone(VOID *from,INT sizeOfChar);
+#define   ims_clone(from)               (MS*)ivs_clone(from,sizeof(MS))
+#define   iws_clone(from)               (WS*)ivs_clone(from,sizeof(WS))
 
-WS        *iws_pclone(WS *from1,WS *from2);
+VOID      *ivs_pclone(VOID *from1,VOID *from2,INT sizeOfChar);
+#define   ims_pclone(from1,from2)       (MS*)ivs_pclone(from1,from2,sizeof(MS))
+#define   iws_pclone(from1,from2)       (WS*)ivs_pclone(from1,from2,sizeof(WS))
 
 MS        *ims_cats(UINT size,...);
 WS        *iws_cats(UINT size,...);
