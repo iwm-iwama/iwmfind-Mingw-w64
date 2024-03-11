@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
-#define   IWM_VERSION         "iwmfind5_20240126"
+#define   IWM_VERSION         "iwmfind5_20240301"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -269,7 +269,6 @@ main()
 		imain_end();
 	}
 
-	INT i1 = 0, i2 = 0;
 	WS *wp1 = 0, *wp2 = 0;
 	MS *mp1 = 0, *mp2 = 0, *mp3 = 0;
 
@@ -277,21 +276,21 @@ main()
 	//   -recursive
 	//   -depth
 	// をチェック
-	for(i1 = 0; i1 < $ARGC; i1++)
+	for(UINT _u1 = 0; _u1 < $ARGC; _u1++)
 	{
 		// -r | -recursive
-		if(iCLI_getOptMatch(i1, L"-r", L"-recursive"))
+		if(iCLI_getOptMatch(_u1, L"-r", L"-recursive"))
 		{
 			_DepthMin = 0;
 			_DepthMax = IMAX_PATH;
 		}
 
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
-		if((wp1 = iCLI_getOptValue(i1, L"-d=", L"-depth=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-d=", L"-depth=")))
 		{
 			WS **wa1 = iwaa_split(wp1, L", ", TRUE);
-				i2 = iwan_size(wa1);
-				if(i2 > 1)
+				UINT _u2 = iwan_size(wa1);
+				if(_u2 > 1)
 				{
 					_DepthMin = _wtoi(wa1[0]);
 					_DepthMax = _wtoi(wa1[1]);
@@ -301,12 +300,12 @@ main()
 					}
 					if(_DepthMin > _DepthMax)
 					{
-						i2 = _DepthMin;
+						_u2 = _DepthMin;
 						_DepthMin = _DepthMax;
-						_DepthMax = i2;
+						_DepthMax = _u2;
 					}
 				}
-				else if(i2 == 1)
+				else if(_u2 == 1)
 				{
 					_DepthMin = _DepthMax = _wtoi(wa1[0]);
 				}
@@ -319,11 +318,11 @@ main()
 	}
 
 	// Dir存在チェック
-	for(i1 = 0; i1 < $ARGC; i1++)
+	for(UINT _u1 = 0; _u1 < $ARGC; _u1++)
 	{
-		if(*$ARGV[i1] != '-' && ! iFchk_existPath($ARGV[i1]))
+		if(*$ARGV[_u1] != '-' && ! iFchk_existPath($ARGV[_u1]))
 		{
-			mp1 = W2M($ARGV[i1]);
+			mp1 = W2M($ARGV[_u1]);
 				P(
 					IESC_FALSE1
 					"[Err] Dir '%s' は存在しない!"
@@ -341,10 +340,10 @@ main()
 	AryInDirSize = iwan_size(AryInDir);
 
 	// Main Loop
-	for(i1 = 0; i1 < $ARGC; i1++)
+	for(UINT _u1 = 0; _u1 < $ARGC; _u1++)
 	{
 		// -i | -in
-		if((wp1 = iCLI_getOptValue(i1, L"-i=", L"-in=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-i=", L"-in=")))
 		{
 			if(! iFchk_existPath(wp1))
 			{
@@ -380,67 +379,67 @@ main()
 		}
 
 		// -o | -out
-		if((wp1 = iCLI_getOptValue(i1, L"-o=", L"-out=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-o=", L"-out=")))
 		{
 			_OutDbn = wp1;
 		}
 
 		// --md | --mkdir
-		if((wp1 = iCLI_getOptValue(i1, L"--md=", L"--mkdir=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--md=", L"--mkdir=")))
 		{
 			_Md = wp1;
 		}
 
 		// --cp | --copy
-		if((wp1 = iCLI_getOptValue(i1, L"--cp=", L"--copy=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--cp=", L"--copy=")))
 		{
 			_Cp = wp1;
 		}
 
 		// --mv | --move
-		if((wp1 = iCLI_getOptValue(i1, L"--mv=", L"--move=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--mv=", L"--move=")))
 		{
 			_Mv = wp1;
 		}
 
 		// --mv2 | --move2
-		if((wp1 = iCLI_getOptValue(i1, L"--mv2=", L"--move2=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--mv2=", L"--move2=")))
 		{
 			_Mv2 = wp1;
 		}
 
 		// --ext | --extract
-		if((wp1 = iCLI_getOptValue(i1, L"--ext=", L"--extract=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--ext=", L"--extract=")))
 		{
 			_Ext = wp1;
 		}
 
 		// --ext2 | --extract2
-		if((wp1 = iCLI_getOptValue(i1, L"--ext2=", L"--extract2=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--ext2=", L"--extract2=")))
 		{
 			_Ext2 = wp1;
 		}
 
 		// --tb | --trashbox
-		if(iCLI_getOptMatch(i1, L"--tb", L"--trashbox"))
+		if(iCLI_getOptMatch(_u1, L"--tb", L"--trashbox"))
 		{
 			_Trashbox = I_TB;
 		}
 
 		// --rep | --replace
-		if((wp1 = iCLI_getOptValue(i1, L"--rep=", L"--replace=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"--rep=", L"--replace=")))
 		{
 			_Rep = wp1;
 		}
 
 		// --rm | --remove
-		if(iCLI_getOptMatch(i1, L"--rm", L"--remove"))
+		if(iCLI_getOptMatch(_u1, L"--rm", L"--remove"))
 		{
 			_Rm = I_RM;
 		}
 
 		// --rm2 | --remove2
-		if(iCLI_getOptMatch(i1, L"--rm2", L"--remove2"))
+		if(iCLI_getOptMatch(_u1, L"--rm2", L"--remove2"))
 		{
 			_Rm = I_RM2;
 		}
@@ -449,7 +448,7 @@ main()
 		//   (none)     : OP_SELECT_0
 		//   -select="" : Err
 		//   -select="Column1,Column2,..."
-		if((wp1 = iCLI_getOptValue(i1, L"-s=", L"-select=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-s=", L"-select=")))
 		{
 			// "AS" 対応のため " " (空白)は不可
 			// (例) -s="dir||name AS PATH"
@@ -464,38 +463,38 @@ main()
 		}
 
 		// -st | -sort
-		if((wp1 = iCLI_getOptValue(i1, L"-st=", L"-sort=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-st=", L"-sort=")))
 		{
 			_Sort = wp1;
 		}
 
 		// -w | -where
-		if((wp1 = iCLI_getOptValue(i1, L"-w=", L"-where=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-w=", L"-where=")))
 		{
 			_Where1 = sql_escape(wp1);
 			_Where2 = iws_cats(2, L"WHERE ", _Where1);
 		}
 
 		// -g | -group
-		if((wp1 = iCLI_getOptValue(i1, L"-g=", L"-group=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-g=", L"-group=")))
 		{
 			_Group = iws_cats(2, L"GROUP BY ", wp1);
 		}
 
 		// -nh | -noheader
-		if(iCLI_getOptMatch(i1, L"-nh", L"-noheader"))
+		if(iCLI_getOptMatch(_u1, L"-nh", L"-noheader"))
 		{
 			_Header = FALSE;
 		}
 
 		// -nf | -nofooter
-		if(iCLI_getOptMatch(i1, L"-nf", L"-nofooter"))
+		if(iCLI_getOptMatch(_u1, L"-nf", L"-nofooter"))
 		{
 			_Footer = FALSE;
 		}
 
 		// -qt | -quote
-		if((wp1 = iCLI_getOptValue(i1, L"-qt=", L"-quote=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-qt=", L"-quote=")))
 		{
 			wp2 = iws_cnv_escape(wp1);
 				// 文字数制限
@@ -509,7 +508,7 @@ main()
 		}
 
 		// -sp | -separate
-		if((wp1 = iCLI_getOptValue(i1, L"-sp=", L"-separate=")))
+		if((wp1 = iCLI_getOptValue(_u1, L"-sp=", L"-separate=")))
 		{
 			wp2 = iws_cnv_escape(wp1);
 				// 文字数制限
@@ -674,8 +673,8 @@ main()
 				// トランザクション開始
 				sql_exec(InDbs, "BEGIN", 0);
 				// 検索データ DB書込
-				i2 = 0;
-				while((wp1 = AryInDir[i2++]))
+				UINT _u2 = 0;
+				while((wp1 = AryInDir[_u2++]))
 				{
 					StepPos = wcslen(wp1);
 					// 本処理
@@ -779,7 +778,7 @@ main()
 		print_footer();
 	}
 
-	///icalloc_mapPrint(); ifree_all(); icalloc_mapPrint();
+	///idebug_map(); ifree_all(); idebug_map();
 
 	imain_end();
 }
@@ -993,7 +992,7 @@ sql_result_std(
 		// [LN]
 		if(i1 == _SelectPosLN)
 		{
-			MS mpTmp[16];
+			MS mpTmp[32];
 			// sprintf()系は遅いので多用しない
 			UINT uLen = sprintf(mpTmp, "%u", RowCnt);
 			iVBM_add2(IVBM, mpTmp, uLen);

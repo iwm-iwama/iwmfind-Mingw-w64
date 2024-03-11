@@ -1,14 +1,12 @@
 @echo off
-::cls
+cls
 
-:: ファイル名はソースと同じ
+:: 繝輔ぃ繧､繝ｫ蜷阪�ｯ繧ｽ繝ｼ繧ｹ縺ｨ蜷後§
 set fn=%~n0
 set src=%fn%.c
-set fn_exe=%fn%.exe
+set fn_a=%fn%.a
 set cc=gcc.exe
-set lib=lib_iwmutil2.a sqlite3_mini.a
-set op_link=-Os -Wall -lgdi32 -luser32 -lshlwapi
-:: -Wextra
+set op_link=-Os -Wall -Wextra
 
 :: Assembler
 	echo --- Compile -S ------------------------------------
@@ -21,23 +19,20 @@ set op_link=-Os -Wall -lgdi32 -luser32 -lshlwapi
 
 :: Make
 	echo --- Make ------------------------------------------
-	%cc% %src% %lib% %op_link% -o %fn_exe%
-	strip %fn_exe%
-	echo.
+	%cc% %src% %op_link% -g -c
+	cp -f %fn_a% %fn_a%.old
+	ar rv %fn_a% %fn%.o
+	strip -S %fn_a%
+	rm -f %fn%.o
 
 :: Dump
 ::	cp -f %fn%.objdump %fn%.objdump.old
-::	objdump -d -s %fn_exe% > %fn%.objdump
+::	objdump -d -s %fn_a% > %fn%.objdump
 ::	echo.
 
-:: Test
-	pause
-	chcp 65001
-	cls
-
-	%fn_exe% . -r
-
 :: Quit
+	dir %fn_a%*
 	echo.
-	pause
-	exit
+::	pause
+::	exit
+iwmfind.bat
