@@ -2410,9 +2410,9 @@ iFinfo_init(
 	FI->mtime_cjd = 0.0;
 	FI->atime_cjd = 0.0;
 	FI->uFsize    = 0;
-	if(! fname)
+	if(! fname || ! *fname)
 	{
-		fname = L"";
+		// 後述 iwn_cpy(... , fname) で対応
 	}
 	// Dir "." ".." は除外
 	else if(! wcscmp(fname, L"..") || ! wcscmp(fname, L"."))
