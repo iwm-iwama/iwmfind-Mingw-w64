@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
-#define   IWM_VERSION         "iwmfind5_20240301"
+#define   IWM_VERSION         "iwmfind5_20240312"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -8,7 +8,7 @@
 INT       main();
 WS        *sql_escape(WS *pW);
 VOID      ifind10($struct_iFinfo *FI, WIN32_FIND_DATAW F, WS *dir, INT depth);
-VOID      ifind21(WS *dir, INT dirId);
+VOID      ifind21(INT dirId, WS *dir);
 VOID      ifind22($struct_iFinfo *FI, INT dirId, WS *fname);
 VOID      sql_exec(sqlite3 *db, CONST MS *sql, sqlite3_callback cb);
 INT       sql_columnName(VOID *option, INT iColumnCount, MS **sColumnValues, MS **sColumnNames);
@@ -254,6 +254,8 @@ main()
 {
 	// lib_iwmutil2 初期化
 	imain_begin();
+
+	///iCLI_VarList();
 
 	// -h | --help
 	if(! $ARGC || iCLI_getOptMatch(0, L"-h", L"--help"))
@@ -844,7 +846,7 @@ ifind10(
 		// Dir
 		if(bMinDepthFlg)
 		{
-			ifind21(dir, dirId);
+			ifind21(dirId, dir);
 			iFinfo_init(FI, &F, dir, NULL);
 			ifind22(FI, dirId, L"");
 		}
@@ -879,8 +881,8 @@ ifind10(
 
 VOID
 ifind21(
-	WS *dir,
-	INT dirId
+	INT dirId,
+	WS *dir
 )
 {
 	sqlite3_reset(Stmt1);
@@ -903,9 +905,9 @@ ifind22(
 		sqlite3_bind_int(Stmt2,    2, AllCnt);
 		sqlite3_bind_text16(Stmt2, 3, fname, -1, SQLITE_STATIC);
 		sqlite3_bind_int(Stmt2,    4, FI->uAttr);
-		sqlite3_bind_double(Stmt2, 5, FI->cjdCtime);
-		sqlite3_bind_double(Stmt2, 6, FI->cjdMtime);
-		sqlite3_bind_double(Stmt2, 7, FI->cjdAtime);
+		sqlite3_bind_double(Stmt2, 5, FI->ctime_cjd);
+		sqlite3_bind_double(Stmt2, 6, FI->mtime_cjd);
+		sqlite3_bind_double(Stmt2, 7, FI->atime_cjd);
 		sqlite3_bind_int64(Stmt2,  8, FI->uFsize);
 		sqlite3_bind_int(Stmt2,    9, 0);
 	sqlite3_step(Stmt2);
@@ -999,7 +1001,7 @@ sql_result_std(
 		}
 		else
 		{
-			iVBM_add(IVBM, sColumnValues[i1]);
+			iVBM_add2(IVBM, sColumnValues[i1], strlen(sColumnValues[i1]));
 		}
 		iVBM_add2(IVBM, _Quote, _QuoteLen);
 		++i1;
@@ -1181,8 +1183,8 @@ sql_result_exec(
 			{
 				SetFileAttributesW(wp1, FALSE);
 			}
-			iVBM_add(IVBM_trashbox, sColumnValues[0]);
-			iVBM_add(IVBM_trashbox, "\n");
+			iVBM_add2(IVBM_trashbox, sColumnValues[0], strlen(sColumnValues[0]));
+			iVBM_add2(IVBM_trashbox, "\n", 1);
 		break;
 
 		case(I_REP): // --replace
@@ -1448,8 +1450,8 @@ print_help()
 					"               '*' '%%' は任意の0文字以上\n\n"
 		IESC_LBL1	"        (例３)"
 		IESC_STR1	" 基準日 \"2010-12-10 12:30:00\" のとき\n"
-					"               \"ctime >= [-10d]\"  : ctime >= '2010-11-30 12:30:00'\n"
-					"               \"ctime >= [-10D]\"  : ctime >= '2010-11-30 00:00:00'\n"
+					"               \"ctime >= [-10d]\"   : ctime >= '2010-11-30 12:30:00'\n"
+					"               \"ctime >= [-10D]\"   : ctime >= '2010-11-30 00:00:00'\n"
 					"               \"ctime >= [-10d%%]\" : ctime >= '2010-11-30 %%'\n"
 					"               \"ctime like [%%]\"   : ctime like '2010-12-10 %%'\n"
 					"               (年) Y, y (月) M, m (日) D, d (時) H, h (分) N, n (秒) S, s\n\n"

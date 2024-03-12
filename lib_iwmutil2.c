@@ -2360,15 +2360,15 @@ ifind2(
 					P1("Bytes:   ");
 						P3(FI->uFsize);
 					P1("Ctime:   ");
-						wp1 = idate_format_cjdToWS(NULL, FI->cjdCtime);
+						wp1 = idate_format_cjdToWS(NULL, FI->ctime_cjd);
 							P2W(wp1);
 						ifree(wp1);
 					P1("Mtime:   ");
-						wp1 = idate_format_cjdToWS(NULL, FI->cjdMtime);
+						wp1 = idate_format_cjdToWS(NULL, FI->mtime_cjd);
 							P2W(wp1);
 						ifree(wp1);
 					P1("Atime:   ");
-						wp1 = idate_format_cjdToWS(NULL, FI->cjdAtime);
+						wp1 = idate_format_cjdToWS(NULL, FI->atime_cjd);
 							P2W(wp1);
 						ifree(wp1);
 					NL();
@@ -2392,7 +2392,7 @@ $struct_iFinfo
 //---------------------------
 // ファイル情報取得の前処理
 //---------------------------
-// v2024-03-03
+// v2024-03-12
 BOOL
 iFinfo_init(
 	$struct_iFinfo *FI,
@@ -2402,16 +2402,20 @@ iFinfo_init(
 )
 {
 	// 初期化
-	*FI->sPath   = 0;
-	FI->uFnPos   = 0;
-	FI->uAttr    = 0;
-	FI->bType    = FALSE;
-	FI->cjdCtime = 0.0;
-	FI->cjdMtime = 0.0;
-	FI->cjdAtime = 0.0;
-	FI->uFsize   = 0;
+	*FI->sPath    = 0;
+	FI->uFnPos    = 0;
+	FI->uAttr     = 0;
+	FI->bType     = FALSE;
+	FI->ctime_cjd = 0.0;
+	FI->mtime_cjd = 0.0;
+	FI->atime_cjd = 0.0;
+	FI->uFsize    = 0;
+	if(! fname)
+	{
+		fname = L"";
+	}
 	// Dir "." ".." は除外
-	if(! fname || ! wcscmp(fname, L"..") || ! wcscmp(fname, L"."))
+	else if(! wcscmp(fname, L"..") || ! wcscmp(fname, L"."))
 	{
 		return FALSE;
 	}
@@ -2447,16 +2451,16 @@ iFinfo_init(
 	}
 	FI->uFnPos = dirLen;
 	// JST変換
-	// FI->cftime
-	// FI->mftime
-	// FI->aftime
+	// FI->ctime_cjd
+	// FI->mtime_cjd
+	// FI->atime_cjd
 	FILETIME ft;
 	FileTimeToLocalFileTime(&F->ftCreationTime, &ft);
-		FI->cjdCtime = iFinfo_ftimeToCjd(ft);
+		FI->ctime_cjd = iFinfo_ftimeToCjd(ft);
 	FileTimeToLocalFileTime(&F->ftLastWriteTime, &ft);
-		FI->cjdMtime = iFinfo_ftimeToCjd(ft);
+		FI->mtime_cjd = iFinfo_ftimeToCjd(ft);
 	FileTimeToLocalFileTime(&F->ftLastAccessTime, &ft);
-		FI->cjdAtime = iFinfo_ftimeToCjd(ft);
+		FI->atime_cjd = iFinfo_ftimeToCjd(ft);
 	return TRUE;
 }
 //---------------------

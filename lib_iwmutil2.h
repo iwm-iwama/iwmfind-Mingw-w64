@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define   LIB_IWMUTIL_COPYLIGHT         "(C)2008-2024 iwm-iwama"
-#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240310"
+#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240312"
 //////////////////////////////////////////////////////////////////////////////////////////
 #include <math.h>
 #include <shlwapi.h>
@@ -264,7 +264,7 @@ VOID      iVBW_add_sprintf($struct_iVBW *IVBW, WS *format, ...);
 // MS
 #define   iVBM_alloc()                  iVBStr_alloc(256, sizeof(MS))
 #define   iVBM_alloc2(startSize)        iVBStr_alloc(startSize, sizeof(MS))
-#define   iVBM_add(IVBM, str)           iVBStr_add(IVBM, str, strlen(str), sizeof(MS))
+#define   iVBM_add(IVBM, str)           iVBStr_add(IVBM, str, imn_len(str), sizeof(MS))
 #define   iVBM_add2(IVBM, str, strLen)  iVBStr_add(IVBM, str, strLen, sizeof(MS))
 #define   iVBM_clear(IVBM)              memset(IVBM->str, 0, (IVBM->length * sizeof(MS)));IVBM->freesize += IVBM->length;IVBM->length = 0
 #define   iVBM_getStr(IVBM)             (MS*)(IVBM->str)
@@ -276,7 +276,7 @@ VOID      iVBW_add_sprintf($struct_iVBW *IVBW, WS *format, ...);
 // WS
 #define   iVBW_alloc()                  iVBStr_alloc(256, sizeof(WS))
 #define   iVBW_alloc2(startSize)        iVBStr_alloc(startSize, sizeof(WS))
-#define   iVBW_add(IVBW, str)           iVBStr_add(IVBW, str, wcslen(str), sizeof(WS))
+#define   iVBW_add(IVBW, str)           iVBStr_add(IVBW, str, iwn_len(str), sizeof(WS))
 #define   iVBW_add2(IVBW, str, strLen)  iVBStr_add(IVBW, str, strLen, sizeof(WS))
 #define   iVBW_clear(IVBW)              memset(IVBW->str, 0, (IVBW->length * sizeof(WS)));IVBW->freesize += IVBW->length;IVBW->length = 0
 #define   iVBW_getStr(IVBW)             (WS*)(IVBW->str)
@@ -296,9 +296,9 @@ typedef struct
 	UINT   uFnPos;           // ファイル名開始位置
 	UINT   uAttr;            // 属性
 	BOOL   bType;            // TRUE=Dir／FALSE=File
-	DOUBLE cjdCtime;         // 作成時間
-	DOUBLE cjdMtime;         // 更新時間
-	DOUBLE cjdAtime;         // アクセス時間
+	DOUBLE ctime_cjd;        // 作成時間
+	DOUBLE mtime_cjd;        // 更新時間
+	DOUBLE atime_cjd;        // アクセス時間
 	UINT64 uFsize;           // ファイルサイズ
 }
 $struct_iFinfo;
