@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define   LIB_IWMUTIL_COPYLIGHT         "(C)2008-2024 iwm-iwama"
-#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240312"
+#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240323"
 //////////////////////////////////////////////////////////////////////////////////////////
 #include <math.h>
 #include <shlwapi.h>
@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <wchar.h>
 #include <windows.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -166,6 +167,9 @@ UINT64    iwn_len(WS *str);
 UINT64    iun_len(MS *str);
 
 UINT      imn_Codepage(MS *str);
+
+VOID      imv_cpy(MS *to, MS *from);
+VOID      iwv_cpy(WS *to, WS *from);
 
 UINT      imn_cpy(MS *to, MS *from);
 UINT      iwn_cpy(WS *to, WS *from);
