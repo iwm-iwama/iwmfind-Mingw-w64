@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
-#define   IWM_VERSION         "iwmfind5_20240312"
+#define   IWM_VERSION         "iwmfind5_20240511"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -290,7 +290,7 @@ main()
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
 		if((wp1 = iCLI_getOptValue(_u1, L"-d=", L"-depth=")))
 		{
-			WS **wa1 = iwaa_split(wp1, L", ", TRUE);
+			WS **wa1 = iwaa_split(wp1, L",", FALSE);
 				UINT _u2 = iwan_size(wa1);
 				if(_u2 > 1)
 				{
