@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define   LIB_IWMUTIL_COPYLIGHT         "(C)2008-2024 iwm-iwama"
-#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240522"
+#define   LIB_IWMUTIL_VERSION           "lib_iwmutil2_20240525"
 //////////////////////////////////////////////////////////////////////////////////////////
 #include <math.h>
 #include <shlwapi.h>
@@ -151,8 +151,8 @@ MS        *ims_popenW(WS *cmd);
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
 VOID      iConsole_EscOn();
-#define   IESC()              iConsole_EscOn();SetConsoleOutputCP(65001);
-#define   IESC_CLEAR          "\033[H;\033[2J"
+#define   IESC()              SetConsoleOutputCP(65001);iConsole_EscOn()
+#define   IESC_CLEAR          "\033[2J\033[1;1H"
 #define   IESC_RESET          "\033[0m"
 #define   IESC_TITLE1         "\033[38;2;250;250;250m\033[104m" // 白／青
 #define   IESC_OPT1           "\033[38;2;250;150;150m"          // 赤
@@ -247,6 +247,8 @@ WS        *iws_strip(WS *str, BOOL bStripLeft, BOOL bStripRight);
 #define   iws_trimR(str)      (WS*)iws_strip(str, FALSE, TRUE)
 
 WS        *iws_cutYenR(WS *path);
+
+WS        *iws_withoutESC(WS *str);
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------

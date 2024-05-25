@@ -92,7 +92,7 @@ iCLI_signal()
 {
 	imain_err();
 }
-// v2024-03-23
+// v2024-05-25
 VOID
 iCLI_begin()
 {
@@ -113,6 +113,12 @@ iCLI_begin()
 	WS *pEnd = 0;
 	WS *wp1 = 0;
 	BOOL bArgc = FALSE;
+
+	// TrimR
+	for(pEnd = (str + wcslen(str) - 1); *pEnd == ' '; pEnd--)
+	{
+		*pEnd = 0;
+	}
 
 	for(pEnd = str; pEnd < (str + wcslen(str)); pEnd++)
 	{
@@ -973,30 +979,44 @@ iConsole_EscOn()
 		P("\n> %lld 文字（'\\n'含む）\n", wcslen(wp1));
 	ifree(wp1);
 */
-// v2024-05-22
+// v2024-05-24
 WS
 *iCLI_GetStdin(
 	BOOL bInputKey // TRUE=手入力モードへ移行
 )
 {
-	INPUT_RECORD PCI_record;
-	DWORD PCI_events;
-	BOOL PCI_flg = PeekConsoleInput(
-		GetStdHandle(STD_INPUT_HANDLE),
-		&PCI_record,
-		1,
-		&PCI_events
-	);
+	INT iStdin = fseeko64(stdin, 0, SEEK_END);
 
-	if(PCI_flg && ! bInputKey)
+	if(iStdin != 0 && ! bInputKey)
 	{
 		return icalloc_WS(1);
 	}
 
 	WS *rtn = 0;
 
+	// STDIN から読込
+	if(iStdin == 0)
+	{
+		UINT mp1Size = 4096;
+		UINT mp1End = 0;
+		MS *mp1 = icalloc_MS(mp1Size);
+			INT c = 0;
+			while((c = getchar()) != EOF)
+			{
+				mp1[mp1End] = (MS)c;
+				++mp1End;
+				if(mp1End >= mp1Size)
+				{
+					mp1Size <<= 1;
+					mp1 = irealloc_MS(mp1, mp1Size);
+				}
+			}
+			rtn = icnv_M2W(mp1, imn_Codepage(mp1));
+		ifree(mp1);
+	}
 	// 手入力
-	if(PCI_flg)
+	// getchar() では日本語が欠落するので ReadConsole() を使用
+	else
 	{
 		$struct_iVBW *iVBW = iVBW_alloc();
 			CONST DWORD BufLen = 1;
@@ -1022,30 +1042,14 @@ WS
 			rtn = iws_clone(iVBW_getStr(iVBW));
 		iVBW_free(iVBW);
 	}
-	// STDIN から読込
-	else
-	{
-		UINT mp1Size = 4096;
-		UINT mp1End = 0;
-		MS *mp1 = icalloc_MS(mp1Size);
-			INT c = 0;
-			while((c = getchar()) != EOF)
-			{
-				mp1[mp1End] = (MS)c;
-				++mp1End;
-				if(mp1End >= mp1Size)
-				{
-					mp1Size <<= 1;
-					mp1 = irealloc_MS(mp1, mp1Size);
-				}
-			}
-			rtn = icnv_M2W(mp1, imn_Codepage(mp1));
-		ifree(mp1);
-	}
 	// "\r\n" を "\n" に変換
 	WS *wp1 = rtn;
 		rtn = iws_replace(wp1, L"\r\n", L"\n", FALSE);
 	ifree(wp1);
+
+	// 重要
+	SetConsoleOutputCP(65001);
+	iConsole_EscOn();
 
 	return rtn;
 }
@@ -1903,9 +1907,9 @@ MS
 	ifree(format);
 	return rtn;
 }
-//------------------------------------------------------------
-// 文字列前後の空白 ' ' L'　' '\t' '\r' '\n' '\0' を消去する
-//------------------------------------------------------------
+//--------------------------------------------------------
+// 文字列前後の空白 ' ' L'　' '\t' '\r' '\n' '\0' を消去
+//--------------------------------------------------------
 // v2024-01-16
 WS
 *iws_strip(
@@ -1939,9 +1943,9 @@ WS
 	}
 	return iws_pclone((str + uLeft), (str + uRight + 1));
 }
-//---------------------------
-// Dir末尾の "\" を消去する
-//---------------------------
+//-----------------------
+// Dir末尾の "\" を消去
+//-----------------------
 // v2024-03-08
 WS
 *iws_cutYenR(
@@ -1960,6 +1964,37 @@ WS
 	}
 	++pEnd;
 	*pEnd = 0;
+	return rtn;
+}
+//----------------
+// ESC文字を消去
+//----------------
+/* 例
+	WS *wp1 = L"\033[97;104mあいうえお\033[0m\n\033[93mかきくけこ\033[0m\n";
+		PL2W(wp1);
+		WS *wp2 = iws_withoutESC(wp1);
+			PL2W(wp2);
+		ifree(wp2);
+	ifree(wp1);
+*/
+// v2024-05-24
+WS
+*iws_withoutESC(
+	WS *str
+)
+{
+	WS *rtn = icalloc_WS(iwn_len(str));
+	WS *rtnEnd = rtn;
+	while(*str)
+	{
+		if(*str == '\033' && *(str + 1) == '[')
+		{
+			str += 2;
+			for(; (*str >= '0' && *str <= '9') || *str == ';'; str++);
+			++str;
+		}
+		*rtnEnd++ = *str++;
+	}
 	return rtn;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
