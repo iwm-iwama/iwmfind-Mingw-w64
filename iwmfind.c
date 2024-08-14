@@ -1,6 +1,7 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
-#define   IWM_VERSION         "iwmfind5_20240511"
+#define   IWM_FILENAME        "iwmfind"
+#define   IWM_UPDATE          "20240814"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -33,7 +34,7 @@ sqlite3   *InDbs = 0;
 sqlite3_stmt        *Stmt1 = 0, *Stmt2 = 0;
 
 #define   MEMDB               L":memory:"
-#define   OLDDB               (L"iwmfind.db."IWM_VERSION)
+#define   OLDDB               (L"iwmfind.db."IWM_FILENAME)
 #define   CREATE_T_DIR \
 			"CREATE TABLE T_DIR( \
 				dir_id    INTEGER, \
@@ -1282,7 +1283,7 @@ print_footer()
 	MS *mp1 = 0;
 	P1(IESC_OPT21);
 	P(
-		"-- %lld row%s in set ( %.3f sec)\n"
+		"-- %lld row%s in set (%.3f sec)\n"
 		,
 		RowCnt,
 		(RowCnt > 1 ? "s" : ""), // 複数形
@@ -1328,14 +1329,9 @@ print_version()
 {
 	P1(IESC_STR2);
 	LN(80);
-	P(
-		" %s\n"
-		"    %s+%s+SQLite%s\n"
-		,
-		IWM_COPYRIGHT,
-		IWM_VERSION,
-		LIB_IWMUTIL_VERSION,
-		SQLITE_VERSION
+	P1(
+		" " IWM_COPYRIGHT "\n"
+		"    " IWM_FILENAME "_" IWM_UPDATE " + " LIB_IWMUTIL_FILENAME " + SQLite" SQLITE_VERSION "\n"
 	);
 	LN(80);
 	P1(IESC_RESET);
@@ -1344,38 +1340,30 @@ print_version()
 VOID
 print_help()
 {
-	MS *_cmd = "iwmfind.exe";
-
 	print_version();
-	P(
-		IESC_TITLE1	" ファイル検索 "	IESC_RESET	"\n\n"
-		IESC_STR1	"    %s"
+	P1(
+		IESC_TITLE1	" ファイル検索 " IESC_RESET "\n\n"
+		IESC_STR1	"    " IWM_FILENAME
 		IESC_OPT1	" [Dir]"
 		IESC_OPT2	" [Option]\n"
 		IESC_LBL1	"        or\n"
-		IESC_STR1	"    %s"
+		IESC_STR1	"    " IWM_FILENAME
 		IESC_OPT2	" [Option]"
 		IESC_OPT1	" [Dir]\n\n\n"
 		IESC_LBL1	" (例１)"
 		IESC_STR1	" 検索\n"
-					"    %s"
+					"    " IWM_FILENAME
 		IESC_OPT1	" Dir"
 		IESC_OPT2	" -r -s=\"LN,path,size\" -w=\"name like '*.exe'\"\n\n"
 		IESC_LBL1	" (例２)"
 		IESC_STR1	" 検索結果をファイルへ保存\n"
-					"    %s"
+					"    " IWM_FILENAME
 		IESC_OPT1	" Dir1 Dir2"
 		IESC_OPT2	" -r -o=File\n\n"
 		IESC_LBL1	" (例３)"
 		IESC_STR1	" 検索対象をファイルから読込\n"
-					"    %s"
+					"    " IWM_FILENAME
 		IESC_OPT2	" -i=File\n\n\n"
-		,
-		_cmd,
-		_cmd,
-		_cmd,
-		_cmd,
-		_cmd
 	);
 	P1(
 		IESC_OPT1	" [Dir]\n"
