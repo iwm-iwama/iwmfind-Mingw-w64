@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2024 iwm-iwama"
 #define   IWM_FILENAME        "iwmfind"
-#define   IWM_UPDATE          "20240814"
+#define   IWM_UPDATE          "20240915"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -310,11 +310,13 @@ main()
 				}
 				else if(_u2 == 1)
 				{
-					_DepthMin = _DepthMax = _wtoi(wa1[0]);
+					_DepthMin = _wtoi(wa1[0]);
+					_DepthMax = _DepthMin;
 				}
 				else
 				{
-					_DepthMin = _DepthMax = 0;
+					_DepthMin = 0;
+					_DepthMax = 0;
 				}
 			ifree(wa1);
 		}
@@ -374,7 +376,8 @@ main()
 			}
 			else
 			{
-				_InDbn = _InTmp = wp1;
+				_InDbn = wp1;
+				_InTmp = _InDbn;
 				// -in のときは -recursive 自動付与
 				_DepthMin = 0;
 				_DepthMax = IMAX_PATH;
