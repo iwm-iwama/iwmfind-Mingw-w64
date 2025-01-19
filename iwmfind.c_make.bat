@@ -10,9 +10,8 @@ for /f "delims=. tokens=1,2" %%i in ("%src%") do (
 )
 set fn_exe=%fn%.exe
 set cc=gcc.exe -std=c2x
-set lib=lib_iwmutil2.a sqlite3_mini.a
-set op_link=-Os -Wall -fstack-usage -lgdi32 -luser32 -lshlwapi
-:: -Wextra
+set lib=lib_iwmutil2.a sqlite3.a
+set op_link=-Os -Wall -fstack-usage -lshlwapi
 
 :: Assembler
 	echo --- Compile -S ------------------------------------
