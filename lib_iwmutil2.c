@@ -78,7 +78,9 @@ WS     *$CMD         = (WS*)L""; // コマンド名を格納
 WS     *$ARG         = 0;        // 引数からコマンド名を消去したもの
 UINT   $ARGC         = 0;        // 引数配列数
 WS     **$ARGV       = 0;        // 引数配列／ダブルクォーテーションを消去したもの
-HANDLE $StdoutHandle = 0;        // 画面制御用ハンドル
+HANDLE $StdinHandle  = 0;        // STDIN ハンドル
+HANDLE $StdoutHandle = 0;        // STDOUT ハンドル
+HANDLE $StderrHandle = 0;        // STDERR ハンドル
 UINT64 $ExecSecBgn   = 0;        // 実行開始時間
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -272,28 +274,29 @@ iCLI_VarList()
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
-	実行開始時間
+	実行時間
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
 /* (例)
-	iExecSec_init(); //=> $ExecSecBgn
-	Sleep(2000);
-	P("-- %.6fsec\n\n", iExecSec_next());
-	Sleep(1000);
-	P("-- %.6fsec\n\n", iExecSec_next());
+	iExecSec_init();
+	Sleep(2500);
+	P("-- %.3fsec\n\n", iExecSec_next());
+	Sleep(1500);
+	P("-- %.3fsec\n\n", iExecSec_next());
 */
-// v2023-07-30
-UINT64
+// v2025-02-14
+DOUBLE
 iExecSec(
-	CONST UINT64 microSec // 0 のとき Init
+	CONST UINT64 microSec // 0=$ExecSecBgnに保存
 )
 {
 	UINT64 u1 = GetTickCount64();
 	if(! microSec)
 	{
 		$ExecSecBgn = u1;
+		return 0.0;
 	}
-	return (u1 < microSec ? 0 : (u1 - microSec)); // Err=0
+	return (u1 < microSec ? 0.0 : (u1 - microSec) / 1000.0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -733,7 +736,7 @@ P(
 {
 	va_list va;
 	va_start(va, format);
-		vfprintf(stdout, format, va);
+		vfprintf(STDOUT, format, va);
 	va_end(va);
 }
 //--------------
@@ -769,7 +772,7 @@ QP(
 	UINT size
 )
 {
-	fflush(stdout);
+	fflush(STDOUT);
 	WriteFile($StdoutHandle, str, size, NULL, NULL);
 	FlushFileBuffers($StdoutHandle);
 }
@@ -780,7 +783,7 @@ P1W(
 )
 {
 	MS *p1 = W2M(str);
-		fputs(p1, stdout);
+		fputs(p1, STDOUT);
 	ifree(p1);
 }
 // v2024-04-16
@@ -902,32 +905,28 @@ imv_systemW(
 		P1(mp1);
 	ifree(mp1);
 */
-// v2024-03-02
+// v2025-02-11
 MS
 *ims_popenW(
 	WS *cmd
 )
 {
-	UINT uSize = 2048;
-	MS *rtn = icalloc_MS(uSize);
-		UINT uPos = 0;
-		// STDERR 排除
-		WS *wp1 = iws_cats(2, cmd, L" 2>NUL");
-			FILE *fp = _wpopen(wp1, L"rb");
-				INT c = 0;
-				while((c = fgetc(fp)) != EOF)
+	WS *wp1 = iws_cats(2, cmd, L" 2>NUL");
+		FILE *fp = _wpopen(wp1, L"rb");
+			CONST UINT mp1Fix = 512 * 8;
+			MS *rtn = icalloc_MS(mp1Fix);
+				UINT rtnEnd = 0;
+				while(TRUE)
 				{
-					rtn[uPos] = c;
-					++uPos;
-					if(uPos >= uSize)
-					{
-						uSize <<= 1;
-						rtn = irealloc_MS(rtn, uSize);
+					UINT u1 = fread((rtn + rtnEnd), sizeof(MS), mp1Fix, fp);
+					if(u1 != mp1Fix){
+						break;
 					}
+					rtnEnd += mp1Fix;
+					rtn = irealloc_MS(rtn, (rtnEnd + mp1Fix));
 				}
-				rtn[uPos] = 0;
-			pclose(fp);
-		ifree(wp1);
+		_pclose(fp);
+	ifree(wp1);
 	return rtn;
 }
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -961,11 +960,13 @@ MS
 	//  背景色   \033[48;2;R;G;Bm
 	P2("\033[38;2;255;255;255m\033[48;2;0;0;255m 文字[白]／背景[青] \033[0m");
 */
-// v2025-01-30
+// v2025-02-15
 VOID
 iConsole_EscOn()
 {
+	$StdinHandle = GetStdHandle(STD_INPUT_HANDLE);
 	$StdoutHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+	$StderrHandle = GetStdHandle(STD_ERROR_HANDLE);
 	DWORD consoleMode = 0;
 	GetConsoleMode($StdoutHandle, &consoleMode);
 	SetConsoleMode($StdoutHandle, (consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING));
@@ -992,81 +993,67 @@ iConsole_EscOn()
 				P1W(wp1);
 		}
 		LN(60);
-		P("%lld 文字（'\\n'含む）\n\n", iwn_len(wp1));
+		P("%lld 文字（改行文字含む）\n\n", iwn_len(wp1));
 	ifree(wp1);
 */
-// v2024-05-24
+// v2025-02-15
 WS
 *iCLI_GetStdin(
-	BOOL bInputKey // TRUE=手入力モードへ移行
+	BOOL bInputKey // STDINが空のとき TRUE=手入力モード／FALSE=空文字を返す
 )
 {
-	INT iStdin = fseeko64(stdin, 0, SEEK_END);
-
-	if(iStdin != 0 && ! bInputKey)
+	INT iStdin = fseeko64(STDIN, 0, SEEK_END);
+	if(iStdin && ! bInputKey)
 	{
 		return icalloc_WS(1);
 	}
-
 	WS *rtn = 0;
-
-	// STDIN から読込
-	if(iStdin == 0)
+	// 手入力
+	// getchar() は日本語が欠損するので ReadConsole() を使用
+	if(iStdin)
 	{
-		UINT mp1Size = 4096;
-		UINT mp1End = 0;
-		MS *mp1 = icalloc_MS(mp1Size);
-			INT c = 0;
-			while((c = getchar()) != EOF)
+		UINT rtnMax = 32;
+		rtn = icalloc_WS(rtnMax);
+			UINT rtnEnd = 0;
+			WS RCW_buf[2];
+			DWORD RCW_len;
+			while(ReadConsoleW($StdinHandle, RCW_buf, 1, &RCW_len, NULL))
 			{
-				mp1[mp1End] = (MS)c;
-				++mp1End;
-				if(mp1End >= mp1Size)
+				// 以下のとき終了
+				//   [Ctrl]+[D]
+				//   [Ctrl]+[Z]
+				if(RCW_buf[0] == 4 || RCW_buf[0] == 26)
 				{
-					mp1Size <<= 1;
-					mp1 = irealloc_MS(mp1, mp1Size);
+					break;
+				}
+				rtn[rtnEnd] = RCW_buf[0];
+				++rtnEnd;
+				if(rtnEnd >= rtnMax)
+				{
+					rtnMax <<= 1;
+					rtn = irealloc_WS(rtn, rtnMax);
 				}
 			}
-			rtn = icnv_M2W(mp1, imn_Codepage(mp1));
-		ifree(mp1);
 	}
-	// 手入力
-	// getchar() では日本語が欠落するので ReadConsole() を使用
+	// STDIN から読込
 	else
 	{
-		$struct_iVBW *iVBW = iVBW_alloc();
-			CONST DWORD BufLen = 1;
-			WS *Buf = icalloc_WS(BufLen);
-				DWORD RCW_len;
-				while(TRUE)
-				{
-					ReadConsoleW(
-						GetStdHandle(STD_INPUT_HANDLE),
-						Buf,
-						BufLen,
-						&RCW_len,
-						NULL
-					);
-					// 終了時 [Ctrl]+[D] or [Ctrl]+[Z]
-					if(Buf[0] == 4 || Buf[0] == 26)
-					{
-						break;
-					}
-					iVBW_add(iVBW, Buf);
-				}
-			ifree(Buf);
-			rtn = iws_clone(iVBW_getStr(iVBW));
-		iVBW_free(iVBW);
+		CONST UINT mp1Size = 512 * 8;
+		MS *mp1 = icalloc_MS(mp1Size);
+			UINT mp1End = 0;
+			// Win32API ReadFile() は日本語表示されないので使用しない
+			while(mp1Size == fread((mp1 + mp1End), sizeof(MS), mp1Size, STDIN))
+			{
+				mp1End += mp1Size;
+				mp1 = irealloc_MS(mp1, (mp1End + mp1Size));
+			}
+			// STDINの文字コードは直前のSTDOUTに依存（CP65001 or CP932）するため都度解析
+			rtn = icnv_M2W(mp1, imn_Codepage(mp1));
+		ifree(mp1);
+		// 別プログラムがコードページを変更することがあるので再設定
+		///PL3(GetConsoleOutputCP());
+		SetConsoleOutputCP(65001);
 	}
-	// "\r\n" を "\n" に変換
-	WS *wp1 = rtn;
-		rtn = iws_replace(wp1, L"\r\n", L"\n", FALSE);
-	ifree(wp1);
-
-	// 重要
-	SetConsoleOutputCP(65001);
-	iConsole_EscOn();
-
 	return rtn;
 }
 //////////////////////////////////////////////////////////////////////////////////////////

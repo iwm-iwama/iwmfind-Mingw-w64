@@ -1,10 +1,12 @@
 //////////////////////////////////////////////////////////////////////////////////////////
 #define   LIB_IWMUTIL_COPYLIGHT         "(C)2008-2025 iwm-iwama"
-#define   LIB_IWMUTIL_FILENAME          "lib_iwmutil2_20250203"
+#define   LIB_IWMUTIL_FILENAME          "lib_iwmutil2_20250215"
 //////////////////////////////////////////////////////////////////////////////////////////
+#include <float.h>
 #include <math.h>
 #include <shlwapi.h>
 #include <signal.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -16,28 +18,42 @@
 	共通定数
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-typedef   CHAR      MS; // imx_xxx() = Muliti Byte String／iux_xxx() = UTF-8N
-typedef   WCHAR     WS; // iwx_xxx()／UTF-16／Wide Char String
+// 数値型
+/*
+	P("BOOL"   "\n\tTRUE:  %d\n\tFALSE: %d\n\n", TRUE,       FALSE);
+	P("INT"    "\n\tMAX: %d\n\tMIN: %d\n\n",     INT_MAX,    INT_MIN);
+	P("UINT"   "\n\tMAX: %u\n\tMIN: %u\n\n",     UINT_MAX,   0);
+	P("INT64"  "\n\tMAX: %lld\n\tMIN: %lld\n\n", INT64_MAX,  INT64_MIN);
+	P("UINT64" "\n\tMAX: %llu\n\tMIN: %llu\n\n", UINT64_MAX, 0);
+	P("DOUBLE" "\n\tMAX: %.8f\n\tMIN: %.8f\n\n", DBL_MAX,    -DBL_MAX);
+*/
+// 文字型
+typedef   CHAR      MS; // imx_xxx() = Mulitibyte String／iux_xxx() = UTF-8
+typedef   WCHAR     WS; // iwx_xxx()／UTF-16／Widechar String
+
+#define   STDIN     stdin
+#define   STDOUT    stdout
+#define   STDERR    stderr
 
 #define   IMAX_PATH           ((MAX_PATH * 4) + 1) // UTF-8 = (Max)4byte
-
-#define   DATETIME_FORMAT     (WS*)L"%.4d-%02d-%02d %02d:%02d:%02d"
 #define   IDATE_FORMAT_STD    (WS*)L"%G%y-%m-%d %h:%n:%s"
+
+#define   imain_begin()       iExecSec_init();iCLI_begin();iConsole_EscOn()
+#define   imain_end()         ifree_all();iCLI_end(EXIT_SUCCESS)
+#define   imain_err()         P1(IESC_RESET);ifree_all();iCLI_end(EXIT_FAILURE)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
 	大域変数
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-#define   imain_begin()       iExecSec(0);iCLI_begin();iConsole_EscOn()
-#define   imain_end()         ifree_all();iCLI_end(EXIT_SUCCESS)
-#define   imain_err()         P1(IESC_RESET);ifree_all();iCLI_end(EXIT_FAILURE)
-
 extern    WS        *$CMD;         // コマンド名を格納
 extern    WS        *$ARG;         // 引数からコマンド名を消去したもの
 extern    UINT      $ARGC;         // 引数配列数
 extern    WS        **$ARGV;       // 引数配列／ダブルクォーテーションを消去したもの
-extern    HANDLE    $StdoutHandle; // 画面制御用ハンドル
+extern    HANDLE    $StdinHandle;  // STDIN ハンドル
+extern    HANDLE    $StdoutHandle; // STDOUT ハンドル
+extern    HANDLE    $StderrHandle; // STDERR ハンドル
 extern    UINT64    $ExecSecBgn;   // 実行開始時間
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -55,12 +71,12 @@ VOID      iCLI_VarList();
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
-	実行開始時間
+	実行時間
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-UINT64    iExecSec(CONST UINT64 microSec);
-#define   iExecSec_init()     (UINT64)iExecSec(0)
-#define   iExecSec_next()     (DOUBLE)(iExecSec($ExecSecBgn)) / 1000
+DOUBLE    iExecSec(CONST UINT64 microSec);
+#define   iExecSec_init()     (DOUBLE)iExecSec(0)
+#define   iExecSec_next()     (DOUBLE)iExecSec($ExecSecBgn)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------

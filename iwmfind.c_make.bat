@@ -14,12 +14,19 @@ set lib=lib_iwmutil2.a sqlite3.a
 set op_link=-Os -Wall -fstack-usage -lshlwapi
 
 :: Assembler
-	echo --- Compile -S ------------------------------------
-	cp -f %fn%.s %fn%.s.old
+::	echo --- Compile -S ------------------------------------
+	if exist "%fn%_old.s" (
+		rm "%fn%_old.s"
+	)
+	if exist "%fn%.s" (
+		mv "%fn%.s" "%fn%_old.s"
+	)
+
+::	echo --- Compile gcc -S ------------------------------------------
 	for %%s in (%src%) do (
 		%cc% %%s -S %op_link%
-		echo %%~ns.s
 	)
+	ls -la *.s
 	echo.
 
 :: Make
