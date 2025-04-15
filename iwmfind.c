@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2025 iwm-iwama"
 #define   IWM_FILENAME        "iwmfind"
-#define   IWM_UPDATE          "20250404"
+#define   IWM_UPDATE          "20250413"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -330,7 +330,7 @@ main()
 	// Dir存在チェック
 	for(UINT _u1 = 0; _u1 < $ARGC; _u1++)
 	{
-		if(*$ARGV[_u1] != '-' && ! iFchk_existPath($ARGV[_u1]))
+		if(*$ARGV[_u1] != '-' && ! iF_chkExistPath($ARGV[_u1]))
 		{
 			mp1 = W2M($ARGV[_u1]);
 				P(
@@ -354,7 +354,7 @@ main()
 		// -i | -in
 		if((wp1 = iCLI_getOptValue(_u1, L"-i=", L"-in=")))
 		{
-			if(! iFchk_existPath(wp1))
+			if(! iF_chkExistPath(wp1))
 			{
 				mp1 = W2M(wp1);
 					P(
@@ -534,32 +534,32 @@ main()
 		if(*_Md)
 		{
 			I_exec = I_MKDIR;
-			_MdOp = iFget_APath(_Md);
+			_MdOp = iF_getAPath(_Md);
 		}
 		else if(*_Cp)
 		{
 			I_exec = I_CP;
-			_MdOp = iFget_APath(_Cp);
+			_MdOp = iF_getAPath(_Cp);
 		}
 		else if(*_Mv)
 		{
 			I_exec = I_MV;
-			_MdOp = iFget_APath(_Mv);
+			_MdOp = iF_getAPath(_Mv);
 		}
 		else if(*_Mv2)
 		{
 			I_exec = I_MV2;
-			_MdOp = iFget_APath(_Mv2);
+			_MdOp = iF_getAPath(_Mv2);
 		}
 		else if(*_Ext)
 		{
 			I_exec = I_EXT;
-			_MdOp = iFget_APath(_Ext);
+			_MdOp = iF_getAPath(_Ext);
 		}
 		else if(*_Ext2)
 		{
 			I_exec = I_EXT2;
-			_MdOp = iFget_APath(_Ext2);
+			_MdOp = iF_getAPath(_Ext2);
 		}
 		else if(_Trashbox)
 		{
@@ -567,7 +567,7 @@ main()
 		}
 		else if(*_Rep)
 		{
-			if(! iFchk_existPath(_Rep))
+			if(! iF_chkExistPath(_Rep))
 			{
 				mp1 = W2M(_Rep);
 					P(
@@ -1091,7 +1091,7 @@ sql_result_exec(
 						SetFileAttributesW(wp5, FALSE);
 					}
 					// 既存File削除
-					if(iFchk_existPath(wp5))
+					if(iF_chkExistPath(wp5))
 					{
 						DeleteFileW(wp5);
 					}
@@ -1160,7 +1160,7 @@ sql_result_exec(
 						SetFileAttributesW(wp3, FALSE);
 					}
 					// Dir存在していれば削除しておく
-					if(iFchk_existPath(wp3))
+					if(iF_chkExistPath(wp3))
 					{
 						DeleteFileW(wp3);
 					}
