@@ -3059,11 +3059,11 @@ iF_chkBinfile(
 )
 {
 	BOOL rtn = FALSE;
-	FILE *Fp = _wfopen(Fn, L"rb");
-	if(Fp)
+	FILE *iFp = _wfopen(Fn, L"rb");
+	if(iFp)
 	{
 		INT c = 0;
-		while((c = getc(Fp)) != EOF)
+		while((c = getc(iFp)) != EOF)
 		{
 			if(! c)
 			{
@@ -3071,7 +3071,7 @@ iF_chkBinfile(
 				break;
 			}
 		}
-		fclose(Fp);
+		fclose(iFp);
 	}
 	return rtn;
 }
@@ -3274,9 +3274,9 @@ WS
 	if(iFp)
 	{
 		WS *wp1 = iF_read(iFp);
-			fclose(iFp);
 			P2W(wp1);
 		ifree(wp1);
+		fclose(iFp);
 	}
 */
 // v2025-04-13
