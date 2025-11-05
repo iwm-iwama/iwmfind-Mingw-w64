@@ -296,7 +296,7 @@ main()
 		// -d=NUM1,NUM2 | -depth=NUM1,NUM2
 		if((wp1 = iCLI_getOptValue(_u1, L"-d=", L"-depth=")))
 		{
-			WS **wa1 = iwaa_split(wp1, TRUE, 1, L",");
+			WS **wa1 = iwsa_split(wp1, TRUE, 1, L",");
 				UINT _u2 = iwan_size(wa1);
 				if(_u2 > 1)
 				{
@@ -460,7 +460,7 @@ main()
 		{
 			// "AS" 対応のため " " (空白)は不可
 			// (例) -s="dir||name AS PATH"
-			WS **wa1 = iwaa_split(wp1, TRUE, 1, L",");
+			WS **wa1 = iwsa_split(wp1, TRUE, 1, L",");
 				if(wa1[0])
 				{
 					WS **wa2 = iwaa_uniq(wa1, TRUE); // 重複排除

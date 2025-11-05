@@ -42,8 +42,7 @@ set op_link=-Os -Wall -Wformat=2 -fstack-usage -lshlwapi
 	chcp 65001
 	cls
 
-::	%fn_exe% . -r
-iwmfind . -r -sp="," -qt="'"
+	%fn_exe% . -r
 
 :: Quit
 	echo.
