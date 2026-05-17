@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
-#define   IWM_COPYRIGHT       "(C)2009-2025 iwm-iwama"
+#define   IWM_COPYRIGHT       "(C)2009-2026 iwm-iwama"
 #define   IWM_FILENAME        "iwmfind"
-#define   IWM_UPDATE          "20250413"
+#define   IWM_UPDATE          "20260517"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -883,6 +883,7 @@ ifind10(
 		fprintf(stderr, "%s> %u%s\033[0K\r", IESC_OPT21, AllCnt, IESC_RESET);
 		CallCnt_ifind10 = 0;
 	}
+	fprintf(stderr, "\033[2K");
 }
 
 VOID
