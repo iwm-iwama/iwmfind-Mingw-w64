@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2026 iwm-iwama"
-#define   IWM_FILENAME        "iwmfind"
-#define   IWM_UPDATE          "20260517"
+#define   IWM_FILENAME        "iwmfind6"
+#define   IWM_UPDATE          "20260526"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -36,10 +36,10 @@ sqlite3_stmt        *Stmt1 = 0, *Stmt2 = 0;
 #define   OLDDB               (L"iwmfind.db."IWM_FILENAME)
 #define   CREATE_T_DIR \
 			"CREATE TABLE T_DIR( \
-				dir_id    INTEGER, \
+				dir_id    INTEGER PRIMARY KEY, \
 				dir       TEXT, \
 				step_byte INTEGER \
-			);"
+			) WITHOUT ROWID;"
 #define   INSERT_T_DIR \
 			"INSERT INTO T_DIR( \
 				dir_id, \
@@ -49,33 +49,36 @@ sqlite3_stmt        *Stmt1 = 0, *Stmt2 = 0;
 #define   CREATE_T_FILE \
 			"CREATE TABLE T_FILE( \
 				dir_id    INTEGER, \
-				id        INTEGER, \
+				file_id   INTEGER PRIMARY KEY, \
 				name      TEXT, \
 				attr_num  INTEGER, \
 				ctime_cjd REAL, \
 				mtime_cjd REAL, \
 				atime_cjd REAL, \
 				size      INTEGER, \
-				ln        INTEGER);"
+				ln        INTEGER, \
+				rm_flg    INTEGER \
+			) WITHOUT ROWID;"
 #define   INSERT_T_FILE \
 			"INSERT INTO T_FILE( \
 				dir_id, \
-				id, \
+				file_id, \
 				name, \
 				attr_num, \
 				ctime_cjd, \
 				mtime_cjd, \
 				atime_cjd, \
 				size, \
-				ln \
-			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);"
+				ln, \
+				rm_flg \
+			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0, 0);"
 #define   CREATE_VIEW \
 			"CREATE VIEW V_INDEX AS SELECT \
 				T_FILE.ln AS LN, \
 				(T_DIR.dir || T_FILE.name) AS path, \
 				T_DIR.dir_id AS dir_id, \
 				T_DIR.dir AS dir, \
-				T_FILE.id AS id, \
+				T_FILE.file_id AS file_id, \
 				T_FILE.name AS name, \
 				(CASE T_FILE.name WHEN '' THEN 'd' ELSE 'f' END) AS type, \
 				T_FILE.attr_num AS attr_num, \
@@ -89,10 +92,11 @@ sqlite3_stmt        *Stmt1 = 0, *Stmt2 = 0;
 				T_FILE.size AS size, \
 				T_DIR.step_byte AS step_byte \
 				FROM T_FILE LEFT JOIN T_DIR ON T_FILE.dir_id=T_DIR.dir_id;"
-#define   UPDATE_EXEC99_1 \
-			"UPDATE T_FILE SET id=0 WHERE (id) NOT IN (SELECT id FROM V_INDEX %s);"
-#define   DELETE_EXEC99_1 \
-			"DELETE FROM T_FILE WHERE id=0;"
+#define   S_EXEC99  "99"
+#define   UPDATE_EXEC9901 \
+			"UPDATE T_FILE SET rm_flg=" S_EXEC99 " WHERE file_id NOT IN (SELECT file_id FROM V_INDEX %s);"
+#define   DELETE_EXEC9901 \
+			"DELETE FROM T_FILE WHERE rm_flg=" S_EXEC99 ";"
 #define   SELECT_VIEW \
 			"SELECT %S FROM V_INDEX %S %S ORDER BY %S;"
 #define   OP_SELECT_0 \
@@ -704,11 +708,11 @@ main()
 				mp1 = W2M(_Where1);
 				mp2 = ims_cats(2, "WHERE ", mp1);
 				ifree(mp1);
-				mp3 = ims_sprintf(UPDATE_EXEC99_1, mp2);
+				mp3 = ims_sprintf(UPDATE_EXEC9901, mp2);
 				ifree(mp2);
 					sql_exec(InDbs, "BEGIN", 0);         // トランザクション開始
 					sql_exec(InDbs, mp3, 0);             // フラグを立てる
-					sql_exec(InDbs, DELETE_EXEC99_1, 0); // 不要データ削除
+					sql_exec(InDbs, DELETE_EXEC9901, 0); // 不要データ削除
 					sql_exec(InDbs, "COMMIT", 0);        // トランザクション終了
 					sql_exec(InDbs, "VACUUM", 0);        // VACUUM
 				ifree(mp3);
@@ -716,7 +720,7 @@ main()
 			// _InTmp, _OutDbn 両指定のときは, 途中, ファイル名が逆になるので, 後でswap
 			sql_saveOrLoadMemdb(InDbs, (*_InTmp ? _InDbn : _OutDbn), TRUE);
 			// 結果数を取得
- 			sql_exec(InDbs, "SELECT id FROM V_INDEX;", sql_result_countOnly);
+ 			sql_exec(InDbs, "SELECT file_id FROM V_INDEX;", sql_result_countOnly);
 		}
 		else
 		{
@@ -883,7 +887,6 @@ ifind10(
 		fprintf(stderr, "%s> %u%s\033[0K\r", IESC_OPT21, AllCnt, IESC_RESET);
 		CallCnt_ifind10 = 0;
 	}
-	fprintf(stderr, "\033[2K");
 }
 
 VOID
@@ -916,7 +919,6 @@ ifind22(
 		sqlite3_bind_double(Stmt2, 6, FI->mtime_cjd);
 		sqlite3_bind_double(Stmt2, 7, FI->atime_cjd);
 		sqlite3_bind_int64(Stmt2,  8, FI->uFsize);
-		sqlite3_bind_int(Stmt2,    9, 0);
 	sqlite3_step(Stmt2);
 }
 
@@ -968,6 +970,7 @@ sql_columnName(
 	// カラム名出力
 	if(_Header)
 	{
+		fprintf(stderr, "\033[2K");
 		P1(IESC_OPT21);
 		for(INT _i1 = 0; _i1 < iColumnCount; _i1++)
 		{
