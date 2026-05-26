@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 #define   IWM_COPYRIGHT       "(C)2009-2026 iwm-iwama"
-#define   IWM_FILENAME        "iwmfind6"
+#define   IWM_FILENAME        "iwmfind"
 #define   IWM_UPDATE          "20260526"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
