@@ -1,6 +1,6 @@
 /*
 --------------------------
-2025-03-26 + 2025-04-13
+2025-03-26 + 2026-05-28
   このライブラリについて
 --------------------------
 2009年、コマンドラインプログラム開発簡素化のため書き始める。
@@ -12,7 +12,14 @@
 		・インデックスによる管理
 		・管理されているポインタは終了時に自動解放
 		・基本は手動解放
-		・セキュリティを考慮し 割り当て／解放時 ゼロクリア（memset(p,0,n)）
+		・セキュリティを考慮し 割り当て／解放時 ゼロクリア
+			コンパイラの最適化オプションにより ゼロクリア がスルーされる問題に対応
+			【修正前】
+				memset(ptr, 0, len);
+				free(ptr);
+			【修正後】
+				SecureZeroMemory(ptr, len);
+				free(ptr);
 		・デバッグ用のメモリアドレス表示（idebug_map()）
 	日付計算（iwmdateadd.exe, iwmdatediff.exe）
 		・ユリウス暦 -4712/01/01..1582/10/04 とグレゴリオ暦 1582/10/15..9999/12/31 を使用
@@ -404,7 +411,7 @@ VOID
 			icalloc_err($icallocMap);
 			UINT uOld = $icallocMapEOD * sizeof($struct_icallocMap);
 				memcpy($icallocMap, pOld, uOld);
-				memset(pOld, 0, uOld);
+				SecureZeroMemory(pOld, uOld); 
 		free(pOld);
 		pOld = 0;
 	}
@@ -456,7 +463,7 @@ VOID
 				rtn = (VOID*)calloc(uAlloc, 1);
 				icalloc_err(rtn);
 					memcpy(rtn, ptr, map1->uAlloc);
-					memset(ptr, 0, map1->uAlloc);
+					SecureZeroMemory(ptr, map1->uAlloc); 
 				free(ptr);
 				ptr = 0;
 				map1->ptr = rtn;
@@ -532,18 +539,18 @@ icalloc_free(
 						$struct_icallocMap *map2 = ($icallocMap + _u2);
 						if(va1[_u1] && va1[_u1] == map2->ptr)
 						{
-							memset(map2->ptr, 0, map2->uAlloc);
+							SecureZeroMemory(map2->ptr, map2->uAlloc); 
 							free(map2->ptr);
-							memset(map2, 0, sizeof($struct_icallocMap));
+							SecureZeroMemory(map2, sizeof($struct_icallocMap)); 
 							break;
 						}
 					}
 				}
 			}
 			// ポインタのリンク先を解放
-			memset(map1->ptr, 0, map1->uAlloc);
+			SecureZeroMemory(map1->ptr, map1->uAlloc); 
 			free(map1->ptr);
-			memset(map1, 0, sizeof($struct_icallocMap));
+			SecureZeroMemory(map1, sizeof($struct_icallocMap)); 
 			return;
 		}
 		--i1;
@@ -565,11 +572,11 @@ icalloc_freeAll()
 		$struct_icallocMap *map1 = ($icallocMap + _u1);
 		if(map1->ptr)
 		{
-			memset(map1->ptr, 0, map1->uAlloc);
+			SecureZeroMemory(map1->ptr, map1->uAlloc); 
 			free(map1->ptr);
 		}
 	}
-	memset($icallocMap, 0, ($icallocMapSize * sizeof($struct_icallocMap)));
+	SecureZeroMemory($icallocMap, ($icallocMapSize * sizeof($struct_icallocMap))); 
 	free($icallocMap);
 	$icallocMap = 0;
 	$icallocMapSize = 0;
@@ -584,7 +591,7 @@ VOID
 icalloc_sweepMap()
 {
 	// ゼロクリア
-	memset(($icallocMap + $icallocMapEOD), 0, (sizeof($struct_icallocMap) * ($icallocMapSize - $icallocMapEOD)));
+	SecureZeroMemory(($icallocMap + $icallocMapEOD), (sizeof($struct_icallocMap) * ($icallocMapSize - $icallocMapEOD))); 
 	// 隙間を詰める
 	UINT uTo = 0;
 	UINT uFrom = 0;
@@ -2729,7 +2736,7 @@ iVBM_pop(
 	}
 	iVBM->length -= strLen;
 	iVBM->freeSize += strLen;
-	memset(((MS*)iVBM->str + iVBM->length), 0, strLen);
+	SecureZeroMemory(((MS*)iVBM->str + iVBM->length), strLen); 
 }
 // v2025-03-04
 VOID
@@ -2748,7 +2755,7 @@ iVBW_pop(
 	}
 	iVBW->length -= strLen;
 	iVBW->freeSize += strLen;
-	wmemset(((WS*)iVBW->str + iVBW->length), 0, strLen);
+	SecureZeroMemory(((WS*)iVBW->str + iVBW->length), strLen * sizeof(WS)); 
 }
 // v2025-03-03
 VOID
@@ -3982,7 +3989,7 @@ iDV_checker(
 					-(IDV3->y), -(IDV3->m), -(IDV3->d), 0, 0, 0
 				);
 			}
-			memset(Buf, 0, (BufLen * sizeof(MS)));
+			SecureZeroMemory(Buf, (BufLen * sizeof(MS))); 
 			INT i1 = sprintf(
 				Buf,
 				"\033[37m"	"%7u"
