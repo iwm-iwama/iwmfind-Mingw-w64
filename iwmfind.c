@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 #define IWM_COPYRIGHT "(C)2009-2026 iwm-iwama"
 #define IWM_FILENAME "iwmfind"
-#define IWM_UPDATE "20260701"
+#define IWM_UPDATE "20260703"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -654,9 +654,7 @@ INT main()
 		{
 			$struct_iFinfo *FI = iFinfo_alloc();
 			WIN32_FIND_DATAW F;
-			// PRAGMA設定
-			sql_exec(InDbs, "PRAGMA encoding = 'UTF-8';", 0);
-			// TABLE作成
+			//  TABLE作成
 			sql_exec(InDbs, CREATE_T_DIR, 0);
 			sql_exec(InDbs, CREATE_T_FILE, 0);
 			// VIEW作成
@@ -664,6 +662,10 @@ INT main()
 			// 前処理
 			sqlite3_prepare_v2(InDbs, INSERT_T_DIR, strlen(INSERT_T_DIR), &Stmt1, 0);
 			sqlite3_prepare_v2(InDbs, INSERT_T_FILE, strlen(INSERT_T_FILE), &Stmt2, 0);
+			//  PRAGMA設定
+			sql_exec(InDbs, "PRAGMA encoding = 'UTF-8';", 0);
+			sql_exec(InDbs, "PRAGMA journal_mode = OFF;", 0);
+			sql_exec(InDbs, "PRAGMA synchronous = OFF;", 0);
 			// トランザクション開始
 			sql_exec(InDbs, "BEGIN", 0);
 			// 検索データ DB書込
