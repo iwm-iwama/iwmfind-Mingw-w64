@@ -1,5 +1,3 @@
----
-
 ### 実行に必要なファイル
 - iwmfind.exe
 
@@ -23,5 +21,3 @@
 - このプログラムは、**sqlite3.c** から生成したスタティックライブラリを使用しています。
   - https://www.sqlite.org/download.html
     - sqlite-amalgamation-xxx.zip
-
----
