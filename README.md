@@ -21,3 +21,5 @@
 - このプログラムは、**sqlite3.c** から生成したスタティックライブラリを使用しています。
   - https://www.sqlite.org/download.html
     - sqlite-amalgamation-xxx.zip
+      - **sqlite3.c**
+      - sqlite3.h 
