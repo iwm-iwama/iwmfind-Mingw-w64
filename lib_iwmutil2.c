@@ -102,13 +102,13 @@ iHM_free(ptr)
   │
   ├─ pRealData = *ppTarget
   │
-  ├─ SecureZero(pRealData)
+  ├─ memZero(pRealData)
   ├─ free(pRealData)
   │
-  ├─ SecureZero(ppTarget)
+  ├─ memZero(ppTarget)
   ├─ free(ppTarget)
   │
-  ├─ SecureZero（pMap[i]）
+  ├─ memZero(pMap[i])
   │
   └─ return TRUE
 ```
@@ -325,7 +325,7 @@ MinGW-w64では最適化すると同じ。
 // スコープ
 static VOID iHM_defrag($struct_HeapManager *pMgr);
 static VOID iHM_add($struct_HeapManager *pMgr, VOID *ptr, UINT uAry, UINT uSizeOf, UINT uAlloc);
-static VOID iSecure_memDump(volatile CONST VOID *v, UINT n, BOOL bOrigin);
+static VOID iSecure_memDump(volatile CONST VOID *v, UINT n, BOOL bBefore);
 static inline VOID iSecure_memZero(volatile VOID *v, UINT n, BOOL dumpOn);
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -1173,11 +1173,11 @@ VOID icalloc_end()
 static VOID iSecure_memDump(
 	volatile CONST VOID *v,
 	UINT n,
-	BOOL bOrigin // TRUE=変更前, FALSE=変更後
+	BOOL bBefore // TRUE=変更前, FALSE=変更後
 )
 {
 	volatile CONST UCHAR *p = (volatile CONST UCHAR *)v;
-	if (bOrigin == TRUE)
+	if (bBefore == TRUE)
 	{
 		P(
 			"\033[97m"
@@ -1205,7 +1205,7 @@ static VOID iSecure_memDump(
 	P2("\033[0m");
 }
 //-----------------------------------------------------------------
-// 最適化(-O2など)によって削除されない安全なメモリゼロクリア関数
+// 最適化(-Osなど)によって削除されない安全なメモリゼロクリア関数
 //-----------------------------------------------------------------
 // v2026-06-18
 static inline VOID iSecure_memZero(
@@ -1244,7 +1244,7 @@ static inline VOID iSecure_memZero(
 //--------------------------------
 // $icallocManager等の内容を出力
 //--------------------------------
-// v2026-06-21
+// v2026-07-08
 VOID idebug_printMap(
 	$struct_HeapManager *pMgr,
 	UINT line,		  // 行番号
@@ -1268,7 +1268,7 @@ VOID idebug_printMap(
 		"\033[37;44m"
 		" L%u (%s) "
 		"\033[0m"
-		"\033[36m"
+		"\033[37m"
 		" %s\n"
 		"\033[96m"
 		"uMax: "
@@ -1706,15 +1706,16 @@ WS *iClipboard_getText()
 	UTF-16／UTF-8変換
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-// v2025-04-10
+// v2026-07-07
 MS *icnv_W2M(
 	CONST WS *str,
 	UINT uCP)
 {
-	INT i1 = WideCharToMultiByte(uCP, 0, str, -1, NULL, 0, NULL, NULL);
+	// L"" のとき 1 が返るので -1 で調整
+	INT i1 = WideCharToMultiByte(uCP, 0, str, -1, NULL, 0, NULL, NULL) - 1;
 	if (i1 > 0)
 	{
-		MS *rtn = icalloc_MS(i1);
+		MS *rtn = icalloc_MS(i1); // 末尾にダブルヌル自動付与
 		WideCharToMultiByte(uCP, 0, str, -1, rtn, i1, NULL, NULL);
 		return rtn;
 	}
@@ -1723,15 +1724,16 @@ MS *icnv_W2M(
 		return icalloc_MS(0);
 	}
 }
-// v2025-04-10
+// v2026-07-07
 WS *icnv_M2W(
 	CONST MS *str,
 	UINT uCP)
 {
-	INT i1 = MultiByteToWideChar(uCP, 0, str, -1, NULL, 0);
+	// "" のとき 1 が返るので -1 で調整
+	INT i1 = MultiByteToWideChar(uCP, 0, str, -1, NULL, 0) - 1;
 	if (i1 > 0)
 	{
-		WS *rtn = icalloc_WS(i1);
+		WS *rtn = icalloc_WS(i1); // 末尾にダブルヌル自動付与
 		MultiByteToWideChar(uCP, 0, str, -1, rtn, i1);
 		return rtn;
 	}
@@ -3199,7 +3201,7 @@ VOID iVBW_push_sprintf(
 	iVBW->length += len;
 	iVBW->freeSize -= len;
 }
-// v2026-06-01
+// v2026-07-07
 VOID iVBM_pop(
 	$struct_iVBM *iVBM,
 	UINT strLen)
@@ -3214,9 +3216,9 @@ VOID iVBM_pop(
 	}
 	iVBM->length -= strLen;
 	iVBM->freeSize += strLen;
-	SecureZeroMemory(((MS *)iVBM->str + iVBM->length), (strLen * iVBM->sizeOf));
+	iSecure_memZero(((MS *)iVBM->str + iVBM->length), (strLen * iVBM->sizeOf), FALSE);
 }
-// v2026-06-01
+// v2026-07-07
 VOID iVBW_pop(
 	$struct_iVBW *iVBW,
 	UINT strLen)
@@ -3231,7 +3233,23 @@ VOID iVBW_pop(
 	}
 	iVBW->length -= strLen;
 	iVBW->freeSize += strLen;
-	SecureZeroMemory(((WS *)iVBW->str + iVBW->length), (strLen * iVBW->sizeOf));
+	iSecure_memZero(((WS *)iVBW->str + iVBW->length), (strLen * iVBW->sizeOf), FALSE);
+}
+// v2026-07-07
+VOID iVBM_clear(
+	$struct_iVBM *iVBM)
+{
+	iSecure_memZero((MS *)iVBM->str, (iVBM->length * iVBM->sizeOf), FALSE);
+	iVBM->freeSize += iVBM->length;
+	iVBM->length = 0;
+}
+// v2026-07-07
+VOID iVBW_clear(
+	$struct_iVBW *iVBW)
+{
+	iSecure_memZero((WS *)iVBW->str, (iVBW->length * iVBW->sizeOf), FALSE);
+	iVBW->freeSize += iVBW->length;
+	iVBW->length = 0;
 }
 // v2025-03-03
 VOID *iVB_free(
@@ -4179,6 +4197,7 @@ VOID idate_add(
 	{
 		iDV_set(IDV, IDV->y, IDV->m, IDV->d, (IDV->h + add_h), (IDV->n + add_n), (IDV->s + add_s));
 	}
+	// 使用しないものは初期化しておく
 	IDV->sign = TRUE;
 	IDV->days = 0.0;
 }
@@ -4230,6 +4249,7 @@ VOID idate_diff(
 	// 正規化1
 	DOUBLE cjd1 = idate_ymdhnsToCjd(i_y1, i_m1, i_d1, i_h1, i_n1, i_s1);
 	DOUBLE cjd2 = idate_ymdhnsToCjd(i_y2, i_m2, i_d2, i_h2, i_n2, i_s2);
+
 	if (cjd1 > cjd2)
 	{
 		IDV->sign = FALSE;
@@ -4481,7 +4501,7 @@ INT main()
 		ifree(wp1);
 	iDV_free(IDV);
 */
-// v2026-06-26
+// v2026-06-05
 WS *idate_format(
 	CONST WS *format,
 	BOOL bSign,	 // TRUE='+'／FALSE='-'
@@ -4502,11 +4522,7 @@ WS *idate_format(
 	DOUBLE cjd = (dDays ? dDays : idate_ymdhnsToCjd(iY, iM, iD, iH, iN, iS));
 	INT64 iDays = (INT64)cjd;
 	// 符号チェック
-	if (iY >= 0)
-	{
-		bSign = TRUE;
-	}
-	else
+	if (iY < 0)
 	{
 		bSign = FALSE;
 		iY = -(iY);
