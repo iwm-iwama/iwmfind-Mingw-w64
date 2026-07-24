@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 #define IWM_COPYRIGHT "(C)2009-2026 iwm-iwama"
 #define IWM_FILENAME "iwmfind"
-#define IWM_UPDATE "20260703"
+#define IWM_UPDATE "20260720"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -252,11 +252,6 @@ INT _Rm = 0;
 //  I_RM2  = --rm2
 //
 INT I_exec = 0;
-//
-// Debug
-// -debug
-//
-BOOL _Debug = FALSE;
 
 INT main()
 {
@@ -326,7 +321,7 @@ INT main()
 				_DepthMin = 0;
 				_DepthMax = 0;
 			}
-			ifree(wa1);
+			ifree2(wa1);
 		}
 	}
 
@@ -462,9 +457,9 @@ INT main()
 			{
 				WS **wa2 = iwaa_uniq(wa1, TRUE); // 重複排除
 				_Select = iwas_join(wa2, L",");
-				ifree(wa2);
+				ifree2(wa2);
 			}
-			ifree(wa1);
+			ifree2(wa1);
 		}
 
 		// -st | -sort
@@ -514,12 +509,6 @@ INT main()
 			_Separate = W2M(wp2);
 			_SeparateLen = strlen(_Separate);
 			ifree(wp2);
-		}
-
-		// -debug
-		if (iCLI_getOptMatch(_u1, L"-debug", NULL))
-		{
-			_Debug = TRUE;
 		}
 	}
 
@@ -751,20 +740,20 @@ INT main()
 		DeleteFileW(OLDDB);
 
 		// Buf解放
-		iVBM_freeAll(IVBM);
+		iVBM_free2(IVBM);
 
 		// 事後バッチ処理
 		// ゴミ箱へ移動
 		if (_Trashbox)
 		{
 			wp1 = M2W(iVBM_getStr(IVBM_trashbox));
-			WS **awp1 = iF_trash(wp1);
+			WS **wa1 = iF_trash(wp1);
 			ifree(wp1);
 			P1("\033[92m");
-			iwav_print2(awp1, L"- ", L"\n");
+			iwav_print2(wa1, L"- ", L"\n");
 			P1("\033[0m");
-			ifree(awp1);
-			iVBM_freeAll(IVBM_trashbox);
+			ifree2(wa1);
+			iVBM_free2(IVBM_trashbox);
 		}
 	}
 
@@ -774,13 +763,10 @@ INT main()
 		print_footer();
 	}
 
-	// Debug
-	if (_Debug)
-	{
-		idebug_map(NULL);
-		/// ifree_all();
-		/// idebug_map(NULL);
-	}
+	// 掃除
+	ifree2(AryInDir);
+	ifree(_Sort);
+	ifree(SqlCmd);
 
 	imain_end();
 }
@@ -873,8 +859,8 @@ VOID ifind10(
 	{
 		EP(
 			"\033[96m"
-			"> %u\r",
-			AllCnt);
+			"> %u (%.3f sec)\r",
+			AllCnt, iExecSec_next());
 		CallCnt_ifind10 = 0;
 	}
 }
