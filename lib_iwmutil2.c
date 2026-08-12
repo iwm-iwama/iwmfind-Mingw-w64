@@ -325,7 +325,7 @@ MinGW-w64では最適化すると同じ。
 // スコープ
 static VOID iHM_defrag($struct_HeapManager *pMgr);
 static VOID iHM_add($struct_HeapManager *pMgr, VOID *ptr, UINT uAry, UINT uSizeOf, UINT uAlloc);
-static inline VOID iSecure_memZero(volatile VOID *v, UINT n);
+static inline VOID iSecure_memZero(VOID *v, UINT n);
 
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -679,8 +679,8 @@ INT main()
 //-------------------
 static CRITICAL_SECTION $iHM_CS;
 // 開始（１度だけ）
-// v2026-06-21
-#define iHM_CS_begin() InitializeCriticalSection(&$iHM_CS)
+// v2026-08-10
+#define iHM_CS_begin() InitializeCriticalSectionAndSpinCount(&$iHM_CS, 4000)
 // ロック
 // v2026-06-21
 #define iHM_CS_lock() EnterCriticalSection(&$iHM_CS)
@@ -912,12 +912,14 @@ VOID *iHM_reallocEx(
 
 			// CRITICAL_SECTION アンロック
 			iHM_CS_unlock();
+
 			return pNewRealData;
 		}
 	}
 
 	// CRITICAL_SECTION アンロック
 	iHM_CS_unlock();
+
 	return oldPtr;
 }
 //------------------------
@@ -971,6 +973,7 @@ UINT iHM_free(
 
 	// CRITICAL_SECTION アンロック
 	iHM_CS_unlock();
+
 	return rtn;
 }
 //--------------------------
@@ -1016,6 +1019,7 @@ UINT iHM_free2(
 
 	// CRITICAL_SECTION アンロック
 	iHM_CS_unlock();
+
 	return rtn;
 }
 //--------------
@@ -1154,6 +1158,7 @@ $struct_HeapMap iHM_info(
 
 	// CRITICAL_SECTION アンロック
 	iHM_CS_unlock();
+
 	return rtn;
 }
 //-----------------------
@@ -1273,22 +1278,21 @@ $struct_HeapMap icalloc_info(
 //-----------------------------------------------------------------
 // 最適化(-Osなど)によって削除されない安全なメモリゼロクリア関数
 //-----------------------------------------------------------------
-// v2026-07-17
+// v2026-08-09
 static inline VOID iSecure_memZero(
-	volatile VOID *v,
+	VOID *v,
 	UINT n)
 {
-	if (!v || n == 0)
-	{
-		return;
-	}
-	// ゼロクリア
-	volatile MS *p = (volatile MS *)v;
-	UINT counter = n;
-	while (counter--)
-	{
-		*p++ = 0;
-	}
+	// GCC/MinGW-w64 インラインアセンブラ
+	// -O2 でも「__volatile__」と「"memory"」の組み合わせにより、100%削除されません
+	// .sファイルで比較しても SecureZeroMemory(v, n) との速度差なし
+	// rep stosb はサイズ0を自動スルーする
+	__asm__ __volatile__(
+		"rep stosb"		   // CPUへ一括ゼロクリアを命令（サイズに応じて自動SIMD化）
+		: "+D"(v), "+c"(n) // 読み書き両方を行うレジスタとして指定
+		: "a"(0)		   // 入力はrAX=0のみ
+		: "memory"		   // 【最重要】コンパイラの最適化（消去）を完全に阻止
+	);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -1839,41 +1843,53 @@ WS *iClipboard_getText()
 	UTF-16／UTF-8変換
 ----------------------------------------------------------------------------------------*/
 //////////////////////////////////////////////////////////////////////////////////////////
-// v2026-07-07
+// v2026-08-09
 MS *icnv_W2M(
 	CONST WS *str,
-	UINT uCP)
+	UINT uCP // 通常=65001
+)
 {
-	// L"" のとき 1 が返るので -1 で調整
-	INT i1 = WideCharToMultiByte(uCP, 0, str, -1, NULL, 0, NULL, NULL) - 1;
-	if (i1 > 0)
+	// bufに収まるなら決め打ち
+	MS buf[512];
+	INT len = WideCharToMultiByte(uCP, 0, str, -1, buf, (512 - 1), NULL, NULL);
+	if (len > 0)
 	{
-		MS *rtn = icalloc_MS(i1); // 末尾にダブルヌル自動付与
-		WideCharToMultiByte(uCP, 0, str, -1, rtn, i1, NULL, NULL);
+		return ims_nclone(buf, len - 1); // 末尾NULLを消去
+	}
+	// 実際の長さを計測
+	len = WideCharToMultiByte(uCP, 0, str, -1, NULL, 0, NULL, NULL);
+	if (len > 0)
+	{
+		--len;
+		MS *rtn = icalloc_MS(len); // 末尾にダブルヌル自動付与
+		WideCharToMultiByte(uCP, 0, str, -1, rtn, len, NULL, NULL);
 		return rtn;
 	}
-	else
-	{
-		return icalloc_MS(0);
-	}
+	return icalloc_MS(0);
 }
-// v2026-07-07
+// v2026-08-09
 WS *icnv_M2W(
 	CONST MS *str,
-	UINT uCP)
+	UINT uCP // 通常=65001
+)
 {
-	// "" のとき 1 が返るので -1 で調整
-	INT i1 = MultiByteToWideChar(uCP, 0, str, -1, NULL, 0) - 1;
-	if (i1 > 0)
+	// bufに収まるなら決め打ち
+	WS buf[512];
+	INT len = MultiByteToWideChar(uCP, 0, str, -1, buf, (512 - 1));
+	if (len > 0)
 	{
-		WS *rtn = icalloc_WS(i1); // 末尾にダブルヌル自動付与
-		MultiByteToWideChar(uCP, 0, str, -1, rtn, i1);
+		return iws_nclone(buf, len - 1); // 末尾NULLを消去
+	}
+	// 実際の長さを計測
+	len = MultiByteToWideChar(uCP, 0, str, -1, NULL, 0);
+	if (len > 0)
+	{
+		--len;
+		WS *rtn = icalloc_WS(len); // 末尾にダブルヌル自動付与
+		MultiByteToWideChar(uCP, 0, str, -1, rtn, len);
 		return rtn;
 	}
-	else
-	{
-		return icalloc_WS(0);
-	}
+	return icalloc_WS(0);
 }
 //////////////////////////////////////////////////////////////////////////////////////////
 /*----------------------------------------------------------------------------------------
@@ -3484,120 +3500,138 @@ UINT iVB_free2(
 // (例１) 複数取得する場合
 VOID ifind1(
 	$struct_iFinfo *FI,
-	WIN32_FIND_DATAW F,
-	WS *dir
-)
+	WIN32_FIND_DATAW *F,
+	WS *dir)
 {
-	// FI->sPath 末尾に "*" を付与
+	// FI->sPath 末尾に"*"を付与
 	UINT dirLen = iwn_cpy(FI->sPath, dir);
-		*(FI->sPath + dirLen) = '*';
-		*(FI->sPath + dirLen + 1) = 0;
-	HANDLE hfind = FindFirstFileW(FI->sPath, &F);
-		// アクセス不可なフォルダ等はスルー
-		if(hfind == INVALID_HANDLE_VALUE)
+	*(FI->sPath + dirLen) = '*';
+	*(FI->sPath + dirLen + 1) = 0;
+
+	// 高速化版 API の呼び出し
+	HANDLE hfind = FindFirstFileExW(
+		FI->sPath,
+		FindExInfoBasic,		  // 【高速化①】短いファイル名(8.3形式)の取得をスキップ
+		F,						  // 結果を格納する構造体
+		FindExSearchNameMatch,	  // 通常のファイル検索
+		NULL,					  // 検索フィルター（通常はNULL）
+		FIND_FIRST_EX_LARGE_FETCH // 【高速化②】OSに一括で多めのデータをバッファリングさせる
+	);
+
+	// アクセス不可なフォルダ等はスルー
+	if (hfind == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+
+	// Dir
+	iFinfo_init(FI, F, dir, NULL);
+	MS *mp1 = W2M(FI->sPath);
+	P("%llu\t%s\n", FI->uFsize, mp1);
+	ifree(mp1);
+
+	// File
+	do
+	{
+		if (iFinfo_init(FI, F, dir, F->cFileName))
 		{
-			FindClose(hfind);
-			return;
-		}
-		// Dir
-		iFinfo_init(FI, &F, dir, NULL);
-			MS *mp1 = W2M(FI->sPath);
-				P("%llu\t%s\n", FI->uFsize, mp1);
-			ifree(mp1);
-		// File
-		do
-		{
-			if(iFinfo_init(FI, &F, dir, F.cFileName))
+			// Dir
+			if (FI->bType)
 			{
-				// Dir
-				if(FI->bType)
-				{
-					WS *wp1 = iws_clone(FI->sPath);
-						ifind1(FI, F, wp1); // Dir(下位)
-					ifree(wp1);
-				}
-				// File
-				else
-				{
-					MS *mp1 = W2M(FI->sPath);
-						P("%llu\t%s\n", FI->uFsize, mp1);
-					ifree(mp1);
-				}
+				WS *wp1 = iws_clone(FI->sPath);
+				ifind1(FI, F, wp1); // Dir(下位)
+				ifree(wp1);
+			}
+			// File
+			else
+			{
+				MS *mp1 = W2M(FI->sPath);
+				P("%llu\t%s\n", FI->uFsize, mp1);
+				ifree(mp1);
 			}
 		}
-		while(FindNextFileW(hfind, &F));
+	} while (FindNextFileW(hfind, F));
+
 	FindClose(hfind);
 }
 	//
 	// main()
 	//
 	WS *dir = iF_getRPath(L".");
-		if(dir)
-		{
-			$struct_iFinfo *FI = iFinfo_alloc();
-				WIN32_FIND_DATAW F;
-				ifind1(FI, F, dir);
-			iFinfo_free(FI);
-		}
+	if (dir)
+	{
+		$struct_iFinfo *FI = iFinfo_alloc();
+			WIN32_FIND_DATAW F;
+			ifind1(FI, &F, dir);
+		iFinfo_free(FI);
+	}
 	ifree(dir);
 //
 // (例２) 単一パスから情報取得する場合
 //
 VOID ifind2(
-	WS *path
-)
+	CONST WS *path)
 {
-	INT iPos = iwn_len(path) - 1;
-	for(; iPos >= 0; iPos--)
+	// 1. ポインタ演算による探索（pathを書き換えない）
+	WS *fn = (WS *)path + iwn_len(path);
+	while (fn > path)
 	{
-		if(path[iPos] == '\\' || path[iPos] == '/')
+		--fn;
+		if (*fn == '\\' || *fn == '/')
 		{
+			++fn;
 			break;
 		}
 	}
-	++iPos;
-	WS *dir = iws_clone(path);
-		dir[iPos] = 0;
-	WS *name = iws_clone(path + iPos);
-		$struct_iFinfo *FI = iFinfo_alloc();
-			iwv_cpy(FI->sPath, path);
-			WIN32_FIND_DATAW F;
-			HANDLE hfind = FindFirstFileW(FI->sPath, &F);
-				// アクセス不可なフォルダなど
-				if(hfind == INVALID_HANDLE_VALUE)
-				{
-					FindClose(hfind);
-					return;
-				}
-				if(iFinfo_init(FI, &F, dir, name))
-				{
-					WS *wp1 = NULL;
-					P1("Path:    ");
-						P2W(FI->sPath);
-					P1("FnPos:   ");
-						P3(FI->uFnPos);
-					P1("Fn:      ");
-						P2W(FI->sPath + FI->uFnPos);
-					P1("Bytes:   ");
-						P3(FI->uFsize);
-					P1("Ctime:   ");
-						wp1 = idate_format_cjdToWS(NULL, FI->ctime_cjd);
-							P2W(wp1);
-						ifree(wp1);
-					P1("Mtime:   ");
-						wp1 = idate_format_cjdToWS(NULL, FI->mtime_cjd);
-							P2W(wp1);
-						ifree(wp1);
-					P1("Atime:   ");
-						wp1 = idate_format_cjdToWS(NULL, FI->atime_cjd);
-							P2W(wp1);
-						ifree(wp1);
-					NL();
-				}
-			FindClose(hfind);
-		iFinfo_free(FI);
-	ifree(name);
-	ifree(dir);
+
+	// 2. 構造体はスタックに配置（高速化）
+	$struct_iFinfo FI_stack;
+	$struct_iFinfo *FI = &FI_stack;
+
+	iwv_cpy(FI->sPath, path);
+
+	WIN32_FIND_DATAW F;
+	HANDLE hfind = FindFirstFileW(FI->sPath, &F);
+	if (hfind == INVALID_HANDLE_VALUE)
+	{
+		return;
+	}
+
+	// 3. 配列をスタック上に確保し、そこに dir を切り出す
+	WS dirBuf[IMAX_PATHW];
+	UINT dirLen = fn - path;
+
+	// dir の部分だけをコピーして NULL 終端する
+	wcsncpy(dirBuf, path, dirLen);
+	dirBuf[dirLen] = 0;
+
+	if (iFinfo_init(FI, &F, dirBuf, fn))
+	{
+		WS *wp1 = NULL;
+			P1("Path:  ");
+			P2W(FI->sPath);
+			P1("FnPos: ");
+			P3(FI->uFnPos);
+			P1("File:  ");
+			P2W(FI->sPath + FI->uFnPos);
+			P1("Bytes: ");
+			P3(FI->uFsize);
+			P1("Ctime: ");
+		wp1 = idate_format_cjdToWS(NULL, FI->ctime_cjd);
+			P2W(wp1);
+		ifree(wp1);
+			P1("Mtime: ");
+		wp1 = idate_format_cjdToWS(NULL, FI->mtime_cjd);
+			P2W(wp1);
+		ifree(wp1);
+			P1("Atime: ");
+		wp1 = idate_format_cjdToWS(NULL, FI->atime_cjd);
+			P2W(wp1);
+		ifree(wp1);
+		NL();
+	}
+
+	FindClose(hfind);
 }
 	//
 	// main()
@@ -5204,19 +5238,26 @@ WS *idate_replace_format_ymdhns(
 		P("%04d, %02d, %02d, %02d, %02d, %02d, %03d\n", ai2[0], ai2[1], ai2[2], ai2[3], ai2[4], ai2[5], ai2[6]);
 	ifree(ai2);
 */
-// v2023-07-13
+// v2026-08-10
 INT *idate_nowToiAryYmdhns(
-	BOOL area // TRUE=LOCAL／FALSE=SYSTEM
+	BOOL area // TRUE=LOCAL / FALSE=SYSTEM
 )
 {
+	FILETIME ft;
 	SYSTEMTIME st;
+	// 【高速化】内核のタイムスタンプを最小オーバーヘッドで取得
+	GetSystemTimeAsFileTime(&ft);
 	if (area)
 	{
-		GetLocalTime(&st);
+		// ローカルタイム（JSTなど）が必要な場合のみ、時差を計算して分解
+		FILETIME ftLocal;
+		FileTimeToLocalFileTime(&ft, &ftLocal);
+		FileTimeToSystemTime(&ftLocal, &st);
 	}
 	else
 	{
-		GetSystemTime(&st);
+		// UTC（システム時間）のまま分解
+		FileTimeToSystemTime(&ft, &st);
 	}
 	INT *rtn = icalloc_INT(7);
 	rtn[0] = st.wYear;

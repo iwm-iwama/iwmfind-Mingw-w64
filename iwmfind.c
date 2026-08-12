@@ -1,14 +1,14 @@
 //------------------------------------------------------------------------------
 #define IWM_COPYRIGHT "(C)2009-2026 iwm-iwama"
 #define IWM_FILENAME "iwmfind"
-#define IWM_UPDATE "20260720"
+#define IWM_UPDATE "20260810"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
 
 INT main();
 WS *sql_escape(WS *pW);
-VOID ifind10($struct_iFinfo *FI, WIN32_FIND_DATAW F, WS *dir, INT depth);
+VOID ifind10($struct_iFinfo *FI, WIN32_FIND_DATAW *F, WS *dir, INT depth);
 VOID ifind21(INT dirId, WS *dir);
 VOID ifind22($struct_iFinfo *FI, INT dirId, WS *fname);
 VOID sql_exec(sqlite3 *db, CONST MS *sql, sqlite3_callback cb);
@@ -663,7 +663,7 @@ INT main()
 			{
 				StepPos = wcslen(wp1);
 				// 本処理
-				ifind10(FI, F, wp1, 0);
+				ifind10(FI, &F, wp1, 0);
 			}
 			// トランザクション終了
 			sql_exec(InDbs, "COMMIT", 0);
@@ -804,7 +804,7 @@ WS *sql_escape(
 
 VOID ifind10(
 	$struct_iFinfo *FI,
-	WIN32_FIND_DATAW F,
+	WIN32_FIND_DATAW *F,
 	WS *dir,
 	INT depth)
 {
@@ -816,7 +816,15 @@ VOID ifind10(
 	UINT dirLen = iwn_cpy(FI->sPath, dir);
 	*(FI->sPath + dirLen) = '*';
 	*(FI->sPath + dirLen + 1) = 0;
-	HANDLE hfind = FindFirstFileW(FI->sPath, &F);
+	// 高速化版 API の呼び出し
+	HANDLE hfind = FindFirstFileExW(
+		FI->sPath,
+		FindExInfoBasic,		  // 【高速化①】短いファイル名(8.3形式)の取得をスキップ
+		F,						  // 結果を格納する構造体
+		FindExSearchNameMatch,	  // 通常のファイル検索
+		NULL,					  // 検索フィルター（通常はNULL）
+		FIND_FIRST_EX_LARGE_FETCH // 【高速化②】OSに一括で多めのデータをバッファリングさせる
+	);
 	// アクセス不可なフォルダ等はスルー
 	if (hfind == INVALID_HANDLE_VALUE)
 	{
@@ -830,13 +838,13 @@ VOID ifind10(
 	if (bMinDepthFlg)
 	{
 		ifind21(dirId, dir);
-		iFinfo_init(FI, &F, dir, NULL);
+		iFinfo_init(FI, F, dir, NULL);
 		ifind22(FI, dirId, L"");
 	}
 	// File
 	do
 	{
-		if (iFinfo_init(FI, &F, dir, F.cFileName))
+		if (iFinfo_init(FI, F, dir, F->cFileName))
 		{
 			if (FI->bType)
 			{
@@ -848,10 +856,10 @@ VOID ifind10(
 			}
 			else if (bMinDepthFlg)
 			{
-				ifind22(FI, dirId, F.cFileName);
+				ifind22(FI, dirId, F->cFileName);
 			}
 		}
-	} while (FindNextFileW(hfind, &F));
+	} while (FindNextFileW(hfind, F));
 	FindClose(hfind);
 	// 経過表示
 	++CallCnt_ifind10;
