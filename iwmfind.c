@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 #define IWM_COPYRIGHT "(C)2009-2026 iwm-iwama"
 #define IWM_FILENAME "iwmfind"
-#define IWM_UPDATE "20260810"
+#define IWM_UPDATE "20261004"
 //------------------------------------------------------------------------------
 #include "lib_iwmutil2.h"
 #include "sqlite3.h"
@@ -33,65 +33,65 @@ sqlite3 *InDbs = 0;
 sqlite3_stmt *Stmt1 = 0, *Stmt2 = 0;
 
 #define MEMDB L":memory:"
-#define OLDDB (L"iwmfind.db." IWM_FILENAME)
+#define TMP_FILE L"iwmfind.db.tmp"
 #define CREATE_T_DIR \
 	"CREATE TABLE T_DIR( \
-				dir_id    INTEGER PRIMARY KEY, \
-				dir       TEXT, \
-				step_byte INTEGER \
-			) WITHOUT ROWID;"
+		dir_id    INTEGER PRIMARY KEY, \
+		dir       TEXT, \
+		step_byte INTEGER \
+	) WITHOUT ROWID;"
 #define INSERT_T_DIR \
 	"INSERT INTO T_DIR( \
-				dir_id, \
-				dir, \
-				step_byte \
-			) VALUES(?, ?, ?);"
+		dir_id, \
+		dir, \
+		step_byte \
+	) VALUES(?, ?, ?);"
 #define CREATE_T_FILE \
 	"CREATE TABLE T_FILE( \
-				dir_id    INTEGER, \
-				file_id   INTEGER PRIMARY KEY, \
-				name      TEXT, \
-				attr_num  INTEGER, \
-				ctime_cjd REAL, \
-				mtime_cjd REAL, \
-				atime_cjd REAL, \
-				size      INTEGER, \
-				ln        INTEGER, \
-				rm_flg    INTEGER \
-			) WITHOUT ROWID;"
+		dir_id    INTEGER, \
+		file_id   INTEGER PRIMARY KEY, \
+		name      TEXT, \
+		attr_num  INTEGER, \
+		ctime_cjd REAL, \
+		mtime_cjd REAL, \
+		atime_cjd REAL, \
+		size      INTEGER, \
+		ln        INTEGER, \
+		rm_flg    INTEGER \
+	) WITHOUT ROWID;"
 #define INSERT_T_FILE \
 	"INSERT INTO T_FILE( \
-				dir_id, \
-				file_id, \
-				name, \
-				attr_num, \
-				ctime_cjd, \
-				mtime_cjd, \
-				atime_cjd, \
-				size, \
-				ln, \
-				rm_flg \
-			) VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0, 0);"
+		dir_id, \
+		file_id, \
+		name, \
+		attr_num, \
+		ctime_cjd, \
+		mtime_cjd, \
+		atime_cjd, \
+		size, \
+		ln, \
+		rm_flg \
+	) VALUES(?, ?, ?, ?, ?, ?, ?, ?, 0, 0);"
 #define CREATE_VIEW \
 	"CREATE VIEW V_INDEX AS SELECT \
-				T_FILE.ln AS LN, \
-				(T_DIR.dir || T_FILE.name) AS path, \
-				T_DIR.dir_id AS dir_id, \
-				T_DIR.dir AS dir, \
-				T_FILE.file_id AS file_id, \
-				T_FILE.name AS name, \
-				(CASE T_FILE.name WHEN '' THEN 'd' ELSE 'f' END) AS type, \
-				T_FILE.attr_num AS attr_num, \
-				((CASE T_FILE.name WHEN '' THEN 'd' ELSE 'f' END) || (CASE 1&T_FILE.attr_num WHEN 1 THEN 'r' ELSE '-' END) || (CASE 2&T_FILE.attr_num WHEN 2 THEN 'h' ELSE '-' END) || (CASE 4&T_FILE.attr_num WHEN 4 THEN 's' ELSE '-' END) || (CASE 32&T_FILE.attr_num WHEN 32 THEN 'a' ELSE '-' END)) AS attr, \
-				T_FILE.ctime_cjd AS ctime_cjd, \
-				datetime(T_FILE.ctime_cjd - 0.5) AS ctime, \
-				T_FILE.mtime_cjd AS mtime_cjd, \
-				datetime(T_FILE.mtime_cjd - 0.5) AS mtime, \
-				T_FILE.atime_cjd AS atime_cjd, \
-				datetime(T_FILE.atime_cjd - 0.5) AS atime, \
-				T_FILE.size AS size, \
-				T_DIR.step_byte AS step_byte \
-				FROM T_FILE LEFT JOIN T_DIR ON T_FILE.dir_id=T_DIR.dir_id;"
+		T_FILE.ln AS LN, \
+		(T_DIR.dir || T_FILE.name) AS path, \
+		T_DIR.dir_id AS dir_id, \
+		T_DIR.dir AS dir, \
+		T_FILE.file_id AS file_id, \
+		T_FILE.name AS name, \
+		(CASE T_FILE.name WHEN '' THEN 'd' ELSE 'f' END) AS type, \
+		T_FILE.attr_num AS attr_num, \
+		((CASE T_FILE.name WHEN '' THEN 'd' ELSE 'f' END) || (CASE 1&T_FILE.attr_num WHEN 1 THEN 'r' ELSE '-' END) || (CASE 2&T_FILE.attr_num WHEN 2 THEN 'h' ELSE '-' END) || (CASE 4&T_FILE.attr_num WHEN 4 THEN 's' ELSE '-' END) || (CASE 32&T_FILE.attr_num WHEN 32 THEN 'a' ELSE '-' END)) AS attr, \
+		T_FILE.ctime_cjd AS ctime_cjd, \
+		datetime(T_FILE.ctime_cjd - 0.5) AS ctime, \
+		T_FILE.mtime_cjd AS mtime_cjd, \
+		datetime(T_FILE.mtime_cjd - 0.5) AS mtime, \
+		T_FILE.atime_cjd AS atime_cjd, \
+		datetime(T_FILE.atime_cjd - 0.5) AS atime, \
+		T_FILE.size AS size, \
+		T_DIR.step_byte AS step_byte \
+		FROM T_FILE LEFT JOIN T_DIR ON T_FILE.dir_id=T_DIR.dir_id;"
 #define S_EXEC99 "99"
 #define UPDATE_EXEC9901 \
 	"UPDATE T_FILE SET rm_flg=" S_EXEC99 " WHERE file_id NOT IN (SELECT file_id FROM V_INDEX %s);"
@@ -644,19 +644,21 @@ INT main()
 			$struct_iFinfo *FI = iFinfo_alloc();
 			WIN32_FIND_DATAW F;
 			//  TABLE作成
-			sql_exec(InDbs, CREATE_T_DIR, 0);
-			sql_exec(InDbs, CREATE_T_FILE, 0);
+			sql_exec(InDbs, CREATE_T_DIR, NULL);
+			sql_exec(InDbs, CREATE_T_FILE, NULL);
 			// VIEW作成
-			sql_exec(InDbs, CREATE_VIEW, 0);
+			sql_exec(InDbs, CREATE_VIEW, NULL);
 			// 前処理
-			sqlite3_prepare_v2(InDbs, INSERT_T_DIR, strlen(INSERT_T_DIR), &Stmt1, 0);
-			sqlite3_prepare_v2(InDbs, INSERT_T_FILE, strlen(INSERT_T_FILE), &Stmt2, 0);
+			sqlite3_prepare_v2(InDbs, INSERT_T_DIR, strlen(INSERT_T_DIR), &Stmt1, NULL);
+			sqlite3_prepare_v2(InDbs, INSERT_T_FILE, strlen(INSERT_T_FILE), &Stmt2, NULL);
 			//  PRAGMA設定
-			sql_exec(InDbs, "PRAGMA encoding = 'UTF-8';", 0);
-			sql_exec(InDbs, "PRAGMA journal_mode = OFF;", 0);
-			sql_exec(InDbs, "PRAGMA synchronous = OFF;", 0);
+			sql_exec(InDbs, "PRAGMA encoding = 'UTF-8';", NULL);
+			sql_exec(InDbs, "PRAGMA journal_mode = OFF;", NULL);
+			sql_exec(InDbs, "PRAGMA synchronous = OFF;", NULL);
+			sql_exec(InDbs, "PRAGMA secure_delete = ON;", NULL);
+			sql_exec(InDbs, "PRAGMA temp_store = MEMORY;", NULL);
 			// トランザクション開始
-			sql_exec(InDbs, "BEGIN", 0);
+			sql_exec(InDbs, "BEGIN", NULL);
 			// 検索データ DB書込
 			UINT _u2 = 0;
 			while ((wp1 = AryInDir[_u2++]))
@@ -666,7 +668,7 @@ INT main()
 				ifind10(FI, &F, wp1, 0);
 			}
 			// トランザクション終了
-			sql_exec(InDbs, "COMMIT", 0);
+			sql_exec(InDbs, "COMMIT", NULL);
 			// 後処理
 			sqlite3_finalize(Stmt2);
 			sqlite3_finalize(Stmt1);
@@ -680,7 +682,7 @@ INT main()
 			// _InTmp, _OutDbn 両指定、別ファイル名のとき
 			if (*_InTmp)
 			{
-				CopyFileW(_InDbn, OLDDB, FALSE);
+				CopyFileW(_InDbn, TMP_FILE, FALSE);
 			}
 			// WHERE Str のとき不要データ削除
 			if (*_Where1)
@@ -690,11 +692,11 @@ INT main()
 				ifree(mp1);
 				mp3 = ims_sprintf(UPDATE_EXEC9901, mp2);
 				ifree(mp2);
-				sql_exec(InDbs, "BEGIN", 0);		 // トランザクション開始
-				sql_exec(InDbs, mp3, 0);			 // フラグを立てる
-				sql_exec(InDbs, DELETE_EXEC9901, 0); // 不要データ削除
-				sql_exec(InDbs, "COMMIT", 0);		 // トランザクション終了
-				sql_exec(InDbs, "VACUUM", 0);		 // VACUUM
+				sql_exec(InDbs, "BEGIN", NULL);			// トランザクション開始
+				sql_exec(InDbs, mp3, NULL);				// フラグを立てる
+				sql_exec(InDbs, DELETE_EXEC9901, NULL); // 不要データ削除
+				sql_exec(InDbs, "COMMIT", NULL);		// トランザクション終了
+				sql_exec(InDbs, "VACUUM", NULL);		// VACUUM
 				ifree(mp3);
 			}
 			// _InTmp, _OutDbn 両指定のときは, 途中, ファイル名が逆になるので, 後でswap
@@ -730,14 +732,16 @@ INT main()
 		}
 		// DB解放
 		sqlite3_close(InDbs);
+
 		// _InDbn, _OutDbn ファイル名をswap
 		if (*_InTmp)
 		{
 			MoveFileW(_InDbn, _OutDbn);
-			MoveFileW(OLDDB, _InDbn);
+			MoveFileW(TMP_FILE, _InDbn);
 		}
-		// 作業用ファイル削除
-		DeleteFileW(OLDDB);
+
+		// 一応残すが使わないはず
+		DeleteFileW(TMP_FILE);
 
 		// Buf解放
 		iVBM_free2(IVBM);
